@@ -21,7 +21,9 @@ export function inlineCSS(html: string, css: string): string {
 }
 
 export function sanitizeForWechat(html: string): string {
+  if (!html.trim()) return "";
   const doc = new DOMParser().parseFromString(html, "text/html");
+  if (!doc.body) return html;
 
   function walk(node: Node): void {
     if (node.nodeType === Node.ELEMENT_NODE) {
@@ -54,6 +56,7 @@ export function sanitizeForWechat(html: string): string {
 }
 
 export function processForWechat(html: string, css: string): string {
+  if (!html.trim()) return "";
   const inlined = inlineCSS(html, css);
   return sanitizeForWechat(inlined);
 }
