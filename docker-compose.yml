@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "7070:80"
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    ports:
+      - "7071:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - IMAGES_DIR=/app/data/images
+      - ARTICLES_DIR=/app/data/articles
+      - CONFIG_FILE=/app/data/config.json
+      - MAX_UPLOAD_SIZE=52428800
