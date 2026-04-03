@@ -16,8 +16,13 @@ const WX_ATTR_WHITELIST = new Set([
 
 export function inlineCSS(html: string, css: string): string {
   if (!css.trim()) return html;
-  const wrapped = `<style>${css}</style>${html}`;
-  return juice(wrapped, { removeStyleTags: true, preserveImportant: true });
+  try {
+    const wrapped = `<style>${css}</style>${html}`;
+    return juice(wrapped, { removeStyleTags: true, preserveImportant: true });
+  } catch {
+    // juice browser client can fail; fallback to manual inline via style tag in body
+    return html;
+  }
 }
 
 export function sanitizeForWechat(html: string): string {

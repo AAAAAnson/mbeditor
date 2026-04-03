@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { processForWechat } from "@/utils/inliner";
 
 interface WechatPreviewProps {
   html: string;
@@ -16,11 +15,12 @@ export default function WechatPreview({ html, css, js, mode }: WechatPreviewProp
 <body style="margin:0;padding:16px;font-family:-apple-system,sans-serif;">${html}
 <script>${js}<\/script></body></html>`;
     }
-    const processed = processForWechat(html, css);
+    // Wechat preview: inject CSS via <style> in iframe, simulating 578px width
+    // juice inline化 only happens at copy/export time, not during live preview
     return `<!DOCTYPE html>
 <html><head><meta charset="utf-8">
-<style>body{margin:0;padding:16px;font-family:-apple-system,sans-serif;font-size:16px;line-height:1.8;color:#333;}</style>
-</head><body>${processed}</body></html>`;
+<style>body{margin:0;padding:16px;font-family:-apple-system,sans-serif;font-size:16px;line-height:1.8;color:#333;}${css}</style>
+</head><body>${html}</body></html>`;
   }, [html, css, js, mode]);
 
   return (
