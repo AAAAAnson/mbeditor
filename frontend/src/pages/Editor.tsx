@@ -60,38 +60,27 @@ export default function EditorPage() {
 
   const handleInsertImage = (url: string) => {
     if (!article) return;
-    // Insert via TipTap if in wechat mode, otherwise append to HTML
-    if (previewMode === "wechat" && previewRef.current) {
-      previewRef.current.insertImage(url);
+    const imgTag = `<img src="${url}" style="max-width:100%;border-radius:8px;" />`;
+    if (previewRef.current) {
+      previewRef.current.insertHtml(imgTag);
     } else {
-      const imgTag = `<img src="${url}" style="max-width:100%;border-radius:8px;" />`;
       updateField("html", article.html + "\n" + imgTag);
     }
   };
 
-  const handleInsertSvg = (html: string) => {
+  const handleInsertSvg = (svgHtml: string) => {
     if (!article) return;
-    // Insert as RawHtmlBlock (atomic node) in TipTap
-    if (previewMode === "wechat" && previewRef.current) {
-      previewRef.current.insertRawHtmlBlock(html);
+    if (previewRef.current) {
+      previewRef.current.insertHtml(svgHtml);
     } else {
-      updateField("html", article.html + "\n" + html);
+      updateField("html", article.html + "\n" + svgHtml);
     }
   };
 
-  // 从预览可编辑区域同步回来的 HTML
   const handlePreviewHtmlChange = useCallback((newHtml: string) => {
     if (!article) return;
     updateField("html", newHtml);
   }, [article]);
-
-  // Image upload trigger for toolbar
-  const handleImageUpload = useCallback(() => {
-    // Trigger the image upload from ActionPanel
-    // For now, prompt for URL — the ActionPanel handles actual file uploads
-    const url = window.prompt("输入图片地址");
-    if (url) handleInsertImage(url);
-  }, [article, previewMode]);
 
   if (!article) {
     return (
@@ -102,7 +91,6 @@ export default function EditorPage() {
   }
 
   const editorValue = (article[activeTab as keyof Article] as string) || "";
-  // 智能提取 HTML：用户可以粘贴整个 Python/JS 文件，自动提取其中的 HTML
   const extractedHtml = article.mode === "markdown" ? renderMarkdown(article.markdown, mdTheme) : extractHTML(article.html);
   const previewHtml = extractedHtml;
   const previewCss = article.mode === "markdown" ? "" : article.css;
@@ -137,7 +125,7 @@ export default function EditorPage() {
 
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Editor */}
+        {/* Code Editor */}
         {article.mode === "html" ? (
           <div className="flex-1 flex flex-col min-w-0 border-r border-border">
             <EditorTabs activeTab={activeTab} onTabChange={setActiveTab} tabs={HTML_TABS} />
@@ -160,21 +148,19 @@ export default function EditorPage() {
           </div>
         )}
 
-        {/* Preview */}
+        {/* Preview — iframe with contentEditable for perfect visual fidelity */}
         <div className="w-[460px] shrink-0 p-4 bg-surface-primary overflow-y-auto">
           <WechatPreview
             ref={previewRef}
             html={previewHtml}
             css={previewCss}
-            js={article.mode === "html" ? article.js : ""}
             mode={previewMode}
             onHtmlChange={handlePreviewHtmlChange}
-            onImageUpload={handleImageUpload}
           />
         </div>
 
         {/* Action Panel */}
-        <div className="flex flex-col">
+        <div className="flex flex-col overflow-y-auto">
           <ActionPanel article={{...article, html: previewHtml, css: previewCss}} onInsertImage={handleInsertImage} />
           {article.mode === "markdown" && (
             <div className="px-4 pb-4 bg-surface-secondary border-l border-border">
