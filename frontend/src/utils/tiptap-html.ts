@@ -23,22 +23,32 @@ export function getArticleHTML(editor: Editor): string {
 
 /**
  * Prepare HTML for loading into TipTap editor.
- * Wraps known interactive/SVG blocks (sections with <style> tags, checkbox/radio hacks)
- * into raw-html-block divs so TipTap treats them as atomic nodes.
+ * Wraps complex styled blocks into raw-html-block divs so TipTap treats them as
+ * atomic nodes and preserves their inline styles.
+ *
+ * A top-level element is treated as a raw block if it:
+ * - Contains <style> tags or checkbox/radio inputs (SVG interactive blocks)
+ * - Has a style attribute AND contains nested block elements (complex styled layout)
  */
 export function prepareHTMLForEditor(html: string): string {
   if (!html.trim()) return html
 
   const doc = new DOMParser().parseFromString(html, 'text/html')
 
-  // Find top-level <section> elements that contain <style> tags (interactive blocks)
-  const topSections = doc.body.querySelectorAll(':scope > section')
-  topSections.forEach((section) => {
-    if (section.querySelector('style') || section.querySelector('input[type="checkbox"]') || section.querySelector('input[type="radio"]')) {
+  const topElements = doc.body.querySelectorAll(':scope > *')
+  topElements.forEach((el) => {
+    const isInteractive = el.querySelector('style') ||
+      el.querySelector('input[type="checkbox"]') ||
+      el.querySelector('input[type="radio"]')
+    const hasInlineStyle = el.hasAttribute('style')
+    const hasNestedBlocks = el.querySelector('section, div, h1, h2, h3, h4, h5, h6, blockquote, table, pre, ul, ol')
+    const isComplexStyled = hasInlineStyle && hasNestedBlocks
+
+    if (isInteractive || isComplexStyled) {
       const wrapper = doc.createElement('div')
       wrapper.setAttribute('data-type', 'raw-html-block')
-      wrapper.setAttribute('data-raw-content', section.outerHTML)
-      section.replaceWith(wrapper)
+      wrapper.setAttribute('data-raw-content', el.outerHTML)
+      el.replaceWith(wrapper)
     }
   })
 
