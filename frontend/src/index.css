@@ -65,14 +65,22 @@ body {
   transition: outline 0.15s;
 }
 
-.raw-html-block:hover {
+.raw-html-block:hover:not(.editing) {
   outline: 1px dashed #A855F7;
   outline-offset: 4px;
 }
 
-.raw-html-block.selected {
+.raw-html-block.selected:not(.editing) {
   outline: 2px solid #A855F7;
   outline-offset: 4px;
+}
+
+.raw-html-block.editing {
+  outline: none;
+}
+
+.raw-html-block.editing *::selection {
+  background: rgba(168, 85, 247, 0.3);
 }
 
 /* Ensure interactive elements work inside TipTap raw blocks */
