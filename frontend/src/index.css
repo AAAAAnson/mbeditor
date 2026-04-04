@@ -36,3 +36,52 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* TipTap Editor Styles */
+.tiptap-editor .ProseMirror {
+  outline: none;
+  min-height: 100%;
+}
+
+.tiptap-editor .ProseMirror p {
+  margin: 8px 0;
+}
+
+.tiptap-editor .ProseMirror img {
+  border-radius: 8px;
+  max-width: 100%;
+  box-shadow: none;
+}
+
+.tiptap-editor .ProseMirror img.ProseMirror-selectednode {
+  outline: 2px solid #A855F7;
+  outline-offset: 2px;
+}
+
+.raw-html-block {
+  position: relative;
+  margin: 12px 0;
+  border-radius: 8px;
+  transition: outline 0.15s;
+}
+
+.raw-html-block:hover {
+  outline: 1px dashed #A855F7;
+  outline-offset: 4px;
+}
+
+.raw-html-block.selected {
+  outline: 2px solid #A855F7;
+  outline-offset: 4px;
+}
+
+/* Ensure interactive elements work inside TipTap raw blocks */
+.raw-html-block input[type="checkbox"],
+.raw-html-block input[type="radio"] {
+  pointer-events: auto;
+}
+
+.raw-html-block label {
+  pointer-events: auto;
+  cursor: pointer;
+}
