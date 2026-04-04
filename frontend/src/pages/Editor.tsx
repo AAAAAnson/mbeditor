@@ -7,6 +7,7 @@ import WechatPreview from "@/components/preview/WechatPreview";
 import ActionPanel from "@/components/panel/ActionPanel";
 import ThemeSelector from "@/components/panel/ThemeSelector";
 import { renderMarkdown } from "@/utils/markdown";
+import { extractHTML } from "@/utils/extractor";
 import api from "@/lib/api";
 import type { Article } from "@/types";
 
@@ -69,7 +70,9 @@ export default function EditorPage() {
   }
 
   const editorValue = (article[activeTab as keyof Article] as string) || "";
-  const previewHtml = article.mode === "markdown" ? renderMarkdown(article.markdown, mdTheme) : article.html;
+  // 智能提取 HTML：用户可以粘贴整个 Python/JS 文件，自动提取其中的 HTML
+  const extractedHtml = article.mode === "markdown" ? renderMarkdown(article.markdown, mdTheme) : extractHTML(article.html);
+  const previewHtml = extractedHtml;
   const previewCss = article.mode === "markdown" ? "" : article.css;
 
   return (
