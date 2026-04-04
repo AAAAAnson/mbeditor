@@ -4,8 +4,10 @@ import MonacoEditor from "@/components/editor/MonacoEditor";
 import MarkdownEditor from "@/components/editor/MarkdownEditor";
 import EditorTabs from "@/components/editor/EditorTabs";
 import WechatPreview from "@/components/preview/WechatPreview";
+import type { WechatPreviewHandle } from "@/components/preview/WechatPreview";
 import ActionPanel from "@/components/panel/ActionPanel";
 import ThemeSelector from "@/components/panel/ThemeSelector";
+import SvgTemplatePanel from "@/components/panel/SvgTemplatePanel";
 import { renderMarkdown } from "@/utils/markdown";
 import { extractHTML } from "@/utils/extractor";
 import api from "@/lib/api";
@@ -26,6 +28,7 @@ export default function EditorPage() {
   const [previewMode, setPreviewMode] = useState<"raw" | "wechat">("wechat");
   const [mdTheme, setMdTheme] = useState("default");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewRef = useRef<WechatPreviewHandle>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -57,15 +60,38 @@ export default function EditorPage() {
 
   const handleInsertImage = (url: string) => {
     if (!article) return;
-    const imgTag = `<img src="${url}" style="max-width:100%;border-radius:8px;" />`;
-    updateField("html", article.html + "\n" + imgTag);
+    // Insert via TipTap if in wechat mode, otherwise append to HTML
+    if (previewMode === "wechat" && previewRef.current) {
+      previewRef.current.insertImage(url);
+    } else {
+      const imgTag = `<img src="${url}" style="max-width:100%;border-radius:8px;" />`;
+      updateField("html", article.html + "\n" + imgTag);
+    }
   };
 
-  // 从预览可编辑区域同步回来的 HTML（此时已经是纯 HTML，替换掉原始内容）
+  const handleInsertSvg = (html: string) => {
+    if (!article) return;
+    // Insert as RawHtmlBlock (atomic node) in TipTap
+    if (previewMode === "wechat" && previewRef.current) {
+      previewRef.current.insertRawHtmlBlock(html);
+    } else {
+      updateField("html", article.html + "\n" + html);
+    }
+  };
+
+  // 从预览可编辑区域同步回来的 HTML
   const handlePreviewHtmlChange = useCallback((newHtml: string) => {
     if (!article) return;
     updateField("html", newHtml);
   }, [article]);
+
+  // Image upload trigger for toolbar
+  const handleImageUpload = useCallback(() => {
+    // Trigger the image upload from ActionPanel
+    // For now, prompt for URL — the ActionPanel handles actual file uploads
+    const url = window.prompt("输入图片地址");
+    if (url) handleInsertImage(url);
+  }, [article, previewMode]);
 
   if (!article) {
     return (
@@ -137,11 +163,13 @@ export default function EditorPage() {
         {/* Preview */}
         <div className="w-[460px] shrink-0 p-4 bg-surface-primary overflow-y-auto">
           <WechatPreview
+            ref={previewRef}
             html={previewHtml}
             css={previewCss}
             js={article.mode === "html" ? article.js : ""}
             mode={previewMode}
             onHtmlChange={handlePreviewHtmlChange}
+            onImageUpload={handleImageUpload}
           />
         </div>
 
@@ -153,6 +181,9 @@ export default function EditorPage() {
               <ThemeSelector value={mdTheme} onChange={setMdTheme} />
             </div>
           )}
+          <div className="bg-surface-secondary border-l border-border">
+            <SvgTemplatePanel onInsert={handleInsertSvg} />
+          </div>
         </div>
       </div>
     </div>

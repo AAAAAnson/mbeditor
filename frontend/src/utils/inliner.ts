@@ -7,11 +7,24 @@ const WX_TAG_WHITELIST = new Set([
   "table", "thead", "tbody", "tr", "td", "th",
   "br", "hr", "pre", "code", "a", "sub", "sup",
   "figure", "figcaption",
+  // SVG elements
+  "svg", "foreignobject", "animate", "animatetransform",
+  "rect", "circle", "path", "polygon", "line", "ellipse",
+  "text", "tspan", "defs", "lineargradient", "radialgradient",
+  "stop", "clippath", "mask", "g", "use", "symbol",
+  // Interactive elements for SVG templates
+  "input", "label", "style",
 ]);
 
 const WX_ATTR_WHITELIST = new Set([
   "style", "src", "href", "alt", "width", "height",
   "colspan", "rowspan", "target",
+  // SVG attributes
+  "viewbox", "xmlns", "fill", "stroke", "stroke-width",
+  "d", "cx", "cy", "r", "x", "y", "x1", "y1", "x2", "y2",
+  "rx", "ry", "points", "transform", "opacity",
+  // Interactive attributes for SVG templates
+  "for", "type", "name", "id", "checked",
 ]);
 
 export function inlineCSS(html: string, css: string): string {
