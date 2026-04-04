@@ -149,7 +149,7 @@ export default function EditorPage() {
         )}
 
         {/* Preview — iframe with contentEditable for perfect visual fidelity */}
-        <div className="w-[460px] shrink-0 p-4 bg-surface-primary overflow-y-auto">
+        <div className="flex-1 min-w-[400px] shrink-0 p-2 bg-surface-primary overflow-y-auto">
           <WechatPreview
             ref={previewRef}
             html={previewHtml}

@@ -50,7 +50,7 @@ const WechatPreview = forwardRef<WechatPreviewHandle, WechatPreviewProps>(
 <style>
   body {
     margin: 0;
-    padding: 16px;
+    padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 16px;
     line-height: 1.8;
@@ -128,8 +128,8 @@ const WechatPreview = forwardRef<WechatPreviewHandle, WechatPreviewProps>(
 
     return (
       <div className="h-full flex flex-col">
-        <div className="mx-auto w-full max-w-[414px] h-full border border-border rounded-xl overflow-hidden bg-white">
-          <div className="h-6 bg-gray-100 flex items-center justify-center">
+        <div className="mx-auto w-full h-full border border-border rounded-xl overflow-hidden">
+          <div className="h-6 bg-gray-100 flex items-center justify-center shrink-0">
             <span className="text-xs text-gray-400">
               {mode === "raw" ? "原始预览（只读）" : "公众号效果（可编辑）"}
             </span>
@@ -137,7 +137,7 @@ const WechatPreview = forwardRef<WechatPreviewHandle, WechatPreviewProps>(
           <iframe
             ref={iframeRef}
             className="w-full border-0"
-            style={{ height: "calc(100% - 24px)" }}
+            style={{ height: "calc(100% - 24px)", background: "#0d0d0d" }}
             title="preview"
           />
         </div>
