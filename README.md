@@ -44,9 +44,16 @@ curl -X POST /api/v1/publish/draft -d '{"article_id":"{id}"}'
 
 ## 截图
 
-| 文章列表 | 编辑器 | 设置 |
-|---------|--------|------|
-| ![文章列表](docs/screenshots/article-list.png) | ![编辑器](docs/screenshots/editor.png) | ![设置](docs/screenshots/settings.png) |
+<table>
+<tr>
+<td width="65%"><strong>编辑器界面</strong> — 左侧代码编辑 + 中间实时预览 + 右侧操作面板</td>
+<td width="35%"><strong>公众号效果预览</strong></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/editor.png" alt="编辑器" /></td>
+<td><img src="docs/screenshots/preview.png" alt="预览效果" /></td>
+</tr>
+</table>
 
 ## 技术栈
 
