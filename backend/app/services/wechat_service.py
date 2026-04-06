@@ -85,7 +85,30 @@ def upload_thumb_to_wechat(image_bytes: bytes, filename: str) -> str:
     return data["media_id"]
 
 
+def _convert_to_png(img_bytes: bytes, filename: str) -> tuple[bytes, str]:
+    """Convert webp/svg/other formats to PNG for WeChat compatibility."""
+    lower = filename.lower()
+    if lower.endswith((".webp", ".svg", ".bmp", ".tiff")):
+        try:
+            from PIL import Image
+            import io
+            img = Image.open(io.BytesIO(img_bytes))
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGBA")
+            else:
+                img = img.convert("RGB")
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+            return buf.getvalue(), filename.rsplit(".", 1)[0] + ".png"
+        except Exception:
+            pass
+    return img_bytes, filename
+
+
 def process_html_images(html: str, images_dir: str) -> str:
+    import logging
+    logger = logging.getLogger(__name__)
+
     def replace_src(match: re.Match) -> str:
         src = match.group(1)
         if "mmbiz.qpic.cn" in src:
@@ -98,18 +121,27 @@ def process_html_images(html: str, images_dir: str) -> str:
             local_path = Path(images_dir) / src.removeprefix("/images/")
         elif src.startswith("http"):
             try:
-                resp = httpx.get(src, timeout=15)
+                resp = httpx.get(
+                    src, timeout=20,
+                    headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
+                    follow_redirects=True,
+                )
+                resp.raise_for_status()
                 img_bytes = resp.content
                 fname = src.split("/")[-1].split("?")[0] or "image.png"
+                img_bytes, fname = _convert_to_png(img_bytes, fname)
                 wx_url = upload_image_to_wechat(img_bytes, fname)
                 _wx_image_cache[src] = wx_url
+                logger.info(f"Uploaded image: {src[:60]} -> {wx_url[:60]}")
                 return f'src="{wx_url}"'
-            except Exception:
+            except Exception as e:
+                logger.warning(f"Failed to upload image {src[:80]}: {e}")
                 return match.group(0)
 
         if local_path and local_path.exists():
             img_bytes = local_path.read_bytes()
             fname = local_path.name
+            img_bytes, fname = _convert_to_png(img_bytes, fname)
             wx_url = upload_image_to_wechat(img_bytes, fname)
             _wx_image_cache[src] = wx_url
             return f'src="{wx_url}"'
@@ -145,7 +177,7 @@ def _generate_default_cover(title: str) -> bytes:
     return buf.getvalue()
 
 
-def create_draft(title: str, html: str, author: str = "", digest: str = "", thumb_media_id: str = "") -> dict:
+def create_draft(title: str, html: str, author: str = "", digest: str = "", thumb_media_id: str = "", content_source_url: str = "") -> dict:
     token = _get_access_token()
 
     if not thumb_media_id:
@@ -159,7 +191,7 @@ def create_draft(title: str, html: str, author: str = "", digest: str = "", thum
         "digest": digest,
         "content": html,
         "thumb_media_id": thumb_media_id,
-        "content_source_url": "",
+        "content_source_url": content_source_url,
         "need_open_comment": 0,
         "only_fans_can_comment": 0,
     }

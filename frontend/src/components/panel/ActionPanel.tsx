@@ -52,8 +52,11 @@ export default function ActionPanel({ article, onInsertImage }: ActionPanelProps
     setCopying(true);
     setCopyMsg("");
     try {
-      // Call backend to inline CSS + sanitize for WeChat
-      const res = await api.get(`/publish/html/${article.id}`);
+      // POST current HTML+CSS for processing (uses live editor state)
+      const res = await api.post("/publish/preview", {
+        html: article.html,
+        css: article.css,
+      });
       if (res.data.code === 0) {
         const inlinedHtml = res.data.data.html;
         const ok = await copyHtmlToClipboard(inlinedHtml);
@@ -72,6 +75,14 @@ export default function ActionPanel({ article, onInsertImage }: ActionPanelProps
     setPublishing(true);
     setPublishMsg("");
     try {
+      // Save current editor state first, then push
+      await api.put(`/articles/${article.id}`, {
+        html: article.html,
+        css: article.css,
+        js: article.js || "",
+        title: article.title,
+        mode: article.mode,
+      });
       const res = await api.post("/publish/draft", { article_id: article.id });
       setPublishMsg(res.data.code === 0 ? "草稿已推送!" : res.data.message);
     } catch (e: unknown) {
@@ -84,20 +95,20 @@ export default function ActionPanel({ article, onInsertImage }: ActionPanelProps
 
   const handleExport = async () => {
     try {
-      const res = await api.get(`/publish/html/${article.id}`);
-      if (res.data.code === 0) {
-        const inlinedHtml = res.data.data.html;
-        const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${article.title}</title></head><body>${inlinedHtml}</body></html>`;
-        const blob = new Blob([fullHtml], { type: "text/html" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${article.title || "article"}.html`;
-        a.click();
-        URL.revokeObjectURL(url);
-      }
+      const res = await api.post("/publish/preview", {
+        html: article.html,
+        css: article.css,
+      });
+      const inlinedHtml = res.data.code === 0 ? res.data.data.html : article.html;
+      const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${article.title}</title></head><body>${inlinedHtml}</body></html>`;
+      const blob = new Blob([fullHtml], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${article.title || "article"}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
     } catch {
-      // fallback: export raw
       const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${article.title}</title></head><body>${article.html}</body></html>`;
       const blob = new Blob([fullHtml], { type: "text/html" });
       const url = URL.createObjectURL(blob);
