@@ -127,8 +127,8 @@ const WechatPreview = forwardRef<WechatPreviewHandle, WechatPreviewProps>(
     }), [onHtmlChange]);
 
     return (
-      <div className="h-full flex flex-col">
-        <div className="mx-auto w-full max-w-[680px] h-full rounded-xl overflow-hidden border border-border-primary shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+      <div className="h-full w-full flex flex-col min-h-0">
+        <div className="mx-auto w-full max-w-[680px] h-full rounded-xl overflow-hidden border border-border-primary shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex flex-col min-h-0">
           <div className="h-6 bg-surface-tertiary flex items-center justify-center shrink-0">
             <span className="text-[10px] text-fg-muted font-mono">
               {mode === "raw" ? "原始预览（只读）" : "公众号效果（可编辑）"}
@@ -136,8 +136,8 @@ const WechatPreview = forwardRef<WechatPreviewHandle, WechatPreviewProps>(
           </div>
           <iframe
             ref={iframeRef}
-            className="w-full border-0"
-            style={{ height: "calc(100% - 24px)", background: "#FAF8F5" }}
+            className="w-full border-0 flex-1 min-h-0"
+            style={{ background: "#FAF8F5" }}
             title="preview"
           />
         </div>

@@ -20,6 +20,14 @@ function uid(): string {
   return "_" + Math.random().toString(36).slice(2, 8);
 }
 
+function isLightColor(hex: string): boolean {
+  const c = hex.replace("#", "");
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  return (r * 299 + g * 587 + b * 114) / 1000 > 160;
+}
+
 const accordion: SvgTemplate = {
   id: "accordion",
   name: "点击展开/收起",
@@ -58,32 +66,36 @@ const accordion: SvgTemplate = {
 const beforeAfter: SvgTemplate = {
   id: "before-after",
   name: "图片前后对比",
-  description: "点击按钮切换前后两张图片",
+  description: "点击按钮切换前后两张内容",
   category: "click",
   fields: [
-    { key: "beforeImage", label: "前图片URL", type: "text", default: "https://via.placeholder.com/600x400/eee/999?text=Before" },
-    { key: "afterImage", label: "后图片URL", type: "text", default: "https://via.placeholder.com/600x400/333/fff?text=After" },
-    { key: "buttonText", label: "按钮文字", type: "text", default: "点击查看" },
-    { key: "width", label: "宽度(%)", type: "number", default: 100 },
+    { key: "beforeText", label: "前面文字", type: "text", default: "修改前" },
+    { key: "afterText", label: "后面文字", type: "text", default: "修改后" },
+    { key: "beforeColor", label: "前面背景色", type: "color", default: "#eee8e0" },
+    { key: "afterColor", label: "后面背景色", type: "color", default: "#2c3e50" },
+    { key: "buttonText", label: "按钮文字", type: "text", default: "点击对比" },
   ],
   render(config) {
     const id = uid();
-    const before = config.beforeImage || "";
-    const after = config.afterImage || "";
-    const btnText = config.buttonText || "点击查看";
-    const width = config.width || 100;
-    return `<section style="margin:16px 0;width:${width}%;position:relative;">
+    const beforeText = config.beforeText || "修改前";
+    const afterText = config.afterText || "修改后";
+    const beforeColor = config.beforeColor || "#eee8e0";
+    const afterColor = config.afterColor || "#2c3e50";
+    const btnText = config.buttonText || "点击对比";
+    const beforeTextColor = isLightColor(String(beforeColor)) ? "#333" : "#fff";
+    const afterTextColor = isLightColor(String(afterColor)) ? "#333" : "#fff";
+    return `<section style="margin:16px 0;position:relative;">
 <style>
-  #ba${id}:checked ~ .ba-after${id} { opacity:1; }
-  #ba${id}:checked ~ .ba-before${id} { opacity:0; }
+  #ba${id}:checked ~ .ba-wrap${id} .ba-after${id} { opacity:1; }
+  #ba${id}:checked ~ .ba-wrap${id} .ba-before${id} { opacity:0; }
   #ba${id}:checked ~ .ba-btn${id} { background:#2c3e50; }
   .ba-before${id}, .ba-after${id} { transition:opacity 0.5s ease; }
-  .ba-after${id} { opacity:0; position:absolute; top:0; left:0; width:100%; }
+  .ba-after${id} { opacity:0; position:absolute; top:0; left:0; width:100%; height:100%; }
 </style>
 <input type="checkbox" id="ba${id}" style="display:none;" />
-<section style="position:relative;overflow:hidden;border-radius:8px;">
-  <img class="ba-before${id}" src="${before}" style="max-width:100%;display:block;" />
-  <img class="ba-after${id}" src="${after}" style="max-width:100%;display:block;position:absolute;top:0;left:0;" />
+<section class="ba-wrap${id}" style="position:relative;overflow:hidden;border-radius:8px;">
+  <section class="ba-before${id}" style="background:${beforeColor};padding:40px 24px;text-align:center;font-size:20px;font-weight:bold;color:${beforeTextColor};">${beforeText}</section>
+  <section class="ba-after${id}" style="background:${afterColor};padding:40px 24px;text-align:center;font-size:20px;font-weight:bold;color:${afterTextColor};display:flex;align-items:center;justify-content:center;">${afterText}</section>
 </section>
 <label for="ba${id}" class="ba-btn${id}" style="display:block;margin-top:8px;padding:8px 0;text-align:center;background:#e8784a;color:#fff;font-size:14px;border-radius:6px;cursor:pointer;transition:background 0.3s;">${btnText}</label>
 </section>`;
@@ -132,25 +144,31 @@ const flipCard: SvgTemplate = {
 const carousel: SvgTemplate = {
   id: "carousel",
   name: "多图轮播",
-  description: "通过点击指示器切换多张图片",
+  description: "通过点击指示器切换多张卡片",
   category: "slide",
   fields: [
-    { key: "image1", label: "图片1 URL", type: "text", default: "https://via.placeholder.com/600x400/e8784a/fff?text=1" },
-    { key: "image2", label: "图片2 URL", type: "text", default: "https://via.placeholder.com/600x400/2c3e50/fff?text=2" },
-    { key: "image3", label: "图片3 URL", type: "text", default: "https://via.placeholder.com/600x400/27ae60/fff?text=3" },
+    { key: "text1", label: "卡片1文字", type: "text", default: "第一页：欢迎使用" },
+    { key: "text2", label: "卡片2文字", type: "text", default: "第二页：功能介绍" },
+    { key: "text3", label: "卡片3文字", type: "text", default: "第三页：开始体验" },
+    { key: "color1", label: "卡片1颜色", type: "color", default: "#e8784a" },
+    { key: "color2", label: "卡片2颜色", type: "color", default: "#2c3e50" },
+    { key: "color3", label: "卡片3颜色", type: "color", default: "#27ae60" },
     { key: "indicatorColor", label: "指示器颜色", type: "color", default: "#e8784a" },
   ],
   render(config) {
     const id = uid();
-    const img1 = config.image1 || "";
-    const img2 = config.image2 || "";
-    const img3 = config.image3 || "";
+    const text1 = config.text1 || "第一页";
+    const text2 = config.text2 || "第二页";
+    const text3 = config.text3 || "第三页";
+    const c1 = config.color1 || "#e8784a";
+    const c2 = config.color2 || "#2c3e50";
+    const c3 = config.color3 || "#27ae60";
     const ic = config.indicatorColor || "#e8784a";
+    const slideStyle = "padding:40px 24px;text-align:center;font-size:20px;font-weight:bold;color:#fff;min-height:120px;display:flex;align-items:center;justify-content:center;";
     return `<section style="margin:16px 0;overflow:hidden;border-radius:8px;">
 <style>
   .car-track${id} { display:flex;transition:transform 0.4s ease;width:300%; }
   .car-slide${id} { width:33.333%;flex-shrink:0; }
-  .car-slide${id} img { width:100%;display:block; }
   #car1${id}:checked ~ .car-wrap${id} .car-track${id} { transform:translateX(0); }
   #car2${id}:checked ~ .car-wrap${id} .car-track${id} { transform:translateX(-33.333%); }
   #car3${id}:checked ~ .car-wrap${id} .car-track${id} { transform:translateX(-66.666%); }
@@ -164,9 +182,9 @@ const carousel: SvgTemplate = {
 <input type="radio" name="car${id}" id="car3${id}" style="display:none;" />
 <section class="car-wrap${id}" style="overflow:hidden;">
   <section class="car-track${id}">
-    <section class="car-slide${id}"><img src="${img1}" style="max-width:100%;" /></section>
-    <section class="car-slide${id}"><img src="${img2}" style="max-width:100%;" /></section>
-    <section class="car-slide${id}"><img src="${img3}" style="max-width:100%;" /></section>
+    <section class="car-slide${id}"><section style="${slideStyle}background:${c1};">${text1}</section></section>
+    <section class="car-slide${id}"><section style="${slideStyle}background:${c2};">${text2}</section></section>
+    <section class="car-slide${id}"><section style="${slideStyle}background:${c3};">${text3}</section></section>
   </section>
 </section>
 <section class="car-dots${id}" style="text-align:center;padding:10px 0;">
