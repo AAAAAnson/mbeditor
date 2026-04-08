@@ -1,5 +1,17 @@
 import { useState, useEffect } from "react";
-import { Eye, EyeOff, ExternalLink } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  TriangleAlert,
+  CircleCheck,
+  CircleX,
+  CircleHelp,
+  Zap,
+  Check,
+  Send,
+  Archive,
+  Loader2,
+} from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -13,7 +25,7 @@ interface PublishModalProps {
   article: Article;
 }
 
-type ConnectionStatus = "disconnected" | "connected" | "failed";
+type ConnectionStatus = "disconnected" | "testing" | "connected" | "failed";
 
 export default function PublishModal({
   open,
@@ -29,6 +41,7 @@ export default function PublishModal({
   const [accountName, setAccountName] = useState("");
   const [testing, setTesting] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [failMessage, setFailMessage] = useState("");
 
   // Article form fields (State B)
   const [title, setTitle] = useState("");
@@ -67,20 +80,29 @@ export default function PublishModal({
 
   const handleTestConnection = async () => {
     setTesting(true);
+    setConnectionStatus("testing");
+    setFailMessage("");
     try {
-      await api.put("/config", { appid: appId, appsecret: appSecret });
-      const res = await api.get("/config");
-      if (res.data.code === 0 && res.data.data.appid) {
+      const res = await api.post("/config/test", {
+        appid: appId,
+        appsecret: appSecret,
+      });
+      if (res.data.code === 0) {
         setConnectionStatus("connected");
+        setConfigured(true);
         setAccountName(res.data.data.account_name || "已配置公众号");
         toast.success("连接成功", "微信公众号配置有效");
       } else {
         setConnectionStatus("failed");
-        toast.error("连接失败", "请检查 AppID 和 AppSecret");
+        setFailMessage(res.data.message || "请检查 AppID 和 AppSecret");
+        toast.error("连接失败", res.data.message || "请检查 AppID 和 AppSecret");
       }
-    } catch {
+    } catch (e: unknown) {
       setConnectionStatus("failed");
-      toast.error("连接失败", "无法连接到微信服务器");
+      const err = e as { response?: { data?: { message?: string } } };
+      const msg = err.response?.data?.message || "无法连接到微信服务器";
+      setFailMessage(msg);
+      toast.error("连接失败", msg);
     }
     setTesting(false);
   };
@@ -103,10 +125,12 @@ export default function PublishModal({
         author,
         mode: article.mode,
       });
-      // Publish to draft
-      const res = await api.post("/publish/draft", {
-        article_id: article.id,
-      });
+      // Publish to draft (longer timeout for image uploading)
+      const res = await api.post(
+        "/publish/draft",
+        { article_id: article.id },
+        { timeout: 300000 }
+      );
       if (res.data.code === 0) {
         toast.success("发布成功", "文章已推送到微信草稿箱");
         onClose();
@@ -139,24 +163,66 @@ export default function PublishModal({
     }
   };
 
-  const statusDot =
-    connectionStatus === "connected"
-      ? "bg-success"
-      : connectionStatus === "failed"
-        ? "bg-error"
-        : "bg-fg-muted";
-  const statusText =
-    connectionStatus === "connected"
-      ? "已连接"
-      : connectionStatus === "failed"
-        ? "连接失败"
-        : "未连接";
-  const statusColor =
-    connectionStatus === "connected"
-      ? "text-success"
-      : connectionStatus === "failed"
-        ? "text-error"
-        : "text-fg-muted";
+  // --- Status banner (matches design: warning / testing / connected / failed) ---
+  const statusBanner = () => {
+    if (configured && connectionStatus === "connected") {
+      // State B: green success banner (design: pcConn)
+      return (
+        <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-[var(--color-success)]/5 border border-[var(--color-success)]/20">
+          <CircleCheck size={16} className="text-success shrink-0" />
+          <span className="text-[12px] font-medium text-success">
+            已连接：{accountName}
+          </span>
+        </div>
+      );
+    }
+    if (connectionStatus === "testing") {
+      // Testing state: amber spinner banner
+      return (
+        <div className="flex items-center gap-2.5 px-3.5 py-3 rounded-lg bg-[var(--color-warning)]/5 border border-[var(--color-warning)]/20">
+          <Loader2 size={16} className="text-warning shrink-0 animate-spin" />
+          <div className="flex flex-col gap-1">
+            <span className="text-[13px] font-semibold text-warning">
+              正在验证连接...
+            </span>
+            <span className="text-[12px] text-warning/70 leading-relaxed">
+              正在向微信服务器发送验证请求，请稍候。
+            </span>
+          </div>
+        </div>
+      );
+    }
+    if (connectionStatus === "failed") {
+      // Failed state: red error banner
+      return (
+        <div className="flex items-center gap-2.5 px-3.5 py-3 rounded-lg bg-[var(--color-error)]/5 border border-[var(--color-error)]/20">
+          <CircleX size={16} className="text-error shrink-0" />
+          <div className="flex flex-col gap-1">
+            <span className="text-[13px] font-semibold text-error">
+              连接失败
+            </span>
+            <span className="text-[12px] text-error/70 leading-relaxed">
+              {failMessage || "请检查 AppID 和 AppSecret 是否正确。"}
+            </span>
+          </div>
+        </div>
+      );
+    }
+    // Default: disconnected warning banner (design: pmWarn)
+    return (
+      <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-lg bg-[var(--color-warning)]/5 border border-[var(--color-warning)]/20">
+        <TriangleAlert size={16} className="text-warning shrink-0 mt-0.5" />
+        <div className="flex flex-col gap-1">
+          <span className="text-[13px] font-semibold text-warning">
+            尚未配置公众号
+          </span>
+          <span className="text-[12px] text-warning/70 leading-relaxed">
+            请填入微信公众号 AppID 和 AppSecret，用于将文章推送到公众号草稿箱。
+          </span>
+        </div>
+      </div>
+    );
+  };
 
   const footer = (
     <div className="flex items-center justify-between">
@@ -166,14 +232,14 @@ export default function PublishModal({
             href="https://mp.weixin.qq.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[12px] text-fg-muted hover:text-accent transition-colors flex items-center gap-1"
+            className="text-[12px] text-fg-muted hover:text-accent transition-colors flex items-center gap-1.5"
           >
+            <CircleHelp size={14} />
             如何获取 AppID？
-            <ExternalLink size={11} />
           </a>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2.5">
         <Button variant="ghost" size="sm" onClick={onClose}>
           取消
         </Button>
@@ -182,6 +248,7 @@ export default function PublishModal({
             <Button
               variant="secondary"
               size="sm"
+              icon={<Zap size={14} />}
               onClick={handleTestConnection}
               disabled={!appId || !appSecret || testing}
               loading={testing}
@@ -191,6 +258,7 @@ export default function PublishModal({
             <Button
               variant="primary"
               size="sm"
+              icon={<Check size={14} />}
               onClick={handleSaveAndPublish}
               disabled={
                 !appId ||
@@ -205,12 +273,18 @@ export default function PublishModal({
           </>
         ) : (
           <>
-            <Button variant="secondary" size="sm" onClick={handleSaveDraft}>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Archive size={14} />}
+              onClick={handleSaveDraft}
+            >
               存为草稿
             </Button>
             <Button
               variant="primary"
               size="sm"
+              icon={<Send size={14} />}
               onClick={handleSaveAndPublish}
               disabled={publishing}
               loading={publishing}
@@ -227,35 +301,40 @@ export default function PublishModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="发布到微信公众号"
-      subtitle={configured ? "确认文章信息后发布到草稿箱" : "请先配置公众号凭证"}
+      title={configured ? "发布到微信公众号" : "配置微信公众号"}
+      subtitle={configured ? "确认文章信息后发布到草稿箱" : "首次使用需要配置公众号凭证"}
       width={480}
       footer={footer}
     >
-      <div className="px-6 py-5 space-y-4">
+      <div className="px-6 py-5 space-y-[18px]">
         {!configured ? (
           <>
-            {/* State A: Not configured */}
-            {/* Warning banner */}
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-warning-bg rounded-[10px] border border-warning-border">
-              <div className="w-1.5 h-1.5 rounded-full bg-warning shrink-0" />
-              <span className="text-[13px] text-warning">尚未配置公众号</span>
-            </div>
+            {/* State A: Not configured — status banner */}
+            {statusBanner()}
 
             {/* AppID */}
-            <Input
-              label="AppID *"
-              type="text"
-              value={appId}
-              onChange={(e) => setAppId(e.target.value)}
-              placeholder="wx1234567890abcdef"
-              className="font-mono"
-            />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] font-medium text-fg-primary flex items-center gap-1">
+                AppID
+                <span className="text-error">*</span>
+              </label>
+              <input
+                type="text"
+                value={appId}
+                onChange={(e) => setAppId(e.target.value)}
+                placeholder="wx1234567890abcdef"
+                className="w-full bg-surface-tertiary border border-border-secondary rounded-lg px-3.5 py-2.5 text-[13px] font-mono text-fg-primary placeholder:text-fg-muted outline-none transition-colors duration-150 focus:border-accent"
+              />
+              <span className="text-[11px] text-fg-muted">
+                在公众号后台 → 开发 → 基本配置中获取
+              </span>
+            </div>
 
             {/* AppSecret */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-semibold text-fg-secondary">
-                AppSecret *
+              <label className="text-[12px] font-medium text-fg-primary flex items-center gap-1">
+                AppSecret
+                <span className="text-error">*</span>
               </label>
               <div className="relative">
                 <input
@@ -263,7 +342,7 @@ export default function PublishModal({
                   value={appSecret}
                   onChange={(e) => setAppSecret(e.target.value)}
                   placeholder="输入 AppSecret"
-                  className="w-full bg-surface-tertiary border border-border-secondary rounded-[8px] px-3.5 py-2.5 pr-9 text-[13px] font-mono text-fg-primary placeholder:text-fg-muted outline-none transition-colors duration-150 focus:border-accent"
+                  className="w-full bg-surface-tertiary border border-border-secondary rounded-lg px-3.5 py-2.5 pr-9 text-[13px] font-mono text-fg-primary placeholder:text-fg-muted outline-none transition-colors duration-150 focus:border-accent"
                 />
                 <button
                   type="button"
@@ -273,13 +352,8 @@ export default function PublishModal({
                   {showSecret ? <Eye size={14} /> : <EyeOff size={14} />}
                 </button>
               </div>
-            </div>
-
-            {/* Connection status */}
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${statusDot}`} />
-              <span className={`text-[12px] ${statusColor}`}>
-                {statusText}
+              <span className="text-[11px] text-fg-muted">
+                AppSecret 仅存储在本地，不会上传到任何服务器
               </span>
             </div>
           </>
@@ -287,39 +361,34 @@ export default function PublishModal({
           <>
             {/* State B: Configured */}
             {/* Connected banner */}
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-success-bg rounded-[10px] border border-success-border">
-              <div className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
-              <span className="text-[13px] text-success">
-                已连接：{accountName}
-              </span>
-            </div>
+            {statusBanner()}
 
-            {/* Article preview card */}
-            <div className="flex items-start gap-3 p-3 bg-surface-tertiary rounded-[10px] border border-border-secondary">
+            {/* Article preview card (design: pcPreview) */}
+            <div className="flex items-center gap-3.5 p-3.5 bg-surface-tertiary rounded-[10px] border border-border-secondary">
               {article.cover ? (
                 <img
                   src={article.cover}
                   alt="cover"
-                  className="w-16 h-16 rounded-[8px] object-cover shrink-0 bg-surface-tertiary"
+                  className="w-20 h-[60px] rounded-md object-cover shrink-0"
                 />
               ) : (
-                <div className="w-16 h-16 rounded-[8px] bg-bg-primary shrink-0 flex items-center justify-center">
-                  <span className="text-[12px] text-fg-muted">封面</span>
+                <div className="w-20 h-[60px] rounded-md bg-bg-primary shrink-0 flex items-center justify-center">
+                  <span className="text-[11px] text-fg-muted">封面</span>
                 </div>
               )}
-              <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-medium text-fg-primary truncate">
+              <div className="flex-1 min-w-0 flex flex-col gap-1">
+                <div className="text-[14px] font-semibold text-fg-primary truncate">
                   {article.title || "无标题"}
                 </div>
-                <div className="text-[12px] text-fg-muted mt-1">
-                  {article.mode === "markdown" ? "Markdown" : "HTML"} /{" "}
+                <div className="text-[11px] font-mono text-fg-muted">
+                  {article.mode === "markdown" ? "Markdown" : "HTML"} ·{" "}
                   {new Date(article.updated_at).toLocaleDateString()}
                 </div>
               </div>
             </div>
 
             {/* Form */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               <Input
                 label="文章标题"
                 type="text"
@@ -327,14 +396,15 @@ export default function PublishModal({
                 onChange={(e) => setTitle(e.target.value)}
               />
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-semibold text-fg-secondary">
+                <label className="text-[12px] font-medium text-fg-primary">
                   摘要
                 </label>
                 <textarea
                   value={digest}
                   onChange={(e) => setDigest(e.target.value)}
                   rows={2}
-                  className="w-full bg-surface-tertiary border border-border-secondary rounded-[8px] px-3.5 py-2.5 text-[13px] text-fg-primary placeholder:text-fg-muted outline-none transition-colors duration-150 focus:border-accent resize-none"
+                  placeholder="从创意到落地的完整旅程"
+                  className="w-full bg-surface-tertiary border border-border-secondary rounded-lg px-3.5 py-2.5 text-[13px] text-fg-primary placeholder:text-fg-muted outline-none transition-colors duration-150 focus:border-accent resize-none"
                 />
               </div>
               <Input

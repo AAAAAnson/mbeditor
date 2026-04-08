@@ -33,7 +33,7 @@ def save_config(appid: str, appsecret: str) -> dict:
     return config
 
 
-def _get_access_token() -> str:
+def get_access_token() -> str:
     if _token_cache["access_token"] and time.time() < _token_cache["expires_at"]:
         return _token_cache["access_token"]
 
@@ -60,7 +60,7 @@ def _get_access_token() -> str:
 
 
 def upload_image_to_wechat(image_bytes: bytes, filename: str) -> str:
-    token = _get_access_token()
+    token = get_access_token()
     resp = httpx.post(
         f"https://api.weixin.qq.com/cgi-bin/media/uploadimg?access_token={token}",
         files={"media": (filename, image_bytes, "image/png")},
@@ -73,7 +73,7 @@ def upload_image_to_wechat(image_bytes: bytes, filename: str) -> str:
 
 
 def upload_thumb_to_wechat(image_bytes: bytes, filename: str) -> str:
-    token = _get_access_token()
+    token = get_access_token()
     resp = httpx.post(
         f"https://api.weixin.qq.com/cgi-bin/material/add_material?access_token={token}&type=thumb",
         files={"media": (filename, image_bytes, "image/jpeg")},
@@ -178,7 +178,7 @@ def _generate_default_cover(title: str) -> bytes:
 
 
 def create_draft(title: str, html: str, author: str = "", digest: str = "", thumb_media_id: str = "", content_source_url: str = "") -> dict:
-    token = _get_access_token()
+    token = get_access_token()
 
     if not thumb_media_id:
         # Auto-generate a default cover

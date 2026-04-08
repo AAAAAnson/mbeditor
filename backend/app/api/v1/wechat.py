@@ -28,3 +28,11 @@ async def get_config():
 async def update_config(req: ConfigReq):
     wechat_service.save_config(req.appid, req.appsecret)
     return success(message="saved")
+
+
+@router.post("/test")
+async def test_connection(req: ConfigReq):
+    """Save config and actually verify credentials against WeChat API."""
+    wechat_service.save_config(req.appid, req.appsecret)
+    token = wechat_service.get_access_token()
+    return success({"valid": True, "account_name": "已配置公众号"})

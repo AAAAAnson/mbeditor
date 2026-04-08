@@ -1,3 +1,4 @@
+import asyncio
 import re
 from typing import Optional
 
@@ -221,10 +222,9 @@ async def process_article(req: PublishDraftReq):
     return success({"html": processed})
 
 
-@router.post("/draft")
-async def publish_draft(req: PublishDraftReq):
-    """Push article to WeChat draft box with CSS inlined."""
-    article = article_service.get_article(req.article_id)
+def _publish_draft_sync(req_article_id: str, req_author: str, req_digest: str) -> dict:
+    """Synchronous publish logic — runs in thread pool to avoid blocking event loop."""
+    article = article_service.get_article(req_article_id)
     html = article.get("html", "")
     css = article.get("css", "")
 
@@ -267,12 +267,21 @@ async def publish_draft(req: PublishDraftReq):
             source_url = url_match.group(1)
 
     # 5. Push draft
-    result = wechat_service.create_draft(
+    return wechat_service.create_draft(
         title=article.get("title", "Untitled"),
         html=processed_html,
-        author=req.author or article.get("author", ""),
-        digest=req.digest or article.get("digest", ""),
+        author=req_author or article.get("author", ""),
+        digest=req_digest or article.get("digest", ""),
         thumb_media_id=thumb_media_id,
         content_source_url=source_url,
+    )
+
+
+@router.post("/draft")
+async def publish_draft(req: PublishDraftReq):
+    """Push article to WeChat draft box with CSS inlined."""
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        None, _publish_draft_sync, req.article_id, req.author or "", req.digest or ""
     )
     return success(result)

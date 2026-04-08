@@ -50,6 +50,7 @@ async def check_upload_size(request: Request, call_next):
     return await call_next(request)
 
 
+Path(settings.IMAGES_DIR).mkdir(parents=True, exist_ok=True)
 app.mount("/images", StaticFiles(directory=settings.IMAGES_DIR), name="images")
 
 app.include_router(api_router)
