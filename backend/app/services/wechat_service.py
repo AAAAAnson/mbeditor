@@ -178,6 +178,9 @@ def _generate_default_cover(title: str) -> bytes:
 
 
 def create_draft(title: str, html: str, author: str = "", digest: str = "", thumb_media_id: str = "", content_source_url: str = "") -> dict:
+    import logging
+    logger = logging.getLogger(__name__)
+
     token = get_access_token()
 
     if not thumb_media_id:
@@ -196,12 +199,18 @@ def create_draft(title: str, html: str, author: str = "", digest: str = "", thum
         "only_fans_can_comment": 0,
     }
 
+    logger.info(f"[draft] title={title!r}, author={author!r}, digest={digest!r}")
+    logger.info(f"[draft] thumb_media_id={thumb_media_id!r}")
+    logger.info(f"[draft] content length={len(html)} chars, first 200: {html[:200]!r}")
+    logger.info(f"[draft] content_source_url={content_source_url!r}")
+
     resp = httpx.post(
         f"https://api.weixin.qq.com/cgi-bin/draft/add?access_token={token}",
         json={"articles": [article]},
         timeout=30,
     )
     data = resp.json()
+    logger.info(f"[draft] WeChat response: {data}")
     if "media_id" not in data:
         raise AppError(code=500, message=f"WeChat draft error: {data.get('errmsg', 'unknown')}")
     return {"media_id": data["media_id"]}
