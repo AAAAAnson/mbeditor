@@ -92,20 +92,20 @@ const beforeAfter: SvgTemplate = {
     // Build inner content for before/after panels
     function buildPanel(img: string, text: string, bgColor: string, textColor: string): string {
       if (img && text) {
-        // Image + text overlay
-        return `<section style="position:relative;min-height:160px;background:${bgColor};display:flex;flex-direction:column;align-items:center;justify-content:center;">
-  <img src="${img}" style="max-width:100%;max-height:240px;border-radius:6px;display:block;" />
-  <section style="margin-top:10px;font-size:15px;font-weight:500;color:${textColor};text-align:center;line-height:1.6;">${text}</section>
+        // Image + text
+        return `<section style="background:${bgColor};padding:24px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;">
+  <img src="${img}" style="max-width:90%;max-height:220px;border-radius:6px;display:block;" />
+  <section style="margin-top:14px;font-size:15px;font-weight:500;color:${textColor};text-align:center;line-height:1.6;">${text}</section>
 </section>`;
       }
       if (img) {
         // Image only
-        return `<section style="background:${bgColor};padding:12px;text-align:center;">
-  <img src="${img}" style="max-width:100%;max-height:280px;border-radius:6px;display:block;margin:0 auto;" />
+        return `<section style="background:${bgColor};padding:20px;text-align:center;min-height:160px;display:flex;align-items:center;justify-content:center;">
+  <img src="${img}" style="max-width:90%;max-height:260px;border-radius:6px;display:block;" />
 </section>`;
       }
       // Text only
-      return `<section style="background:${bgColor};padding:40px 24px;text-align:center;font-size:18px;font-weight:500;color:${textColor};min-height:100px;display:flex;align-items:center;justify-content:center;">${text || "对比内容"}</section>`;
+      return `<section style="background:${bgColor};padding:48px 28px;text-align:center;font-size:18px;font-weight:500;color:${textColor};min-height:120px;display:flex;align-items:center;justify-content:center;line-height:1.7;">${text || "对比内容"}</section>`;
     }
 
     const beforeHtml = buildPanel(beforeImg, beforeText, String(beforeColor), beforeTextColor);

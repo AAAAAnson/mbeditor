@@ -53,12 +53,12 @@ function getDefaultConfig(tpl: SvgTemplate): Record<string, string | number> {
 
 /** Heights that work well for each template type */
 const TEMPLATE_PREVIEW_HEIGHT: Record<string, number> = {
-  accordion: 160,
-  "before-after": 220,
-  "flip-card": 260,
-  carousel: 240,
-  "fade-in-text": 140,
-  "press-reveal": 120,
+  accordion: 170,
+  "before-after": 300,
+  "flip-card": 270,
+  carousel: 260,
+  "fade-in-text": 150,
+  "press-reveal": 140,
 };
 
 function buildPreviewDoc(html: string): string {
@@ -102,10 +102,10 @@ export default function SvgTemplatePanel({ onInsert }: SvgTemplatePanelProps) {
   }, [activeTemplate, configs, getConfig]);
 
   return (
-    <div className="border-t border-border-primary">
+    <div className="border-t border-border-primary mx-4">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-medium text-fg-secondary hover:text-fg-primary transition-colors"
+        className="w-full flex items-center gap-1.5 py-3 text-xs font-medium text-fg-secondary hover:text-fg-primary transition-colors"
       >
         {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         <span className="font-mono text-[10px] font-semibold tracking-[1.5px] uppercase">
@@ -115,7 +115,7 @@ export default function SvgTemplatePanel({ onInsert }: SvgTemplatePanelProps) {
       </button>
 
       {expanded && (
-        <div className="px-3 pb-3 space-y-4">
+        <div className="pb-4 space-y-4">
           {CATEGORIES.map((cat) => {
             const templates = svgTemplates.filter((t) => t.category === cat);
             if (templates.length === 0) return null;

@@ -161,18 +161,15 @@ export default function EditorPage() {
       <div className="flex-1 flex overflow-hidden">
         {/* Left sidebar - 250px */}
         <div className="w-[300px] shrink-0 bg-surface-secondary border-r border-border-primary flex flex-col overflow-y-auto">
-          {/* Structure section header */}
-          <div className="flex items-center justify-between px-3.5 pt-3.5 pb-2">
+          {/* Structure section */}
+          <div className="px-4 pt-4 pb-1">
             <span className="font-mono text-[10px] font-semibold tracking-[1.5px] uppercase text-fg-muted">
               结构
             </span>
-            <div className="flex items-center gap-1">
-              {/* placeholder for search/add icons */}
-            </div>
           </div>
 
           {/* Title input */}
-          <div className="px-3.5 pb-2">
+          <div className="px-4 pb-2">
             <input
               value={article.title}
               onChange={(e) => updateField("title", e.target.value)}
@@ -182,10 +179,10 @@ export default function EditorPage() {
           </div>
 
           {/* Mode toggle */}
-          <div className="flex items-center gap-1 px-3.5 pb-2">
+          <div className="flex items-center gap-1.5 px-4 pb-3">
             <button
               onClick={() => updateField("mode", "html")}
-              className={`px-2 py-1 text-[11px] rounded-md font-medium transition-colors ${
+              className={`px-2.5 py-1 text-[11px] rounded-md font-medium transition-colors ${
                 article.mode === "html" ? "bg-accent text-white" : "text-fg-muted hover:text-fg-secondary"
               }`}
             >
@@ -193,7 +190,7 @@ export default function EditorPage() {
             </button>
             <button
               onClick={() => updateField("mode", "markdown")}
-              className={`px-2 py-1 text-[11px] rounded-md font-medium transition-colors ${
+              className={`px-2.5 py-1 text-[11px] rounded-md font-medium transition-colors ${
                 article.mode === "markdown" ? "bg-accent text-white" : "text-fg-muted hover:text-fg-secondary"
               }`}
             >
@@ -201,20 +198,20 @@ export default function EditorPage() {
             </button>
           </div>
 
-          {/* Document tree placeholder - shows article structure */}
-          <div className="px-2 flex-1 overflow-y-auto">
-            <div className="flex items-center gap-1.5 px-2 py-[5px] rounded text-fg-primary w-full">
+          {/* Document tree */}
+          <div className="px-3 pb-2">
+            <div className="flex items-center gap-1.5 px-1.5 py-1 rounded text-fg-primary">
               <FileText size={14} className="text-accent shrink-0" />
               <span className="text-[12px] truncate">{article.title || "未命名文章"}</span>
             </div>
           </div>
 
           {/* Divider */}
-          <div className="h-px bg-border-primary mx-2" />
+          <div className="h-px bg-border-primary mx-4" />
 
           {/* Image Manager section */}
-          <div className="p-3">
-            <div className="flex items-center justify-between mb-2">
+          <div className="px-4 py-3">
+            <div className="mb-2">
               <span className="font-mono text-[10px] font-semibold tracking-[1.5px] uppercase text-fg-muted">
                 图片
               </span>
@@ -225,8 +222,8 @@ export default function EditorPage() {
           {/* Theme Selector (Markdown mode only) */}
           {article.mode === "markdown" && (
             <>
-              <div className="h-px bg-border-primary mx-2" />
-              <div className="p-3">
+              <div className="h-px bg-border-primary mx-4" />
+              <div className="px-4 py-3">
                 <div className="mb-2">
                   <span className="font-mono text-[10px] font-semibold tracking-[1.5px] uppercase text-fg-muted">
                     主题
@@ -238,7 +235,6 @@ export default function EditorPage() {
           )}
 
           {/* SVG Templates */}
-          <div className="h-px bg-border-primary mx-2" />
           <SvgTemplatePanel onInsert={handleInsertSvg} />
         </div>
 
