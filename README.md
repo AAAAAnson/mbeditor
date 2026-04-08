@@ -17,7 +17,7 @@
 
 ![MBEditor 编辑器](docs/screenshots/editor-v2.png)
 
-## 为什么我们做了这个
+## 为什么做了这个
 
 市面上的公众号编辑器都是给人用的。
 
