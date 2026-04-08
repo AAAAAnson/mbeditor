@@ -75,7 +75,9 @@ export default function EditorPage() {
   const handleInsertImage = (url: string) => {
     if (!article) return;
     const imgTag = `<img src="${url}" style="max-width:100%;border-radius:8px;" />`;
-    if (previewRef.current) {
+    if (article.mode === "markdown") {
+      updateField("markdown", article.markdown + "\n\n" + imgTag + "\n");
+    } else if (previewRef.current) {
       previewRef.current.insertHtml(imgTag);
     } else {
       updateField("html", article.html + "\n" + imgTag);
@@ -84,7 +86,10 @@ export default function EditorPage() {
 
   const handleInsertSvg = (svgHtml: string) => {
     if (!article) return;
-    if (previewRef.current) {
+    if (article.mode === "markdown") {
+      // Markdown 中直接插入 HTML 块（需要前后空行）
+      updateField("markdown", article.markdown + "\n\n" + svgHtml + "\n");
+    } else if (previewRef.current) {
       previewRef.current.insertHtml(svgHtml);
     } else {
       updateField("html", article.html + "\n" + svgHtml);
@@ -126,6 +131,7 @@ export default function EditorPage() {
       : extractHTML(article.html);
   const previewHtml = extractedHtml;
   const previewCss = article.mode === "markdown" ? "" : article.css;
+  const previewJs = article.mode === "markdown" ? "" : article.js;
 
   const showCode = viewMode === "code" || viewMode === "split";
   const showPreview = viewMode === "preview" || viewMode === "split";
@@ -138,7 +144,7 @@ export default function EditorPage() {
         mode={article.mode as "html" | "markdown"}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
-        onPreview={() => {}}
+        onPreview={() => setViewMode(viewMode === "preview" ? "split" : "preview")}
         onPublish={() => setPublishOpen(true)}
       />
 
@@ -273,6 +279,7 @@ export default function EditorPage() {
                     ref={previewRef}
                     html={previewHtml}
                     css={previewCss}
+                    js={previewJs}
                     mode={previewMode}
                     onHtmlChange={handlePreviewHtmlChange}
                   />

@@ -24,12 +24,13 @@ export interface WechatPreviewHandle {
 interface WechatPreviewProps {
   html: string;
   css: string;
+  js?: string;
   mode: "raw" | "wechat";
   onHtmlChange?: (html: string) => void;
 }
 
 const WechatPreview = forwardRef<WechatPreviewHandle, WechatPreviewProps>(
-  function WechatPreview({ html, css, mode, onHtmlChange }, ref) {
+  function WechatPreview({ html, css, js, mode, onHtmlChange }, ref) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const isUserEditing = useRef(false);
     const lastSetHtml = useRef("");
@@ -50,7 +51,7 @@ const WechatPreview = forwardRef<WechatPreviewHandle, WechatPreviewProps>(
 <style>
   body {
     margin: 0;
-    padding: 0;
+    padding: 20px 24px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 16px;
     line-height: 1.8;
@@ -62,7 +63,7 @@ const WechatPreview = forwardRef<WechatPreviewHandle, WechatPreviewProps>(
   img { border-radius: 8px; max-width: 100%; box-shadow: none; }
   ${css}
 </style>
-</head><body${editable ? ' contenteditable="true"' : ''}>${content}</body></html>`;
+</head><body${editable ? ' contenteditable="true"' : ''}>${content}${js ? `<script>${js}<\/script>` : ""}</body></html>`;
 
       doc.open();
       doc.write(fullHtml);
@@ -87,7 +88,7 @@ const WechatPreview = forwardRef<WechatPreviewHandle, WechatPreviewProps>(
           // Let browser handle paste naturally for rich content
         });
       }
-    }, [css, onHtmlChange]);
+    }, [css, js, onHtmlChange]);
 
     // Sync external html changes
     useEffect(() => {

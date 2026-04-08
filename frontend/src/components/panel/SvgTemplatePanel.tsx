@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ChevronDown, ChevronRight, Eye, PlusCircle } from "lucide-react";
 import { svgTemplates, type SvgTemplate } from "@/utils/svg-templates";
 
@@ -14,11 +14,21 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const CATEGORIES: SvgTemplate["category"][] = ["click", "slide", "animation"];
 
-const CATEGORY_GRADIENTS: Record<string, string> = {
-  click: "linear-gradient(135deg, #E8553A, #C9923E)",
-  slide: "linear-gradient(135deg, #3A9E7E, #6B7FBF)",
-  animation: "linear-gradient(135deg, #6B7FBF, #1a1a2e)",
-};
+function getDefaultConfig(tpl: SvgTemplate): Record<string, string | number> {
+  const defaults: Record<string, string | number> = {};
+  tpl.fields.forEach((f) => {
+    defaults[f.key] = f.default;
+  });
+  return defaults;
+}
+
+/** Build a self-contained srcdoc for mini preview */
+function buildPreviewDoc(html: string): string {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+body{margin:0;padding:8px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:12px;line-height:1.5;color:#333;overflow:hidden;transform-origin:top left;}
+img{max-width:100%;border-radius:4px;}
+</style></head><body>${html}</body></html>`;
+}
 
 export default function SvgTemplatePanel({ onInsert }: SvgTemplatePanelProps) {
   const [expanded, setExpanded] = useState(true);
@@ -26,26 +36,28 @@ export default function SvgTemplatePanel({ onInsert }: SvgTemplatePanelProps) {
   const [configs, setConfigs] = useState<Record<string, Record<string, string | number>>>({});
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
 
+  /** Memoize default rendered HTML for each template */
+  const defaultPreviews = useMemo(() => {
+    const map: Record<string, string> = {};
+    svgTemplates.forEach((tpl) => {
+      const cfg = getDefaultConfig(tpl);
+      map[tpl.id] = tpl.render(cfg);
+    });
+    return map;
+  }, []);
+
   const getConfig = (tpl: SvgTemplate): Record<string, string | number> => {
     if (configs[tpl.id]) return configs[tpl.id];
-    const defaults: Record<string, string | number> = {};
-    tpl.fields.forEach((f) => {
-      defaults[f.key] = f.default;
-    });
-    return defaults;
+    return getDefaultConfig(tpl);
   };
 
   const updateConfig = (tplId: string, key: string, value: string | number) => {
+    const tpl = svgTemplates.find((t) => t.id === tplId);
+    if (!tpl) return;
     setConfigs((prev) => ({
       ...prev,
-      [tplId]: { ...getConfigById(tplId), [key]: value },
+      [tplId]: { ...getConfig(tpl), [key]: value },
     }));
-  };
-
-  const getConfigById = (tplId: string): Record<string, string | number> => {
-    const tpl = svgTemplates.find((t) => t.id === tplId);
-    if (!tpl) return {};
-    return getConfig(tpl);
   };
 
   const handlePreview = (tpl: SvgTemplate) => {
@@ -83,15 +95,25 @@ export default function SvgTemplatePanel({ onInsert }: SvgTemplatePanelProps) {
                 <div className="space-y-2">
                   {templates.map((tpl) => (
                     <div key={tpl.id} className={`rounded-lg overflow-hidden border transition-colors ${activeTemplate === tpl.id ? "border-accent-border" : "border-border-secondary"}`}>
-                      {/* Gradient cover */}
+                      {/* Live mini preview */}
                       <button
                         onClick={() =>
                           setActiveTemplate(activeTemplate === tpl.id ? null : tpl.id)
                         }
-                        className="w-full h-20 flex items-center justify-center rounded-t-lg"
-                        style={{ background: CATEGORY_GRADIENTS[cat] }}
+                        className="w-full relative block cursor-pointer"
                       >
-                        <span className="text-white text-sm font-semibold drop-shadow-sm">{tpl.name}</span>
+                        <iframe
+                          srcDoc={buildPreviewDoc(defaultPreviews[tpl.id])}
+                          className="w-full h-[80px] pointer-events-none border-0"
+                          style={{ background: "#fff" }}
+                          title={tpl.name}
+                          tabIndex={-1}
+                          loading="lazy"
+                        />
+                        {/* Overlay with name */}
+                        <div className="absolute inset-0 flex items-end justify-start bg-gradient-to-t from-black/50 to-transparent p-2">
+                          <span className="text-white text-[11px] font-semibold drop-shadow-sm">{tpl.name}</span>
+                        </div>
                       </button>
                       {/* Info & insert */}
                       <div className="bg-surface-secondary px-2.5 py-2 flex items-center justify-between gap-2">
@@ -189,9 +211,11 @@ export default function SvgTemplatePanel({ onInsert }: SvgTemplatePanelProps) {
                               <div className="text-[10px] text-fg-muted px-2 py-1 bg-surface-tertiary">
                                 预览
                               </div>
-                              <div
-                                className="p-2"
-                                dangerouslySetInnerHTML={{ __html: previewHtml }}
+                              <iframe
+                                srcDoc={buildPreviewDoc(previewHtml)}
+                                className="w-full h-[160px] border-0"
+                                style={{ background: "#fff" }}
+                                title="preview"
                               />
                             </div>
                           )}

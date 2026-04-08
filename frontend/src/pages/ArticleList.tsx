@@ -183,6 +183,70 @@ const SAMPLE_HTML = `<section style="max-width:100%;font-family:-apple-system,Bl
 
 </section>`;
 
+const SAMPLE_CSS = `/* MBEditor 示例样式 — 这些样式会注入到预览的 <style> 中 */
+
+/* 全局段落间距 */
+section p { margin: 8px 0; }
+
+/* 标题渐变下划线效果 */
+h2[style] {
+  position: relative;
+}
+
+/* 三栏卡片 hover 效果 */
+section > section[style*="flex:1"] {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+section > section[style*="flex:1"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* 代码块滚动条美化 */
+pre::-webkit-scrollbar { height: 4px; }
+pre::-webkit-scrollbar-track { background: transparent; }
+pre::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+/* 提示框脉冲动画 */
+section[style*="fffbf0"] {
+  animation: pulse-border 2s ease-in-out infinite;
+}
+@keyframes pulse-border {
+  0%, 100% { border-color: #f0e4c8; }
+  50% { border-color: #e8784a; }
+}
+
+/* 底部分隔线渐变 */
+section[style*="border-top:1px solid #eee"] {
+  border-image: linear-gradient(to right, transparent, #E8553A, transparent) 1;
+}`;
+
+const SAMPLE_JS = `// MBEditor 示例脚本 — 这些代码会注入到预览的 <script> 中
+// 注意：微信公众号不支持 JS，此处仅用于本地预览增强
+
+(function() {
+  // 自动为所有交互组件添加触摸反馈
+  document.querySelectorAll('label[for]').forEach(function(label) {
+    label.addEventListener('touchstart', function() {
+      this.style.opacity = '0.8';
+    });
+    label.addEventListener('touchend', function() {
+      this.style.opacity = '1';
+    });
+  });
+
+  // 阅读进度条
+  var bar = document.createElement('div');
+  bar.style.cssText = 'position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,#E8553A,#C9923E);z-index:9999;transition:width 0.1s;width:0;';
+  document.body.appendChild(bar);
+  window.addEventListener('scroll', function() {
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.width = h > 0 ? (window.scrollY / h * 100) + '%' : '0';
+  });
+
+  console.log('[MBEditor] 示例脚本已加载');
+})();`;
+
 const CB = "```";  // code block fence
 const SAMPLE_MARKDOWN = [
   "# MBEditor 功能全览",
@@ -358,7 +422,7 @@ export default function ArticleList() {
   const createArticle = async (
     mode: "html" | "markdown" = "html",
     title = "未命名文章",
-    content?: { html?: string; markdown?: string },
+    content?: { html?: string; css?: string; js?: string; markdown?: string },
     shouldNavigate = true,
   ) => {
     try {
@@ -380,7 +444,7 @@ export default function ArticleList() {
   const createSamples = async () => {
     try {
       await createArticle("markdown", "MBEditor Markdown 示例", { markdown: SAMPLE_MARKDOWN }, false);
-      await createArticle("html", "MBEditor HTML 示例", { html: SAMPLE_HTML }, true);
+      await createArticle("html", "MBEditor HTML 示例", { html: SAMPLE_HTML, css: SAMPLE_CSS, js: SAMPLE_JS }, true);
     } catch {
       toast.error("创建失败", "无法创建示例文章");
     }
