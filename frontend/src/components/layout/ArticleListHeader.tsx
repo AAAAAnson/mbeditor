@@ -19,23 +19,23 @@ export default function ArticleListHeader({
   onCreateNew,
 }: ArticleListHeaderProps) {
   return (
-    <header className="h-14 bg-surface-secondary border-b border-border-primary px-6 flex items-center justify-between shrink-0">
+    <header className="h-14 bg-surface-secondary border-b border-border-primary px-6 flex items-center shrink-0 relative">
       {/* Left: Logo */}
       <Link
         to="/"
-        className="text-fg-primary font-bold text-[18px] tracking-tight"
+        className="text-fg-primary font-bold text-[18px] tracking-tight shrink-0"
         style={{ fontFamily: "Inter, sans-serif" }}
       >
         MBEditor
       </Link>
 
-      {/* Center: Nav tabs */}
-      <nav className="flex items-center gap-5">
+      {/* Center: Nav tabs — absolute center */}
+      <nav className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-5">
         {tabs.map((tab) => (
           <button
             key={tab}
             onClick={() => onTabChange(tab)}
-            className={`text-sm transition-colors ${
+            className={`text-sm transition-colors whitespace-nowrap ${
               activeTab === tab
                 ? "text-accent font-medium"
                 : "text-fg-muted hover:text-fg-secondary"
@@ -47,7 +47,7 @@ export default function ArticleListHeader({
       </nav>
 
       {/* Right: Search + New + Avatar */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2.5 ml-auto">
         {/* Search input */}
         <div className="relative">
           <Search

@@ -267,8 +267,8 @@ export default function EditorPage() {
 
             {/* Preview pane */}
             {showPreview && (
-              <div className="flex-1 min-w-[360px] shrink-0 overflow-y-auto bg-bg-primary">
-                <div className="flex justify-center p-8">
+              <div className="flex-1 min-w-[360px] shrink-0 flex flex-col bg-bg-primary">
+                <div className="flex-1 flex justify-center p-8 min-h-0">
                   <WechatPreview
                     ref={previewRef}
                     html={previewHtml}
