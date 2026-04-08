@@ -65,39 +65,66 @@ const accordion: SvgTemplate = {
 
 const beforeAfter: SvgTemplate = {
   id: "before-after",
-  name: "图片前后对比",
-  description: "点击按钮切换前后两张内容",
+  name: "前后对比",
+  description: "支持纯文字、纯图片、图文混合三种对比",
   category: "click",
   fields: [
-    { key: "beforeText", label: "前面文字", type: "text", default: "修改前" },
-    { key: "afterText", label: "后面文字", type: "text", default: "修改后" },
-    { key: "beforeColor", label: "前面背景色", type: "color", default: "#eee8e0" },
-    { key: "afterColor", label: "后面背景色", type: "color", default: "#2c3e50" },
-    { key: "buttonText", label: "按钮文字", type: "text", default: "点击对比" },
+    { key: "beforeImage", label: "前·图片URL（留空则纯文字）", type: "text", default: "" },
+    { key: "afterImage", label: "后·图片URL（留空则纯文字）", type: "text", default: "" },
+    { key: "beforeText", label: "前·文字（留空则纯图片）", type: "text", default: "修改前" },
+    { key: "afterText", label: "后·文字（留空则纯图片）", type: "text", default: "修改后" },
+    { key: "beforeColor", label: "前·背景色", type: "color", default: "#f0ebe4" },
+    { key: "afterColor", label: "后·背景色", type: "color", default: "#3d3730" },
+    { key: "buttonText", label: "按钮文字", type: "text", default: "点击切换对比" },
   ],
   render(config) {
     const id = uid();
-    const beforeText = config.beforeText || "修改前";
-    const afterText = config.afterText || "修改后";
-    const beforeColor = config.beforeColor || "#eee8e0";
-    const afterColor = config.afterColor || "#2c3e50";
-    const btnText = config.buttonText || "点击对比";
+    const beforeImg = String(config.beforeImage || "").trim();
+    const afterImg = String(config.afterImage || "").trim();
+    const beforeText = String(config.beforeText || "").trim();
+    const afterText = String(config.afterText || "").trim();
+    const beforeColor = config.beforeColor || "#f0ebe4";
+    const afterColor = config.afterColor || "#3d3730";
+    const btnText = config.buttonText || "点击切换对比";
     const beforeTextColor = isLightColor(String(beforeColor)) ? "#333" : "#fff";
     const afterTextColor = isLightColor(String(afterColor)) ? "#333" : "#fff";
+
+    // Build inner content for before/after panels
+    function buildPanel(img: string, text: string, bgColor: string, textColor: string): string {
+      if (img && text) {
+        // Image + text overlay
+        return `<section style="position:relative;min-height:160px;background:${bgColor};display:flex;flex-direction:column;align-items:center;justify-content:center;">
+  <img src="${img}" style="max-width:100%;max-height:240px;border-radius:6px;display:block;" />
+  <section style="margin-top:10px;font-size:15px;font-weight:500;color:${textColor};text-align:center;line-height:1.6;">${text}</section>
+</section>`;
+      }
+      if (img) {
+        // Image only
+        return `<section style="background:${bgColor};padding:12px;text-align:center;">
+  <img src="${img}" style="max-width:100%;max-height:280px;border-radius:6px;display:block;margin:0 auto;" />
+</section>`;
+      }
+      // Text only
+      return `<section style="background:${bgColor};padding:40px 24px;text-align:center;font-size:18px;font-weight:500;color:${textColor};min-height:100px;display:flex;align-items:center;justify-content:center;">${text || "对比内容"}</section>`;
+    }
+
+    const beforeHtml = buildPanel(beforeImg, beforeText, String(beforeColor), beforeTextColor);
+    const afterHtml = buildPanel(afterImg, afterText, String(afterColor), afterTextColor);
+
     return `<section contenteditable="false" style="margin:16px 0;position:relative;">
 <style>
   #ba${id}:checked ~ .ba-wrap${id} .ba-after${id} { opacity:1; }
   #ba${id}:checked ~ .ba-wrap${id} .ba-before${id} { opacity:0; }
-  #ba${id}:checked ~ .ba-btn${id} { background:#2c3e50; }
+  #ba${id}:checked ~ .ba-btn${id} { background:#3d3730; }
   .ba-before${id}, .ba-after${id} { transition:opacity 0.5s ease; }
   .ba-after${id} { opacity:0; position:absolute; top:0; left:0; width:100%; height:100%; }
 </style>
 <input type="checkbox" id="ba${id}" style="display:none;" />
 <section class="ba-wrap${id}" style="position:relative;overflow:hidden;border-radius:8px;">
-  <section class="ba-before${id}" style="background:${beforeColor};padding:40px 24px;text-align:center;font-size:20px;font-weight:bold;color:${beforeTextColor};">${beforeText}</section>
-  <section class="ba-after${id}" style="background:${afterColor};padding:40px 24px;text-align:center;font-size:20px;font-weight:bold;color:${afterTextColor};display:flex;align-items:center;justify-content:center;">${afterText}</section>
+  <section class="ba-before${id}">${beforeHtml}</section>
+  <section class="ba-after${id}" style="display:flex;align-items:center;justify-content:center;">${afterHtml}</section>
 </section>
-<label for="ba${id}" class="ba-btn${id}" style="display:block;margin-top:8px;padding:8px 0;text-align:center;background:#e8784a;color:#fff;font-size:14px;border-radius:6px;cursor:pointer;transition:background 0.3s;">${btnText}</label>
+<label for="ba${id}" class="ba-btn${id}" style="display:block;margin-top:8px;padding:10px 0;text-align:center;background:#c4a76c;color:#fff;font-size:13px;font-weight:500;border-radius:8px;cursor:pointer;transition:background 0.3s;letter-spacing:1px;">${btnText}</label>
 </section>`;
   },
 };

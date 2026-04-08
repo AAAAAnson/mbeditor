@@ -54,7 +54,7 @@ function getDefaultConfig(tpl: SvgTemplate): Record<string, string | number> {
 /** Heights that work well for each template type */
 const TEMPLATE_PREVIEW_HEIGHT: Record<string, number> = {
   accordion: 160,
-  "before-after": 200,
+  "before-after": 220,
   "flip-card": 260,
   carousel: 240,
   "fade-in-text": 140,
