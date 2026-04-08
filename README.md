@@ -2,72 +2,136 @@
 
 # MBEditor
 
-**首款支持 CLI 化操作的微信公众号编辑器**
-**让你的Agent直接无缝使用**
+### 首款 AI Agent 原生的微信公众号编辑器
 
-编辑 · 预览 · 发布 · 一体化 · AI 驱动
+**告诉你的 Agent 一句话，从排版到发布全自动完成。**
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Docker](https://img.shields.io/badge/Docker-一键部署-blue.svg)](docker-compose.yml)
-[![AI Skill](https://img.shields.io/badge/AI_Skill-Claude_|_Codex_|_OpenClaw-purple.svg)](skill/SKILL.md)
+[![Docker](https://img.shields.io/badge/Docker-一键部署-2496ED.svg)](docker-compose.yml)
+[![AI Agent](https://img.shields.io/badge/Agent-Claude_|_Codex_|_OpenClaw-8B5CF6.svg)](skill/SKILL.md)
+[![Version](https://img.shields.io/badge/Version-2.0-E8553A.svg)](https://github.com/AAAAAnson/mbeditor/releases/tag/v2.0)
 
 </div>
 
 ---
 
-![MBEditor 编辑器](docs/screenshots/editor.png)
+![MBEditor 编辑器](docs/screenshots/editor-v2.png)
 
-## 为什么选 MBEditor
+## 为什么我们做了这个
 
-> 告诉 AI「写一篇 Docker 入门推文，暗色科技风，卡片式排版」—— AI 自动生成 HTML，实时预览，一键推送到微信草稿箱。
+市面上的公众号编辑器都是给人用的。
+
+但当 AI Agent 成为内容生产的主力，编辑器需要的不是更好看的 UI，而是 **能被程序调用的接口**。MBEditor 的每个功能都是一个 API 端点——创建文章、上传图片、切换排版、推送草稿箱——全部 `curl` 一行搞定。
+
+你可以用 Claude Code 说一句「写一篇 Docker 入门推文，杂志风排版，发到草稿箱」，剩下的事情 Agent 自己完成。
+
+## 三个核心差异
 
 <table>
 <tr>
 <td width="33%">
 
-**Skill 化**
+**Agent 原生**
 
-将 SKILL.md 注册为 AI Agent 的 Skill，Claude Code / Codex / OpenClaw 即装即用，任意目录下操作编辑器。
+不是"兼容 AI"，是"为 AI 设计"。完整 RESTful API，Skill 文件即装即用。Claude Code / Codex / OpenClaw 任意一个 Agent 都能直接操控编辑器。
 
 </td>
 <td width="33%">
 
-**自然语言排版**
+**CLI 全流程**
 
-用对话描述你想要的排版风格，AI 直接生成微信兼容的 HTML/CSS，所见即所得。
+从创建到发布，不需要打开浏览器。所有操作都可以用命令行完成。适合 CI/CD 流水线、定时任务、批量生产。
 
 </td>
 <td width="34%">
 
-**CLI 全流程**
+**高度自定义排版**
 
-每个功能都有 REST API。创建、编辑、上传、发布，全部 curl 搞定，CI/CD 无缝集成。
+三种编辑模式 + 六种交互组件 + 无限自定义。HTML/CSS/JS 三栏编辑给你完全的排版控制权，Markdown 模式让你专注写作。
 
 </td>
 </tr>
 </table>
 
-## 功能
+## 快速开始
 
-<table>
-<tr><td>
+```bash
+git clone https://github.com/AAAAAnson/mbeditor.git
+cd mbeditor
+docker compose up -d
+# 打开 http://localhost:7073
+```
 
-**编辑器** — 双模式编辑（HTML 三栏 + Markdown 多主题）、Monaco 代码编辑器、所见即所得预览、原始/微信双视图切换
+三行命令，编辑器就跑起来了。
 
-**发布** — 一键复制富文本、一键推送草稿箱（自动 CSS 内联 + 图片上传微信 CDN）、导出 HTML
+## Agent 工作流
 
-**素材** — 本地图床（MD5 去重 / 按日归档）、格式自动转换（WebP/SVG/BMP → PNG）、SVG 交互模板（点击展开/翻牌/轮播/渐显）
+MBEditor 的设计哲学是 **Agent First**。以下是 Agent 的典型工作流：
 
-**微信兼容** — premailer CSS 内联化、智能清洗不支持的 CSS、`div` → `section` 标签转换、自动生成封面图
+```bash
+# 1. 创建文章
+curl -X POST http://localhost:7072/api/v1/articles \
+  -H "Content-Type: application/json" \
+  -d '{"title":"AI 入门指南","mode":"html"}'
+# → 返回 {"data": {"id": "a1b2c3"}}
 
-**REST API** — 文章 CRUD、图片上传、发布推送、配置管理，完整覆盖所有功能
+# 2. 写入内容（Agent 生成的 HTML）
+curl -X PUT http://localhost:7072/api/v1/articles/a1b2c3 \
+  -d '{"html":"<h1>AI 入门</h1><p>正文...</p>", "css":"h1{color:#333}"}'
 
-</td></tr>
-</table>
+# 3. 上传图片
+curl -X POST http://localhost:7072/api/v1/images/upload \
+  -F "file=@cover.png"
 
-## 内置排版模板
+# 4. 一键推送到微信草稿箱
+curl -X POST http://localhost:7072/api/v1/publish/draft \
+  -d '{"article_id":"a1b2c3"}'
+```
 
-MBEditor + AI 可以用自然语言生成各种风格的公众号排版，以下是 6 种内置示例：
+或者直接让 Agent 来：
+
+```bash
+# Claude Code
+claude "写一篇关于 MBEditor 的推文，杂志风排版，推到草稿箱"
+
+# 安装为全局 Skill（任意目录可用）
+cp skill/SKILL.md ~/.claude/skills/wechat-editor.md
+```
+
+## 编辑器功能
+
+![预览模式](docs/screenshots/preview-v2.png)
+
+### 三种编辑模式
+
+| 模式 | 适合谁 | 能做什么 |
+|------|--------|---------|
+| **HTML 模式** | 设计师 / Agent | HTML + CSS + JS 三栏编辑，像素级控制每一个元素 |
+| **Markdown 模式** | 写作者 | 用最简洁的语法写作，多种排版主题自动渲染 |
+| **可视化编辑** | 所有人 | 所见即所得，在预览区直接编辑内容 |
+
+### 六种交互组件
+
+内置纯 CSS 交互模板，无需 JavaScript，100% 微信公众号兼容：
+
+- **展开收起** — FAQ、隐藏内容，点击标题展开
+- **前后对比** — 支持纯文字、纯图片、图文混合三种对比模式
+- **翻牌卡片** — 正反两面，点击翻转，适合知识点展示
+- **滑动轮播** — 触摸滑动 + 指示器切换，原生 scroll-snap
+- **渐显文字** — 滚动进入视口时逐行淡入
+- **长按揭秘** — 长按查看隐藏内容
+
+### 发布能力
+
+- 一键复制富文本到剪贴板
+- 一键推送到微信公众号草稿箱
+- 自动将本地/外部图片上传到微信 CDN
+- 自动生成文章封面图
+- CSS 自动内联化，标签自动转换为微信兼容格式
+
+## 排版示例
+
+MBEditor + AI 可以用自然语言生成任意风格的排版。以下是内置的 6 种模板：
 
 <table>
 <tr>
@@ -92,59 +156,44 @@ MBEditor + AI 可以用自然语言生成各种风格的公众号排版，以下
 </tr>
 </table>
 
-> 所有模板均为纯 inline style + `<section>` 标签，100% 微信公众号兼容。你也可以用自然语言描述任意风格，AI 会实时生成。
+> 所有模板均为纯 inline style + `<section>` 标签，100% 微信兼容。你也可以用自然语言描述任意风格，AI 实时生成。
 
 <details>
-<summary><strong>生成这些风格的提示词参考</strong></summary>
-
-以下是生成上述 6 种风格时使用的提示词，你可以直接复制使用，也可以在此基础上自由发挥：
+<summary><strong>查看生成这些风格的提示词</strong></summary>
 
 **明亮清新**
 ```
-帮我写一篇 MBEditor 介绍推文，明亮清新风格。
-浅色渐变背景，彩色图标卡片，圆润友好的设计。
-功能用带颜色图标的横向卡片展示，技术栈用三栏对比，底部深色 footer。
+帮我写一篇推文，明亮清新风格。浅色渐变背景，彩色图标卡片，圆润友好。
 ```
 
 **暗黑终端**
 ```
-帮我写一篇 MBEditor 介绍推文，暗黑终端/黑客风格。
-纯黑背景 #0c0c0c，荧光绿 #00e87b 为主色调，搭配琥珀黄 #ffbe0b 和品红 #ff006e。
-功能区用左侧彩色边框卡片，代码区模拟终端界面，等宽字体 Menlo，章节用 01/02/03 编号。
+帮我写一篇推文，暗黑终端风格。纯黑背景，荧光绿主色，终端界面模拟，等宽字体。
 ```
 
 **报纸编辑部**
 ```
-帮我写一篇 MBEditor 介绍推文，复古报纸/杂志编辑部风格。
-奶油色背景 #f4f1eb，黑色油墨文字，双线装饰边框，衬线字体 Georgia。
-功能用双栏报纸排版，大号衬线体编号，BREAKING NEWS / EXCLUSIVE REPORT 等新闻标签。
+帮我写一篇推文，复古报纸风格。奶油色背景，双线边框，衬线字体，新闻标签。
 ```
 
 **霓虹赛博**
 ```
-帮我写一篇 MBEditor 介绍推文，赛博朋克/霓虹风格。
-深海蓝背景 #0a0e27，霓虹青 #00d4ff 和热粉 #ff1493 为点缀色。
-用 box-shadow 做发光效果，全等宽字体，MOD_01 编号体系，[ SYSTEM ONLINE ] 标签。
+帮我写一篇推文，赛博朋克风格。深蓝背景，霓虹发光效果，等宽字体。
 ```
 
 **大地暖色**
 ```
-帮我写一篇 MBEditor 介绍推文，大地色/手工匠人风格。
-深棕背景 #2c1810，赤陶色 #c1440e、沙色 #e8d5b7、森林绿 #2d5016 搭配。
-圆角卡片，编号圆圈，Georgia 衬线标题，温暖有质感的手工艺人感觉。
+帮我写一篇推文，大地暖色风格。深棕背景，赤陶/沙色/森林绿搭配，手工匠人感。
 ```
 
 **瑞士极简**
 ```
-帮我写一篇 MBEditor 介绍推文，瑞士国际主义/极简风格。
-纯白背景，纯黑文字，唯一的彩色是红色 #ff0000 色块。
-极致留白，功能用表格式水平排列（编号 + 标题 + 简述），无装饰，严格网格对齐。
+帮我写一篇推文，瑞士极简风格。纯白背景，纯黑文字，唯一彩色是红色色块。
 ```
 
-你也可以完全自定义：
+你也可以完全自由发挥：
 ```
-帮我写一篇推文，主题是 [你的主题]，风格是 [你想要的风格描述]，
-色调 [你喜欢的颜色]，排版要 [你的排版偏好]
+帮我写一篇推文，主题是 [你的主题]，风格是 [任意描述]
 ```
 
 </details>
@@ -153,104 +202,31 @@ MBEditor + AI 可以用自然语言生成各种风格的公众号排版，以下
 
 | 前端 | 后端 | 部署 |
 |------|------|------|
-| React 19 | FastAPI | Docker Compose |
-| TypeScript | Python | Nginx |
-| Tailwind CSS 4 | premailer | Uvicorn |
-| Monaco Editor | Pillow | 一键启动 |
+| React 19 + TypeScript | FastAPI + Python | Docker Compose |
+| Tailwind CSS 4 | premailer (CSS 内联) | Nginx 反向代理 |
+| Monaco Editor | Pillow (图片处理) | 一键启动 |
+| 深色/浅色双主题 | 微信公众号 API | 端口 7073 |
 
-## 快速开始
-
-### Docker 部署
-
-```bash
-git clone https://github.com/AAAAAnson/mbeditor.git
-cd mbeditor
-
-# 配置微信凭据
-cp data/config.json.example data/config.json
-# 编辑 data/config.json，填入 appid 和 appsecret
-
-# 启动
-docker compose up -d
-```
-
-访问 **http://localhost:7070** 开始使用。
-
-### 本地开发
-
-```bash
-# 后端
-cd backend && pip install -r requirements.txt
-# 设置数据目录（默认路径是 Docker 容器内路径，本地需覆盖）
-export IMAGES_DIR=../data/images ARTICLES_DIR=../data/articles CONFIG_FILE=../data/config.json
-uvicorn app.main:app --reload --port 7071
-
-# 前端（新终端）
-cd frontend && npm install && npm run dev
-```
-
-## AI 工具集成
-
-MBEditor 的每个功能都有 REST API，天然支持 AI 代理操作。
-
-### Claude Code
-
-```bash
-# 在项目目录下
-claude "帮我写一篇关于 AI 的推文，排版精美，推送到草稿箱"
-
-# 安装为全局 Skill（任意目录可用）
-cp skill/SKILL.md ~/.claude/skills/wechat-editor.md
-```
-
-### Codex
-
-```bash
-codex "部署这个微信编辑器，然后创建一篇文章"
-```
-
-### OpenClaw
-
-```bash
-openclaw skill add ./skill/SKILL.md
-openclaw "写一篇公众号推文，主题是 Docker 入门"
-```
-
-### REST API
-
-```bash
-# 创建 → 编辑 → 发布，三步搞定
-curl -X POST http://localhost:7071/api/v1/articles \
-  -H "Content-Type: application/json" \
-  -d '{"title":"我的文章","mode":"html"}'
-
-curl -X PUT http://localhost:7071/api/v1/articles/{id} \
-  -H "Content-Type: application/json" \
-  -d '{"html":"<h1>标题</h1><p>正文</p>"}'
-
-curl -X POST http://localhost:7071/api/v1/publish/draft \
-  -H "Content-Type: application/json" \
-  -d '{"article_id":"{id}"}'
-```
+## API 参考
 
 <details>
-<summary><strong>完整 API 参考</strong></summary>
+<summary><strong>完整 API 端点列表</strong></summary>
 
-### 文章管理
+### 文章
 
 | 方法 | 端点 | 说明 |
 |------|------|------|
-| `POST` | `/api/v1/articles` | 创建文章 |
+| `POST` | `/api/v1/articles` | 创建文章 `{title, mode}` |
 | `GET` | `/api/v1/articles` | 列出所有文章 |
 | `GET` | `/api/v1/articles/{id}` | 获取文章详情 |
-| `PUT` | `/api/v1/articles/{id}` | 更新文章 |
+| `PUT` | `/api/v1/articles/{id}` | 更新文章 `{html, css, js, markdown, title, mode}` |
 | `DELETE` | `/api/v1/articles/{id}` | 删除文章 |
 
-### 图片管理
+### 图片
 
 | 方法 | 端点 | 说明 |
 |------|------|------|
-| `POST` | `/api/v1/images/upload` | 上传图片 |
+| `POST` | `/api/v1/images/upload` | 上传图片（自动 MD5 去重） |
 | `GET` | `/api/v1/images` | 列出所有图片 |
 | `DELETE` | `/api/v1/images/{id}` | 删除图片 |
 
@@ -258,17 +234,17 @@ curl -X POST http://localhost:7071/api/v1/publish/draft \
 
 | 方法 | 端点 | 说明 |
 |------|------|------|
-| `GET` | `/api/v1/publish/html/{id}` | 获取处理后的 HTML |
-| `POST` | `/api/v1/publish/preview` | 预览处理（CSS 内联） |
-| `POST` | `/api/v1/publish/process` | 处理文章图片 |
 | `POST` | `/api/v1/publish/draft` | 推送到微信草稿箱 |
+| `POST` | `/api/v1/publish/preview` | 预览处理（CSS 内联化） |
+| `POST` | `/api/v1/publish/process` | 处理文章图片（上传到微信 CDN） |
+| `GET` | `/api/v1/publish/html/{id}` | 获取处理后的 HTML |
 
 ### 配置
 
 | 方法 | 端点 | 说明 |
 |------|------|------|
 | `GET` | `/api/v1/config` | 查看配置状态 |
-| `PUT` | `/api/v1/config` | 设置 AppID / AppSecret |
+| `PUT` | `/api/v1/config` | 设置微信 AppID / AppSecret |
 
 </details>
 
@@ -279,27 +255,33 @@ mbeditor/
 ├── frontend/              # React 19 + TypeScript + Tailwind 4
 │   └── src/
 │       ├── pages/         # 编辑器 / 文章列表 / 设置
-│       ├── components/    # Monaco 编辑器 / 预览 / 操作面板 / 图片管理
-│       └── utils/         # CSS 内联 / Markdown 渲染 / HTML 提取
+│       ├── components/    # Monaco 编辑器 / 预览 / 操作面板 / SVG 模板
+│       └── utils/         # Markdown 渲染 / HTML 提取 / SVG 模板引擎
 ├── backend/               # FastAPI + Python
 │   └── app/
 │       ├── api/v1/        # REST API 路由
-│       └── services/      # 文章 / 图片 / 微信 API 服务
+│       └── services/      # 文章 / 图片 / 微信 API / 发布服务
 ├── skill/                 # AI Agent Skill 定义
-│   └── SKILL.md           # Claude Code / OpenClaw 兼容
-├── data/                  # 运行时数据（gitignored）
+│   └── SKILL.md           # Claude Code / Codex / OpenClaw 兼容
 ├── docker-compose.yml     # 一键部署
-└── LICENSE
+└── LICENSE                # MIT
 ```
 
-<details>
-<summary><strong>微信公众号后台</strong></summary>
+## 本地开发
 
-<img src="docs/screenshots/wechat-backend.png" alt="微信公众号后台" />
+```bash
+# 后端
+cd backend && pip install -r requirements.txt
+export IMAGES_DIR=../data/images ARTICLES_DIR=../data/articles CONFIG_FILE=../data/config.json
+uvicorn app.main:app --reload --port 7072
 
-</details>
+# 前端（新终端）
+cd frontend && npm install && npm run dev
+```
 
-## 贡献者
+## 贡献
+
+欢迎提交 [Issue](https://github.com/AAAAAnson/mbeditor/issues) 和 [Pull Request](https://github.com/AAAAAnson/mbeditor/pulls)。
 
 <a href="https://github.com/AAAAAnson">
   <img src="https://github.com/AAAAAnson.png" width="60" style="border-radius:50%;" alt="AAAAAnson" />
@@ -307,8 +289,6 @@ mbeditor/
 
 **[AAAAAnson](https://github.com/AAAAAnson)** — 创建者与维护者
 
-欢迎提交 [Issue](https://github.com/AAAAAnson/mbeditor/issues) 和 [Pull Request](https://github.com/AAAAAnson/mbeditor/pulls)!
-
 ## 许可证
 
-[MIT](LICENSE) &copy; 2026 Anson
+[MIT](LICENSE) &copy; 2025 Anson
