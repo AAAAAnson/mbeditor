@@ -308,13 +308,9 @@ def _sanitize_for_wechat(html: str) -> str:
 # ---------------------------------------------------------------------------
 
 def _process_for_wechat(html: str, css: str = "") -> str:
-    """Full pipeline: extract interactive → inline CSS → sanitize → restore SVG."""
-    # 1. Extract interactive components (they have their own <style>/<input>/<label>)
-    html_safe, interactive_blocks = _extract_and_protect_interactive(html)
-    # 2. CSS inline + sanitize the static content only
-    processed = _sanitize_for_wechat(_inline_css(html_safe, css))
-    # 3. Restore SVG-wrapped interactive components
-    processed = _restore_interactive(processed, interactive_blocks)
+    """Full pipeline: inline CSS → sanitize. SVG wrapping temporarily disabled."""
+    # SVG interactive feature is unstable — skip extract/wrap/restore for now
+    processed = _sanitize_for_wechat(_inline_css(html, css))
     return processed
 
 

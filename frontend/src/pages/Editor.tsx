@@ -234,8 +234,8 @@ export default function EditorPage() {
             </>
           )}
 
-          {/* SVG Templates */}
-          <SvgTemplatePanel onInsert={handleInsertSvg} />
+          {/* SVG Templates — 功能暂时下架 */}
+          {/* <SvgTemplatePanel onInsert={handleInsertSvg} /> */}
         </div>
 
         {/* Center area */}
