@@ -2,6 +2,13 @@
 
 All notable changes to MBEditor will be documented in this file.
 
+## [3.1] - 2026-04-09
+
+### Fixed
+- **预览所见即所得** — 预览框改为显示后端处理后的内联化 HTML，复制到微信后台的效果与预览完全一致
+- 移除 base CSS 中 section 全局 margin/padding 重置，防止覆盖文章自定义样式
+- 复制时直接使用预处理好的 HTML，避免重复 API 调用
+
 ## [3.0] - 2026-04-09
 
 ### Changed
