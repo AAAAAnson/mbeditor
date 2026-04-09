@@ -15,6 +15,9 @@ from app.core.response import fail
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Suppress httpx request logging — it prints full URLs including tokens/secrets
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
