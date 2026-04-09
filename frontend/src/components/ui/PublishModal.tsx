@@ -322,7 +322,7 @@ export default function PublishModal({
                 type="text"
                 value={appId}
                 onChange={(e) => setAppId(e.target.value)}
-                placeholder="wx1234567890abcdef"
+                placeholder="wx..."
                 className="w-full bg-surface-tertiary border border-border-secondary rounded-lg px-3.5 py-2.5 text-[13px] font-mono text-fg-primary placeholder:text-fg-muted outline-none transition-colors duration-150 focus:border-accent"
               />
               <span className="text-[11px] text-fg-muted">
