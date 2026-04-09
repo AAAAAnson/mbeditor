@@ -391,7 +391,7 @@ export default function ArticleList() {
   const navigate = useNavigate();
   const [articles, setArticles] = useState<ArticleSummary[]>([]);
   const [sortBy, setSortBy] = useState<"updated" | "created">("updated");
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  // hoveredId removed — delete button now uses CSS group-hover for better touch device support
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("全部文章");
   const [loading, setLoading] = useState(true);
@@ -511,8 +511,6 @@ export default function ArticleList() {
                   <div
                     key={a.id}
                     onClick={() => navigate(`/editor/${a.id}`)}
-                    onMouseEnter={() => setHoveredId(a.id)}
-                    onMouseLeave={() => setHoveredId(null)}
                     className="relative bg-surface-secondary rounded-xl border border-border-primary cursor-pointer hover:border-border-secondary transition-all group overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.2)]"
                   >
                     {/* Cover */}
@@ -549,15 +547,13 @@ export default function ArticleList() {
                       </div>
                     </div>
 
-                    {/* Delete button (hover) */}
-                    {hoveredId === a.id && (
-                      <button
-                        onClick={(e) => deleteArticle(a.id, e)}
-                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 text-fg-muted hover:text-accent transition-colors"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
+                    {/* Delete button — visible on hover (desktop) or always visible (touch) */}
+                    <button
+                      onClick={(e) => deleteArticle(a.id, e)}
+                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 text-fg-muted hover:text-accent transition-all opacity-0 group-hover:opacity-100 touch-device:opacity-100 [@media(hover:none)]:opacity-70"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 ))}
 

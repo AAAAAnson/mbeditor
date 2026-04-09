@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { Code, LayoutGrid, Columns2, Eye, Send } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Code, LayoutGrid, Columns2, Eye, Send, Settings } from "lucide-react";
 
 interface EditorHeaderProps {
   title: string;
@@ -23,6 +23,7 @@ export default function EditorHeader({
   onPreview,
   onPublish,
 }: EditorHeaderProps) {
+  const navigate = useNavigate();
   return (
     <header className="h-[52px] bg-bg-primary border-b border-border-primary px-4 flex items-center justify-between shrink-0">
       {/* Left: Logo + Breadcrumb */}
@@ -81,8 +82,16 @@ export default function EditorHeader({
           <span className="text-xs font-semibold">发布</span>
         </button>
 
+        <button
+          onClick={() => navigate("/settings")}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-fg-muted hover:text-fg-primary hover:bg-surface-hover transition-colors"
+          title="设置"
+        >
+          <Settings size={16} />
+        </button>
+
         <div
-          className="w-7 h-7 rounded-full shrink-0 ml-1"
+          className="w-7 h-7 rounded-full shrink-0"
           style={{
             background: "linear-gradient(135deg, #E8553A, #C9923E)",
           }}

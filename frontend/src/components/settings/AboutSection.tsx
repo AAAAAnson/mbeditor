@@ -1,4 +1,16 @@
+import { useState, useEffect } from "react";
+import api from "../../lib/api";
+
 export default function AboutSection() {
+  const [version, setVersion] = useState("...");
+
+  useEffect(() => {
+    api.get("/version").then((res) => {
+      const v = res.data?.data?.version;
+      if (v) setVersion(v.startsWith("v") ? v : `v${v}`);
+    }).catch(() => setVersion("未知"));
+  }, []);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
@@ -9,7 +21,7 @@ export default function AboutSection() {
       <div className="bg-surface-secondary rounded-xl border border-border-primary p-6 flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <span className="text-[13px] font-medium text-fg-secondary">版本</span>
-          <span className="text-[13px] text-fg-primary font-mono">v0.1.0</span>
+          <span className="text-[13px] text-fg-primary font-mono">{version}</span>
         </div>
 
         <div className="h-px w-full bg-border-primary" />
