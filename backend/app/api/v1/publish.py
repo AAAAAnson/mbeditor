@@ -130,23 +130,37 @@ def _estimate_svg_height(inner_html: str) -> int:
     We set overflow:visible on SVG+foreignObject so content won't be clipped
     even if we underestimate. Too-tall estimates create ugly whitespace.
     """
-    # Pure visible text
-    text = re.sub(r'<[^>]+>', '', inner_html).strip()
+    # Detect component type for type-specific sizing
+    is_ba = 'ba-before' in inner_html or 'ba-after' in inner_html
+    is_acc = 'acc-body' in inner_html or 'acc-lbl' in inner_html
+    is_flip = 'flip-inner' in inner_html or 'flip-front' in inner_html
+    is_carousel = 'car-track' in inner_html or 'carousel' in inner_html.lower()
+    is_fade = 'fadeIn' in inner_html
+    is_longpress = 'longpress' in inner_html.lower() or 'pr-wrap' in inner_html
+
+    # Known component heights — tight fit, overflow:visible handles excess
+    if is_ba:
+        return 200  # two panels + toggle button
+    if is_acc:
+        return 120  # title bar only (body hidden by default via :checked)
+    if is_flip:
+        return 200  # card face + label
+    if is_carousel:
+        return 220  # visible slide + nav dots
+    if is_fade:
+        return 120  # 3 text lines stacked
+    if is_longpress:
+        return 100  # single content block
+
+    # Fallback: strip <style> before counting visible text
+    no_style = re.sub(r'<style[^>]*>.*?</style>', '', inner_html, flags=re.DOTALL)
+    text = re.sub(r'<[^>]+>', '', no_style).strip()
     text = re.sub(r'\s+', ' ', text)
-    # ~35 CJK chars per line at 580px, ~28px per line
     text_lines = max(1, len(text) // 35)
-    text_height = text_lines * 28
 
-    # Interactive chrome: buttons, labels, inputs add ~50px each
     labels = len(re.findall(r'<label\b', inner_html))
-    chrome = labels * 50
-
-    # Padding/margins from sections
-    sections = len(re.findall(r'<section\b', inner_html))
-    padding = sections * 8
-
-    h = text_height + chrome + padding + 20  # 20px base
-    return max(120, min(h, 800))
+    h = text_lines * 28 + labels * 50 + 40
+    return max(120, min(h, 600))
 
 
 def _wrap_in_svg_foreignobject(inner_html: str) -> str:
