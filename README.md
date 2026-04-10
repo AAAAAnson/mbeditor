@@ -398,3 +398,5 @@ cd frontend && npm install && npm run dev
 ## 许可证
 
 [MIT](LICENSE) &copy; 2025 Anson
+
+_在真正的AGI时代到到来之前，你与世界的摩擦就是最强的生产力。_
