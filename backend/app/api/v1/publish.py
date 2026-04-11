@@ -112,221 +112,54 @@ def _inline_css(html: str, css: str = "") -> str:
 
 
 # ---------------------------------------------------------------------------
-#  HTML post-processing: fix WeChat-incompatible inline styles & tags
+#  HTML post-processing: strip WeChat-incompatible tags and attributes
 # ---------------------------------------------------------------------------
-
-def _remove_if_decorative(m: re.Match) -> str:
-    """Remove empty element if it looks purely decorative (large circle, connector, etc.)."""
-    full = m.group(0)
-    # Keep dividers / separators (height ≤ 2px with background — intentional hr-like elements)
-    style = re.search(r'style="([^"]*)"', full)
-    if not style:
-        return full
-    s = style.group(1)
-    # Keep if it has meaningful text-related styles (font, color with text)
-    # Remove if: large dimensions + opacity < 0.3 (decorative blobs)
-    opacity_m = re.search(r'opacity\s*:\s*([\d.]+)', s)
-    if opacity_m and float(opacity_m.group(1)) < 0.3:
-        return ''  # decorative blob
-    # Keep thin lines (dividers, connectors) — they're intentional visual separators
-    return full
-
-
-# ---------------------------------------------------------------------------
-#  Interactive components → SVG + foreignObject wrapper
-# ---------------------------------------------------------------------------
-
-_INTERACTIVE_PATTERN = re.compile(
-    r'<section\s+contenteditable="false"[^>]*>(.*?)</section>'
-    r'(?=\s*(?:<section\s+contenteditable|<section\s+style="margin|<h\d|<p\b|$))',
-    re.DOTALL,
-)
-
-
-def _estimate_svg_height(inner_html: str) -> int:
-    """Conservative height estimate — prefer too short over too tall.
-
-    We set overflow:visible on SVG+foreignObject so content won't be clipped
-    even if we underestimate. Too-tall estimates create ugly whitespace.
-    """
-    # Detect component type for type-specific sizing
-    is_ba = 'ba-before' in inner_html or 'ba-after' in inner_html
-    is_acc = 'acc-body' in inner_html or 'acc-lbl' in inner_html
-    is_flip = 'flip-inner' in inner_html or 'flip-front' in inner_html
-    is_carousel = 'car-track' in inner_html or 'carousel' in inner_html.lower()
-    is_fade = 'fadeIn' in inner_html
-    is_longpress = 'longpress' in inner_html.lower() or 'pr-wrap' in inner_html
-
-    # Known component heights — tight fit, overflow:visible handles excess
-    if is_ba:
-        return 200  # two panels + toggle button
-    if is_acc:
-        return 120  # title bar only (body hidden by default via :checked)
-    if is_flip:
-        return 200  # card face + label
-    if is_carousel:
-        return 220  # visible slide + nav dots
-    if is_fade:
-        return 120  # 3 text lines stacked
-    if is_longpress:
-        return 100  # single content block
-
-    # Fallback: strip <style> before counting visible text
-    no_style = re.sub(r'<style[^>]*>.*?</style>', '', inner_html, flags=re.DOTALL)
-    text = re.sub(r'<[^>]+>', '', no_style).strip()
-    text = re.sub(r'\s+', ' ', text)
-    text_lines = max(1, len(text) // 35)
-
-    labels = len(re.findall(r'<label\b', inner_html))
-    h = text_lines * 28 + labels * 50 + 40
-    return max(120, min(h, 600))
-
-
-def _wrap_in_svg_foreignobject(inner_html: str) -> str:
-    """Wrap an interactive component in SVG + foreignObject for WeChat.
-
-    WeChat strips <input>/<label>/<style> from article body HTML, but preserves
-    them inside <svg><foreignObject>. This is the industry-standard technique
-    used by Xiumi (秀米), 135editor, etc.
-    """
-    # Clean up: remove contenteditable, it's editor-only
-    inner_html = re.sub(r'\s*contenteditable="[^"]*"', '', inner_html)
-
-    height = _estimate_svg_height(inner_html)
-
-    # Use 580px width — matches WeChat article content area on mobile
-    vw = 580
-    return (
-        f'<section style="width:100%;margin:16px 0;">'
-        f'<svg xmlns="http://www.w3.org/2000/svg" '
-        f'viewBox="0 0 {vw} {height}" '
-        f'style="width:100%;overflow:visible;background:transparent;">'
-        f'<foreignObject x="0" y="0" width="{vw}" height="{height}" '
-        f'style="overflow:visible;">'
-        f'<div xmlns="http://www.w3.org/1999/xhtml" '
-        f'style="width:{vw}px;font-family:-apple-system,BlinkMacSystemFont,'
-        f"'PingFang SC','Hiragino Sans GB',sans-serif;"
-        f'font-size:15px;line-height:1.8;color:#333;">'
-        f'{inner_html}'
-        f'</div>'
-        f'</foreignObject>'
-        f'</svg>'
-        f'</section>'
-    )
-
-
-def _extract_and_protect_interactive(html: str):
-    """Extract interactive components, replace with placeholders.
-
-    Returns (html_with_placeholders, list_of_svg_wrapped_components).
-    """
-    components = []
-    placeholder_tpl = '<!--INTERACTIVE_PLACEHOLDER_{idx}-->'
-
-    def _replacer(m: re.Match) -> str:
-        idx = len(components)
-        inner = m.group(1)
-        # Wrap the interactive block in SVG+foreignObject
-        svg_block = _wrap_in_svg_foreignobject(inner)
-        components.append(svg_block)
-        return placeholder_tpl.format(idx=idx)
-
-    html_with_placeholders = _INTERACTIVE_PATTERN.sub(_replacer, html)
-    return html_with_placeholders, components
-
-
-def _restore_interactive(html: str, components: list) -> str:
-    """Put SVG-wrapped interactive components back in place of placeholders."""
-    for idx, svg_block in enumerate(components):
-        placeholder = f'<!--INTERACTIVE_PLACEHOLDER_{idx}-->'
-        html = html.replace(placeholder, svg_block)
-    return html
-
 
 def _sanitize_for_wechat(html: str) -> str:
-    """Post-process inlined HTML for WeChat compatibility."""
+    """Strip tags/attributes that WeChat's backend renderer removes.
 
-    # ---- remove contenteditable from non-interactive content ---
+    Post-Stage-0 scope: this function ONLY removes what WeChat itself removes.
+    It does NOT rewrite CSS values, delete grid/flex/position, or otherwise
+    mutate the author's intent. If the user writes display:grid, we send
+    display:grid. WeChat's runtime is responsible for the final rendering.
+
+    The "cleaning downstream" anti-pattern (rewriting grid→block, deleting
+    absolute positioning, etc.) is explicitly banned — see
+    docs/research/wechat-wysiwyg-pipeline.md HC-6.
+    """
+    # ---- remove contenteditable (editor-only attribute) ---------------------
     html = re.sub(r'\s*contenteditable="[^"]*"', '', html)
 
-    # ---- strip leftover tags --------------------------------------------------
+    # ---- strip tags WeChat does not support ---------------------------------
     html = re.sub(r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL | re.IGNORECASE)
     html = re.sub(r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE)
+    html = re.sub(r"<link[^>]*/?>", "", html, flags=re.IGNORECASE)
+    html = re.sub(r"<meta[^>]*/?>", "", html, flags=re.IGNORECASE)
 
-    # ---- strip <input>/<label> outside of SVG (orphan interactive elements) ---
+    # ---- strip <input>/<label> (WeChat article body drops them) -------------
     html = re.sub(r'<input\s[^>]*>\s*', '', html)
     html = re.sub(r'<label\b[^>]*>(.*?)</label>', r'\1', html, flags=re.DOTALL)
 
-    # ---- remove class / data-* attributes ------------------------------------
+    # ---- remove class / data-* attributes (WeChat drops external CSS) ------
     html = re.sub(r'\s+class="[^"]*"', "", html)
     html = re.sub(r"\s+class='[^']*'", "", html)
     html = re.sub(r'\s+data-[\w-]+="[^"]*"', "", html)
 
-    # ---- <div> → <section> (WeChat convention) -------------------------------
+    # ---- <div> → <section> (WeChat convention from Xiumi/135) ---------------
     html = re.sub(r'<div\b', '<section', html)
     html = re.sub(r'</div>', '</section>', html)
 
-    # ---- normalize quotes: premailer may output style='...' (single quotes).
-    # Must escape any inner double quotes to &quot; before swapping the wrapper,
-    # otherwise values like font-family:"PingFang SC","Hiragino Sans GB" get
-    # torn into fake attributes (pingfang="" sc"="" ...) by the HTML parser. ---
+    # ---- normalize style quotes: premailer may emit style='...' (single)
+    # Must escape any inner double quotes to &quot; before swapping the
+    # wrapper, otherwise font-family:"PingFang SC","Hiragino Sans GB" gets
+    # torn into fake attributes by the HTML parser.
     def _single_to_double_quoted_style(m: re.Match) -> str:
         inner = m.group(1).replace('"', '&quot;')
         return f'style="{inner}"'
 
     html = re.sub(r"style='([^']*)'", _single_to_double_quoted_style, html)
 
-    # ---- remove empty decorative absolute-positioned elements -----------------
-    html = re.sub(
-        r'<(\w+)\s+style="[^"]*position\s*:\s*absolute[^"]*"\s*>\s*</\1>',
-        '', html,
-    )
-
-    # ---- fix individual inline style values -----------------------------------
-    def _fix_style(m: re.Match) -> str:
-        s = m.group(1)
-
-        # display:grid → block (WeChat doesn't support CSS Grid)
-        s = re.sub(r'display\s*:\s*grid\b', 'display:block', s)
-        s = re.sub(r'grid-template-columns\s*:[^;]+;?\s*', '', s)
-        s = re.sub(r'grid-template-rows\s*:[^;]+;?\s*', '', s)
-
-        # sub-pixel borders → 1 px
-        s = re.sub(r'(?<!\d)0\.5px', '1px', s)
-
-        # animation (not supported)
-        s = re.sub(r'animation\s*:[^;]+;?\s*', '', s)
-        s = re.sub(r'animation-[\w-]+\s*:[^;]+;?\s*', '', s)
-
-        # position:absolute (unreliable in WeChat)
-        s = re.sub(r'position\s*:\s*absolute\s*;?\s*', '', s)
-
-        # orphaned top/right/bottom/left if no position left
-        # use negative lookbehind for hyphen to avoid matching margin-left etc.
-        if 'position' not in s:
-            for prop in ('top', 'right', 'bottom', 'left'):
-                s = re.sub(rf'(?<!-){prop}\s*:\s*[^;]+;?\s*', '', s)
-
-        # cursor (useless on mobile)
-        s = re.sub(r'cursor\s*:[^;]+;?\s*', '', s)
-
-        # tidy up — collapse consecutive `;` but DON'T eat the `;` that
-        # terminates an HTML entity like `&quot;`. Negative lookbehind
-        # excludes cases where the `;` is actually entity-terminating.
-        s = re.sub(r'(?<!&quot);\s*;+', ';', s).strip().strip(';').strip()
-        return f'style="{s}"' if s else ''
-
-    html = re.sub(r'style="([^"]*)"', _fix_style, html)
-    html = re.sub(r'\s+style="\s*"', '', html)
-
-    # ---- remove premailer-added width/height attributes (not needed) ----------
-    html = re.sub(r'\s+width="[^"]*"', '', html)
-    html = re.sub(r'\s+height="[^"]*"', '', html)
-
-    # ---- remove empty elements (no text content, no children with text) -------
-    html = re.sub(r'<(\w+)(?:\s+[^>]*)?\s*>\s*</\1>', _remove_if_decorative, html)
-
-    # ---- collapse blank lines -------------------------------------------------
+    # ---- collapse blank lines ----------------------------------------------
     html = re.sub(r'\n\s*\n', '\n', html)
     return html.strip()
 
@@ -336,10 +169,8 @@ def _sanitize_for_wechat(html: str) -> str:
 # ---------------------------------------------------------------------------
 
 def _process_for_wechat(html: str, css: str = "") -> str:
-    """Full pipeline: inline CSS → sanitize. SVG wrapping temporarily disabled."""
-    # SVG interactive feature is unstable — skip extract/wrap/restore for now
-    processed = _sanitize_for_wechat(_inline_css(html, css))
-    return processed
+    """Full pipeline: inline CSS → sanitize for WeChat compatibility."""
+    return _sanitize_for_wechat(_inline_css(html, css))
 
 
 # ---------------------------------------------------------------------------
