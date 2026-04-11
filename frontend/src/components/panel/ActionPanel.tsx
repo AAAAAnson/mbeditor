@@ -51,28 +51,33 @@ export default function ActionPanel({ article, processedHtml }: ActionPanelProps
     setCopying(true);
     setCopyMsg("");
     try {
-      let html = processedHtml;
-      if (!html) {
-        // Fallback: call backend if processedHtml not yet available
-        const res = await api.post("/publish/preview", {
-          html: article.html,
-          css: article.css,
-        });
-        if (res.data.code === 0) {
-          html = res.data.data.html;
-        } else {
-          setCopyMsg(res.data.message);
-          setCopying(false);
-          return;
-        }
+      // Save current state first — /publish/process reads from storage
+      await api.put(`/articles/${article.id}`, {
+        html: article.html,
+        css: article.css,
+        js: article.js || "",
+        title: article.title,
+        mode: article.mode,
+      });
+      // Use /publish/process (not /preview) because PM's paste handler strips
+      // any <img> whose src isn't already a WeChat CDN URL. /process uploads
+      // all local images to mmbiz.qpic.cn first so they survive paste.
+      setCopyMsg("正在上传图片…");
+      const res = await api.post("/publish/process", { article_id: article.id });
+      if (res.data.code !== 0) {
+        setCopyMsg(res.data.message || "处理失败");
+        setCopying(false);
+        return;
       }
-      const ok = await copyHtmlToClipboard(html!);
-      setCopyMsg(ok ? "已复制!" : "复制失败");
-    } catch {
-      setCopyMsg("复制失败");
+      const html = res.data.data.html as string;
+      const ok = await copyHtmlToClipboard(html);
+      setCopyMsg(ok ? "已复制！可直接粘贴到公众号" : "复制失败");
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } };
+      setCopyMsg(err.response?.data?.message || "复制失败");
     }
     setCopying(false);
-    setTimeout(() => setCopyMsg(""), 3000);
+    setTimeout(() => setCopyMsg(""), 4000);
   };
 
   const handlePublish = async () => {
