@@ -9,10 +9,22 @@ Every block has a `type` discriminator and its own shape. Renderers in
 `app/services/renderers/` operate on individual blocks; the top-level
 `render_for_wechat` function composes them into final content HTML.
 """
+import re
 from enum import Enum
 from typing import Annotated, List, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+_SAFE_ID_RE = re.compile(r'^[A-Za-z0-9_-]+$')
+
+
+def _validate_safe_id(v: str) -> str:
+    if not _SAFE_ID_RE.match(v):
+        raise ValueError(
+            "id must contain only letters, digits, '-' and '_' "
+            "(no path separators, no unicode)"
+        )
+    return v
 
 
 class BlockType(str, Enum):
@@ -30,6 +42,11 @@ class _BlockBase(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: str = Field(..., min_length=1, max_length=64)
+
+    @field_validator("id")
+    @classmethod
+    def _id_safe(cls, v: str) -> str:
+        return _validate_safe_id(v)
 
 
 class HeadingBlock(_BlockBase):
@@ -60,6 +77,16 @@ class ImageBlock(_BlockBase):
     alt: str = ""
     width: Optional[int] = None
     height: Optional[int] = None
+
+    @field_validator("src")
+    @classmethod
+    def _src_scheme_must_be_safe(cls, v: str) -> str:
+        lowered = v.lower().lstrip()
+        if lowered.startswith("javascript:") or lowered.startswith("data:"):
+            raise ValueError(
+                "ImageBlock src must not use javascript: or data: scheme"
+            )
+        return v
 
 
 class SvgBlock(_BlockBase):
@@ -120,3 +147,15 @@ class MBDoc(BaseModel):
     version: Literal["1"] = "1"
     meta: MBDocMeta = Field(default_factory=MBDocMeta)
     blocks: List[Block] = Field(default_factory=list)
+
+    @field_validator("id")
+    @classmethod
+    def _id_safe(cls, v: str) -> str:
+        return _validate_safe_id(v)
+
+    @model_validator(mode="after")
+    def _block_ids_must_be_unique(self) -> "MBDoc":
+        ids = [b.id for b in self.blocks]
+        if len(ids) != len(set(ids)):
+            raise ValueError("MBDoc blocks must have unique ids")
+        return self

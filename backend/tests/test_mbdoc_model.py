@@ -119,3 +119,77 @@ def test_mbdoc_discriminated_union_parsing():
     assert isinstance(doc.blocks[0], HeadingBlock)
     assert isinstance(doc.blocks[1], ParagraphBlock)
     assert isinstance(doc.blocks[2], ImageBlock)
+
+
+def test_extra_fields_rejected_on_mbdoc():
+    with pytest.raises(ValidationError):
+        MBDoc(id="doc1", version="1", blocks=[], unexpected_key="x")
+
+
+def test_extra_fields_rejected_on_block():
+    with pytest.raises(ValidationError):
+        HeadingBlock(id="b1", level=1, text="H", rogue_attr="y")
+
+
+def test_extra_fields_rejected_on_meta():
+    with pytest.raises(ValidationError):
+        MBDocMeta(title="T", phantom="x")
+
+
+def test_block_id_rejects_path_traversal():
+    with pytest.raises(ValidationError):
+        HeadingBlock(id="../etc/passwd", level=1, text="H")
+    with pytest.raises(ValidationError):
+        HeadingBlock(id="a/b", level=1, text="H")
+    with pytest.raises(ValidationError):
+        HeadingBlock(id="a b", level=1, text="H")  # space
+
+
+def test_mbdoc_id_rejects_path_traversal():
+    with pytest.raises(ValidationError):
+        MBDoc(id="../secrets", meta=MBDocMeta())
+
+
+def test_block_id_accepts_safe_chars():
+    # Letters, digits, dash, underscore — all OK
+    HeadingBlock(id="h-1_A", level=1, text="H")
+
+
+def test_image_block_rejects_javascript_scheme():
+    with pytest.raises(ValidationError):
+        ImageBlock(id="i1", src="javascript:alert(1)")
+
+
+def test_image_block_rejects_data_scheme():
+    with pytest.raises(ValidationError):
+        ImageBlock(id="i1", src="data:text/html,<script>alert(1)</script>")
+
+
+def test_image_block_accepts_normal_urls():
+    ImageBlock(id="i1", src="/images/a.png")
+    ImageBlock(id="i2", src="https://mmbiz.qpic.cn/x.jpg")
+    ImageBlock(id="i3", src="./rel.png")
+
+
+def test_mbdoc_rejects_duplicate_block_ids():
+    with pytest.raises(ValidationError):
+        MBDoc(
+            id="d1",
+            meta=MBDocMeta(),
+            blocks=[
+                HeadingBlock(id="same", level=1, text="a"),
+                ParagraphBlock(id="same", text="b"),
+            ],
+        )
+
+
+def test_mbdoc_allows_unique_block_ids():
+    doc = MBDoc(
+        id="d1",
+        meta=MBDocMeta(),
+        blocks=[
+            HeadingBlock(id="a", level=1, text="a"),
+            ParagraphBlock(id="b", text="b"),
+        ],
+    )
+    assert len(doc.blocks) == 2
