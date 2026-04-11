@@ -16,9 +16,9 @@ interface WechatPreviewProps {
  * article view (375px width, PingFang font, line-height 1.8).
  *
  * Post-Stage-0 invariant: the HTML written into the iframe body is EXACTLY
- * what the caller passes in. No second-pass sanitization, no cleanMode toggle,
- * no image style normalization. WYSIWYG is enforced by the upstream
- * renderForWechat pipeline (Stage 1+).
+ * what the caller passes in. No second-pass HTML rewriting is permitted here;
+ * any transformation must happen upstream in the renderForWechat pipeline so
+ * that preview, copy, and draft-box outputs are byte-identical.
  */
 export default function WechatPreview({
   html,
@@ -35,10 +35,8 @@ export default function WechatPreview({
   const [iframeHeight, setIframeHeight] = useState(400);
 
   // Post-Stage-0: in wechat mode the iframe body is unconditionally
-  // contenteditable. Previously this was gated by a `cleanMode` toggle that
-  // defaulted to true (read-only). The toggle has been removed so that
-  // preview == final output. Upstream (Editor.tsx) controls whether
-  // onHtmlChange is wired.
+  // contenteditable so that preview == final output. Upstream (Editor.tsx)
+  // controls whether onHtmlChange is wired.
   const editable = mode === "wechat";
 
   // Listen for iframe resize messages (validate source to prevent spoofing).

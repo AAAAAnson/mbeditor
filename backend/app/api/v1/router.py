@@ -7,6 +7,7 @@ from app.api.v1.articles import router as articles_router
 from app.api.v1.images import router as images_router
 from app.api.v1.wechat import router as wechat_router
 from app.api.v1.publish import router as publish_router
+from app.api.v1.mbdoc import router as mbdoc_router
 from app.core.config import APP_VERSION, GITHUB_REPO
 from app.core.response import success
 
@@ -16,6 +17,7 @@ api_router.include_router(articles_router)
 api_router.include_router(images_router)
 api_router.include_router(wechat_router)
 api_router.include_router(publish_router)
+api_router.include_router(mbdoc_router)
 
 _version_cache: dict = {"latest": "", "checked_at": 0}
 
