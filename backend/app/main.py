@@ -57,3 +57,8 @@ Path(settings.IMAGES_DIR).mkdir(parents=True, exist_ok=True)
 app.mount("/images", StaticFiles(directory=settings.IMAGES_DIR), name="images")
 
 app.include_router(api_router)
+
+
+@app.get("/healthz")
+def healthz():
+    return {"status": "ok"}

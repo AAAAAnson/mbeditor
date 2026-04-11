@@ -1,6 +1,11 @@
-import { processForWechat } from "@/utils/inliner";
-
-/** Write a rich-text HTML blob to the clipboard, with execCommand fallback. */
+/**
+ * Writes rich-text HTML to the clipboard.
+ *
+ * Post-Stage-0: the single public API is writeHtmlToClipboard. Callers are
+ * responsible for preparing the HTML upstream (via renderForWechat in Stage 1).
+ * No more processForWechat helper, no more "copyRichText" — those lived in a
+ * world where the frontend did its own CSS inlining, which violated WYSIWYG.
+ */
 export async function writeHtmlToClipboard(html: string): Promise<boolean> {
   try {
     const blob = new Blob([html], { type: "text/html" });
@@ -30,13 +35,4 @@ export async function writeHtmlToClipboard(html: string): Promise<boolean> {
     document.body.removeChild(container);
     return ok;
   }
-}
-
-export function useClipboard() {
-  const copyRichText = async (html: string, css: string): Promise<boolean> => {
-    const processed = processForWechat(html, css);
-    return writeHtmlToClipboard(processed);
-  };
-
-  return { copyRichText };
 }

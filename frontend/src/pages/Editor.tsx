@@ -8,7 +8,6 @@ import WechatPreview from "@/components/preview/WechatPreview";
 import FullScreenPreviewModal from "@/components/preview/FullScreenPreviewModal";
 import ActionPanel from "@/components/panel/ActionPanel";
 import ThemeSelector from "@/components/panel/ThemeSelector";
-import SvgTemplatePanel from "@/components/panel/SvgTemplatePanel";
 import ImageManager from "@/components/panel/ImageManager";
 import CommandBar from "@/components/ui/CommandBar";
 import PublishModal from "@/components/ui/PublishModal";
@@ -97,26 +96,6 @@ export default function EditorPage() {
           htmlEditorRef.current.insertAtCursor("\n" + imgTag + "\n");
         } else {
           updateField("html", article.html + "\n" + imgTag);
-        }
-      }
-    },
-    [article, activeTab]
-  );
-
-  const handleInsertSvg = useCallback(
-    (svgHtml: string) => {
-      if (!article) return;
-      if (article.mode === "markdown") {
-        if (mdEditorRef.current) {
-          mdEditorRef.current.insertAtCursor("\n\n" + svgHtml + "\n");
-        } else {
-          updateField("markdown", article.markdown + "\n\n" + svgHtml + "\n");
-        }
-      } else {
-        if (activeTab === "html" && htmlEditorRef.current) {
-          htmlEditorRef.current.insertAtCursor("\n" + svgHtml + "\n");
-        } else {
-          updateField("html", article.html + "\n" + svgHtml);
         }
       }
     },
@@ -303,8 +282,6 @@ export default function EditorPage() {
             </>
           )}
 
-          {/* SVG Templates — 功能暂时下架 */}
-          {/* <SvgTemplatePanel onInsert={handleInsertSvg} /> */}
         </div>
 
         {/* Center area */}
