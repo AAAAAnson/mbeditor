@@ -12,10 +12,12 @@ from app.services import article_service, wechat_service
 
 router = APIRouter(prefix="/publish", tags=["publish"])
 
-# Base styles matching the preview iframe — ensures WYSIWYG between preview and publish
+# Base styles matching the preview iframe — ensures WYSIWYG between preview and publish.
+# NOTE: font-family intentionally omitted. WeChat on mobile uses its own PingFang/system
+# font stack; setting a quoted family here triggers nested-quote bugs when premailer
+# inlines the CSS onto a style="..." attribute (inner quotes break the HTML parser).
 _WECHAT_BASE_CSS = """
 body, section.wechat-root {
-    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
     font-size: 16px;
     line-height: 1.8;
     color: #333;
@@ -241,6 +243,52 @@ def _restore_interactive(html: str, components: list) -> str:
     return html
 
 
+def _fix_button_anchors(html: str) -> str:
+    """Wrap styled <a> button contents in <section> so visual styling survives
+    WeChat's ProseMirror schema which strips <a> wrappers at render time but
+    preserves <section> children with their inline styles intact.
+    """
+    pattern = re.compile(
+        r'<a\s+([^>]*?)>([^<]*?(?:<(?!/a>)[^<]*)*?)</a>',
+        re.DOTALL,
+    )
+
+    def _wrap(m: re.Match) -> str:
+        attrs = m.group(1)
+        inner = m.group(2)
+        # Only intervene when the <a> has visual button styling
+        style_m = re.search(r'style="([^"]*)"', attrs)
+        if not style_m:
+            return m.group(0)
+        a_style = style_m.group(1)
+        has_button_style = bool(
+            re.search(r'display\s*:\s*inline-block', a_style)
+            or re.search(r'background(?:-color)?\s*:\s*#', a_style)
+            or re.search(r'padding\s*:', a_style)
+            or re.search(r'border-radius\s*:', a_style)
+        )
+        if not has_button_style:
+            return m.group(0)
+        # Skip if content already starts with a block-level wrapper
+        if re.match(r'\s*<(section|div|table|p|span)\b', inner):
+            return m.group(0)
+        # Strip button-visual styles from <a> itself, move them to <section>
+        a_kept = re.sub(
+            r'(display|background|background-color|padding|border-radius|'
+            r'box-shadow|font-size|font-weight|letter-spacing|line-height|'
+            r'color)\s*:[^;]+;?\s*',
+            '', a_style,
+        ).strip().strip(';').strip()
+        a_attrs_new = re.sub(
+            r'style="[^"]*"',
+            f'style="text-decoration:none; color:inherit{";"+a_kept if a_kept else ""}"',
+            attrs,
+        )
+        return f'<a {a_attrs_new}><section style="{a_style}">{inner}</section></a>'
+
+    return pattern.sub(_wrap, html)
+
+
 def _sanitize_for_wechat(html: str) -> str:
     """Post-process inlined HTML for WeChat compatibility."""
 
@@ -260,12 +308,24 @@ def _sanitize_for_wechat(html: str) -> str:
     html = re.sub(r"\s+class='[^']*'", "", html)
     html = re.sub(r'\s+data-[\w-]+="[^"]*"', "", html)
 
+    # ---- remove id / on* attributes (ProseMirror & WeChat both strip them) ---
+    html = re.sub(r'\s+id="[^"]*"', "", html)
+    html = re.sub(r'\s+on\w+="[^"]*"', "", html)
+
+    # ---- wrap button <a> content in <section> so styles survive ProseMirror --
+    html = _fix_button_anchors(html)
+
     # ---- <div> → <section> (WeChat convention) -------------------------------
     html = re.sub(r'<div\b', '<section', html)
     html = re.sub(r'</div>', '</section>', html)
 
     # ---- normalize quotes: premailer may output style='...' (single quotes) ---
     html = re.sub(r"style='([^']*)'", r'style="\1"', html)
+
+    # ---- strip bgcolor attr from <table> and <tr> (ProseMirror drops them,
+    #      leaving only <td> which keeps them in practice) ---------------------
+    html = re.sub(r'(<table\b[^>]*?)\s+bgcolor="[^"]*"', r'\1', html)
+    html = re.sub(r'(<tr\b[^>]*?)\s+bgcolor="[^"]*"', r'\1', html)
 
     # ---- remove empty decorative absolute-positioned elements -----------------
     html = re.sub(
@@ -277,20 +337,41 @@ def _sanitize_for_wechat(html: str) -> str:
     def _fix_style(m: re.Match) -> str:
         s = m.group(1)
 
-        # display:grid → block (WeChat doesn't support CSS Grid)
-        s = re.sub(r'display\s*:\s*grid\b', 'display:block', s)
-        s = re.sub(r'grid-template-columns\s*:[^;]+;?\s*', '', s)
-        s = re.sub(r'grid-template-rows\s*:[^;]+;?\s*', '', s)
+        # background: shorthand → background-color: (when value is only a color)
+        s = re.sub(
+            r'background\s*:\s*(#[0-9a-fA-F]{3,8}|rgb\([^)]*\)|rgba\([^)]*\)|'
+            r'hsl\([^)]*\)|hsla\([^)]*\)|\w+)\s*(;|$)',
+            r'background-color:\1\2', s,
+        )
+
+        # display: flex/inline-flex/grid/inline-grid → inline-block fallback
+        s = re.sub(r'display\s*:\s*(?:inline-)?flex\b', 'display:inline-block', s)
+        s = re.sub(r'display\s*:\s*(?:inline-)?grid\b', 'display:block', s)
+        s = re.sub(r'grid-template-[\w-]+\s*:[^;]+;?\s*', '', s)
+        s = re.sub(r'(?:flex|justify|align)-[\w-]+\s*:[^;]+;?\s*', '', s)
+        s = re.sub(r'gap\s*:[^;]+;?\s*', '', s)
+
+        # font-family → remove (WeChat forces system fonts on mobile anyway,
+        # and custom families cause preview/actual mismatches)
+        s = re.sub(r'font-family\s*:[^;]+;?\s*', '', s)
+
+        # box-shadow / transform / filter (unsupported or unstable in WeChat)
+        s = re.sub(r'box-shadow\s*:[^;]+;?\s*', '', s)
+        s = re.sub(r'transform\s*:[^;]+;?\s*', '', s)
+        s = re.sub(r'filter\s*:[^;]+;?\s*', '', s)
+        s = re.sub(r'backdrop-filter\s*:[^;]+;?\s*', '', s)
 
         # sub-pixel borders → 1 px
         s = re.sub(r'(?<!\d)0\.5px', '1px', s)
 
-        # animation (not supported)
+        # animation / transition (not supported)
         s = re.sub(r'animation\s*:[^;]+;?\s*', '', s)
         s = re.sub(r'animation-[\w-]+\s*:[^;]+;?\s*', '', s)
+        s = re.sub(r'transition\s*:[^;]+;?\s*', '', s)
+        s = re.sub(r'transition-[\w-]+\s*:[^;]+;?\s*', '', s)
 
-        # position:absolute (unreliable in WeChat)
-        s = re.sub(r'position\s*:\s*absolute\s*;?\s*', '', s)
+        # position:absolute/fixed/sticky (unreliable in WeChat)
+        s = re.sub(r'position\s*:\s*(?:absolute|fixed|sticky)\s*;?\s*', '', s)
 
         # orphaned top/right/bottom/left if no position left
         # use negative lookbehind for hyphen to avoid matching margin-left etc.
@@ -300,6 +381,12 @@ def _sanitize_for_wechat(html: str) -> str:
 
         # cursor (useless on mobile)
         s = re.sub(r'cursor\s*:[^;]+;?\s*', '', s)
+
+        # user-select, pointer-events, will-change (mobile-irrelevant)
+        s = re.sub(r'user-select\s*:[^;]+;?\s*', '', s)
+        s = re.sub(r'-webkit-user-select\s*:[^;]+;?\s*', '', s)
+        s = re.sub(r'pointer-events\s*:[^;]+;?\s*', '', s)
+        s = re.sub(r'will-change\s*:[^;]+;?\s*', '', s)
 
         # tidy up
         s = re.sub(r';\s*;+', ';', s).strip().strip(';').strip()

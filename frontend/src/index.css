@@ -1,77 +1,115 @@
 @import "tailwindcss";
 
 @theme {
-  /* Semantic color tokens - reference CSS custom properties for theme switching */
+  /* Semantic color tokens — reference CSS custom properties for theme switching */
   --color-bg-primary: var(--theme-bg-primary);
   --color-surface-secondary: var(--theme-surface-secondary);
   --color-surface-tertiary: var(--theme-surface-tertiary);
+  --color-surface-raised: var(--theme-surface-raised);
 
   --color-fg-primary: var(--theme-fg-primary);
   --color-fg-secondary: var(--theme-fg-secondary);
   --color-fg-muted: var(--theme-fg-muted);
+  --color-fg-disabled: var(--theme-fg-disabled);
 
   --color-border-primary: var(--theme-border-primary);
   --color-border-secondary: var(--theme-border-secondary);
+  --color-border-strong: var(--theme-border-strong);
 
-  /* Accent - consistent across themes */
-  --color-accent: #E8553A;
-  --color-accent-hover: #D44A31;
-  --color-accent-glow: #E8553A40;
-  --color-accent-bg: #E8553A1A;
-  --color-accent-border: #E8553A44;
-  --color-accent-soft: #E8553A14;
+  /* Accent — deep oxblood red, used sparingly for primary actions only */
+  --color-accent: #C14A3A;
+  --color-accent-hover: #A63D30;
+  --color-accent-glow: #C14A3A38;
+  --color-accent-bg: #C14A3A18;
+  --color-accent-border: #C14A3A44;
+  --color-accent-soft: #C14A3A10;
 
-  /* Semantic colors */
-  --color-success: #3A9E7E;
-  --color-success-bg: #3A9E7E14;
-  --color-success-border: #3A9E7E33;
-  --color-info: #6B7FBF;
-  --color-info-bg: #6B7FBF1A;
-  --color-warning: #C9923E;
-  --color-warning-bg: #C9923E0D;
-  --color-warning-border: #C9923E33;
-  --color-warning-text: #C9923ECC;
-  --color-error: #EF4444;
+  /* Secondary accent — warm gold, for highlights and secondary badges */
+  --color-gold: #C4A76C;
+  --color-gold-bg: #C4A76C15;
+  --color-gold-border: #C4A76C33;
+
+  /* Semantic colors — muted, not fluorescent */
+  --color-success: #6B9872;
+  --color-success-bg: #6B987214;
+  --color-success-border: #6B987233;
+  --color-info: #7588B8;
+  --color-info-bg: #7588B81A;
+  --color-info-border: #7588B833;
+  --color-warning: #C89458;
+  --color-warning-bg: #C8945814;
+  --color-warning-border: #C8945833;
+  --color-warning-text: #C89458CC;
+  --color-error: #C4543E;
 
   /* Special */
-  --color-overlay: #000000AA;
+  --color-overlay: #000000B0;
   --color-card-preview: #FAF8F5;
 
-  /* Radii */
+  /* Radii — slightly softer than before */
   --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
   --radius-full: 9999px;
 
+  /* Spacing scale — 4px base, ensures consistent rhythm across components */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+
   /* Fonts */
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: "Inter", "PingFang SC", "Hiragino Sans GB", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Source Han Serif SC", "Noto Serif SC", Georgia, serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
-/* Dark theme (default) */
+/* ============================================================ */
+/*  Warm Walnut Dark (default)                                   */
+/*  Warm near-black with hints of walnut & coffee, not cold grey */
+/* ============================================================ */
 :root,
 [data-theme="dark"] {
-  --theme-bg-primary: #17151A;
-  --theme-surface-secondary: #1E1C21;
-  --theme-surface-tertiary: #262429;
-  --theme-fg-primary: #EDEBE8;
-  --theme-fg-secondary: #9B9696;
-  --theme-fg-muted: #6B6666;
-  --theme-border-primary: #2E2B34;
-  --theme-border-secondary: #3A3740;
+  --theme-bg-primary:       #141013;
+  --theme-surface-secondary:#1C1719;
+  --theme-surface-tertiary: #261F22;
+  --theme-surface-raised:   #302629;
+
+  --theme-fg-primary:   #F0E8D8;
+  --theme-fg-secondary: #A89A87;
+  --theme-fg-muted:     #6B5E55;
+  --theme-fg-disabled:  #3D3530;
+
+  --theme-border-primary:   #2A2225;
+  --theme-border-secondary: #3A3033;
+  --theme-border-strong:    #4A3F3B;
 }
 
-/* Light theme */
+/* ============================================================ */
+/*  Warm Paper Light theme                                       */
+/*  Cream paper with ink text, takes cue from WeChat article BG  */
+/* ============================================================ */
 [data-theme="light"] {
-  --theme-bg-primary: #FAF8F5;
-  --theme-surface-secondary: #FFFFFF;
-  --theme-surface-tertiary: #F5F0EB;
-  --theme-fg-primary: #1C1917;
-  --theme-fg-secondary: #78716C;
-  --theme-fg-muted: #A8A29E;
-  --theme-border-primary: #EDE9E3;
-  --theme-border-secondary: #E5E0D8;
+  --theme-bg-primary:       #FBF7F0;
+  --theme-surface-secondary:#FFFFFF;
+  --theme-surface-tertiary: #F5EEE2;
+  --theme-surface-raised:   #FFFFFF;
+
+  --theme-fg-primary:   #1A1512;
+  --theme-fg-secondary: #6B5E55;
+  --theme-fg-muted:     #9B8E82;
+  --theme-fg-disabled:  #C9BDB0;
+
+  --theme-border-primary:   #EDE4D4;
+  --theme-border-secondary: #DCCFB8;
+  --theme-border-strong:    #C7B79C;
 }
 
 body {
@@ -81,25 +119,40 @@ body {
   color: var(--color-fg-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  letter-spacing: 0.01em;
+  font-feature-settings: "ss01", "ss02", "cv11";
 }
 
-/* Scrollbar styling */
+/* Headings — refined type hierarchy */
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.01em;
+  font-weight: 700;
+}
+
+/* Scrollbar — thinner, warm */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
   background: var(--theme-border-primary);
-  border-radius: 3px;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background: var(--theme-border-secondary);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+/* Selection */
+::selection {
+  background: rgba(193, 74, 58, 0.22);
+  color: inherit;
 }
 
 /* TipTap Editor Styles */
@@ -119,7 +172,7 @@ body {
 }
 
 .tiptap-editor .ProseMirror img.ProseMirror-selectednode {
-  outline: 2px solid #E8553A;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
@@ -128,10 +181,9 @@ body {
 }
 
 .raw-html-block *::selection {
-  background: rgba(232, 85, 58, 0.3);
+  background: rgba(193, 74, 58, 0.3);
 }
 
-/* Ensure interactive elements work inside TipTap raw blocks */
 .raw-html-block input[type="checkbox"],
 .raw-html-block input[type="radio"] {
   pointer-events: auto;
@@ -142,10 +194,57 @@ body {
   cursor: pointer;
 }
 
+/* ============================================================ */
+/*  Article card — warm paper strip (replaces rainbow gradients) */
+/* ============================================================ */
+.article-card {
+  position: relative;
+  background: var(--theme-surface-secondary);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform 0.22s cubic-bezier(.4,0,.2,1),
+              border-color 0.22s cubic-bezier(.4,0,.2,1),
+              box-shadow   0.22s cubic-bezier(.4,0,.2,1);
+  cursor: pointer;
+}
+.article-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--color-accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.22s cubic-bezier(.4,0,.2,1);
+}
+.article-card:hover {
+  border-color: var(--theme-border-secondary);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.45);
+}
+.article-card:hover::before {
+  transform: scaleY(1);
+}
+
+/* Warm paper-strip cover — 6 subtle variants cycled per card */
+.article-card-strip {
+  height: 6px;
+  width: 100%;
+}
+.article-card-strip-0 { background: linear-gradient(90deg, #C14A3A 0%, #C4A76C 100%); }
+.article-card-strip-1 { background: linear-gradient(90deg, #6B9872 0%, #C4A76C 100%); }
+.article-card-strip-2 { background: linear-gradient(90deg, #C4A76C 0%, #8A6D5B 100%); }
+.article-card-strip-3 { background: linear-gradient(90deg, #7588B8 0%, #C4A76C 100%); }
+.article-card-strip-4 { background: linear-gradient(90deg, #C89458 0%, #C14A3A 100%); }
+.article-card-strip-5 { background: linear-gradient(90deg, #8A6D5B 0%, #C4A76C 100%); }
+
 /* Animations */
 @keyframes skeleton-pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.15; }
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.18; }
 }
 
 @keyframes fade-in {
@@ -164,6 +263,6 @@ body {
 }
 
 @keyframes scale-in {
-  from { opacity: 0; transform: scale(0.95); }
+  from { opacity: 0; transform: scale(0.96); }
   to { opacity: 1; transform: scale(1); }
 }

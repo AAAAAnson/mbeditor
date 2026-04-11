@@ -8,14 +8,13 @@ import { toast } from "@/stores/toastStore";
 import ArticleListHeader from "@/components/layout/ArticleListHeader";
 import { ArticleCardSkeleton } from "@/components/ui/Skeleton";
 
-const COVER_GRADIENTS = [
-  "linear-gradient(135deg, #2D1B4E, #1A3A5C 50%, #0D4A4A)",
-  "linear-gradient(45deg, #1A4A3E, #0D6B5C)",
-  "linear-gradient(180deg, #5C3A1A, #8B6034)",
-  "linear-gradient(90deg, #4A1A2E, #7B3048)",
-  "linear-gradient(200deg, #1A3A5C, #3A5A7C)",
-  "linear-gradient(60deg, #2E4A1A, #4A6B34)",
-];
+// Paper-strip accent — picks one of 6 warm gradients based on title hash.
+// Replaces the old rainbow cover blocks with a restrained 6px strip.
+function stripIndexForId(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = ((h << 5) - h + id.charCodeAt(i)) | 0;
+  return Math.abs(h) % 6;
+}
 
 const SAMPLE_HTML = `<section style="max-width:100%;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB',sans-serif;color:#2d2a26;line-height:1.9;letter-spacing:0.3px;">
 
@@ -478,95 +477,103 @@ export default function ArticleList() {
         <EmptyState onCreateSample={createSamples} onCreateBlank={createBlank} />
       ) : (
         <div className="flex-1 overflow-auto">
-          <div className="px-12 py-8">
+          <div className="mx-auto w-full max-w-[1280px] px-10 py-10">
             {/* Stats row */}
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-[13px] text-fg-muted">
-                共 {filtered.length} 篇文章
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-[12px] text-fg-muted">排序:</span>
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-baseline gap-3">
+                <span className="text-[20px] font-bold text-fg-primary tracking-tight">
+                  {activeTab === "all" ? "全部文章" : activeTab === "draft" ? "草稿" : activeTab === "published" ? "已发布" : "回收站"}
+                </span>
+                <span className="text-[13px] text-fg-muted tabular-nums">
+                  {filtered.length} 篇
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[12px] text-fg-muted">排序</span>
                 <div className="relative">
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as "updated" | "created")}
-                    className="appearance-none bg-surface-secondary border border-border-secondary rounded-md px-2.5 py-1 pr-7 text-[12px] text-fg-secondary cursor-pointer focus:outline-none focus:border-accent transition-colors"
+                    className="appearance-none bg-surface-secondary border border-border-primary rounded-lg pl-3 pr-8 py-1.5 text-[12px] text-fg-secondary cursor-pointer focus:outline-none focus:border-accent hover:border-border-secondary transition-colors"
                   >
                     <option value="updated">最近修改</option>
                     <option value="created">最近创建</option>
                   </select>
-                  <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" />
+                  <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" />
                 </div>
               </div>
             </div>
 
             {/* Card grid */}
             {loading ? (
-              <div className="grid grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {Array.from({ length: 6 }).map((_, i) => <ArticleCardSkeleton key={i} />)}
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-5">
-                {filtered.map((a, i) => (
-                  <div
-                    key={a.id}
-                    onClick={() => navigate(`/editor/${a.id}`)}
-                    className="relative bg-surface-secondary rounded-xl border border-border-primary cursor-pointer hover:border-border-secondary transition-all group overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.2)]"
-                  >
-                    {/* Cover */}
-                    <div
-                      className="h-[140px] relative flex items-end p-3.5"
-                      style={{ background: COVER_GRADIENTS[i % COVER_GRADIENTS.length] }}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filtered.map((a) => {
+                  const stripIdx = stripIndexForId(a.id);
+                  return (
+                    <article
+                      key={a.id}
+                      onClick={() => navigate(`/editor/${a.id}`)}
+                      className="article-card group"
                     >
-                      <h3 className="text-white font-bold text-[14px] leading-snug line-clamp-2 drop-shadow-sm">
-                        {a.title || "未命名文章"}
-                      </h3>
-                    </div>
+                      {/* Thin paper strip — deterministic per-article accent */}
+                      <div className={`article-card-strip article-card-strip-${stripIdx}`} />
 
-                    {/* Body */}
-                    <div className="p-3.5 flex flex-col gap-2">
-                      <div className="text-[13px] font-semibold text-fg-primary truncate">
-                        {a.title || "未命名文章"}
+                      {/* Body — generous padding, clear hierarchy */}
+                      <div className="px-6 pt-5 pb-5 flex flex-col gap-3">
+                        <h3 className="text-[15px] font-bold text-fg-primary leading-[1.45] line-clamp-2 min-h-[44px] tracking-tight">
+                          {a.title || "未命名文章"}
+                        </h3>
+
+                        <div className="flex items-center flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-fg-muted">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${
+                              a.mode === "markdown"
+                                ? "bg-gold-bg text-gold border border-gold-border"
+                                : "bg-info-bg text-info border border-info-border"
+                            }`}
+                          >
+                            {a.mode}
+                          </span>
+                          <span className="tabular-nums">
+                            {new Date(a.updated_at).toLocaleString("zh-CN", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                          <span className="ml-auto px-2 py-0.5 rounded text-[10px] font-semibold bg-warning-bg text-warning border border-warning-border">
+                            草稿
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-[11px] text-fg-muted">
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium uppercase ${
-                          a.mode === "markdown"
-                            ? "bg-accent-bg text-accent"
-                            : "bg-info-bg text-info"
-                        }`}>
-                          {a.mode}
-                        </span>
-                        <span>
-                          {new Date(a.updated_at).toLocaleString("zh-CN", {
-                            month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-                          })}
-                        </span>
-                        <span className="ml-auto px-1.5 py-0.5 rounded text-[10px] font-medium bg-warning-bg text-warning">
-                          草稿
-                        </span>
-                      </div>
-                    </div>
 
-                    {/* Delete button — visible on hover (desktop) or always visible (touch) */}
-                    <button
-                      onClick={(e) => deleteArticle(a.id, e)}
-                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 text-fg-muted hover:text-accent transition-all opacity-0 group-hover:opacity-100 touch-device:opacity-100 [@media(hover:none)]:opacity-70"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
+                      {/* Delete button — fade in on hover */}
+                      <button
+                        onClick={(e) => deleteArticle(a.id, e)}
+                        aria-label="删除"
+                        className="absolute top-3 right-3 p-1.5 rounded-lg bg-surface-raised/80 backdrop-blur text-fg-muted hover:text-accent hover:bg-surface-raised transition-all opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-60"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </article>
+                  );
+                })}
 
-                {/* New article card */}
-                <div
+                {/* New article card — dashed */}
+                <button
                   onClick={createBlank}
-                  className="flex flex-col items-center justify-center h-[264px] rounded-xl border border-border-secondary hover:border-fg-muted cursor-pointer transition-colors group"
+                  className="flex flex-col items-center justify-center min-h-[140px] rounded-[14px] border border-dashed border-border-secondary hover:border-accent/60 hover:bg-accent-soft cursor-pointer transition-colors group"
                 >
-                  <Plus size={28} className="text-fg-muted group-hover:text-fg-secondary transition-colors mb-2" />
-                  <span className="text-[13px] text-fg-muted group-hover:text-fg-secondary transition-colors">
+                  <Plus size={26} className="text-fg-muted group-hover:text-accent transition-colors mb-2" strokeWidth={1.75} />
+                  <span className="text-[13px] font-medium text-fg-muted group-hover:text-accent transition-colors">
                     新建文章
                   </span>
-                </div>
+                </button>
               </div>
             )}
           </div>
