@@ -38,9 +38,18 @@ _AUTH_STATE_PATH = _THIS_DIR / ".auth" / "state.json"
 # (a) render_mbdoc_to_screenshot
 # ---------------------------------------------------------------------------
 
-_BODY_STYLE = (
+_BODY_STYLE_PADDED = (
     "margin:0;"
     "padding:20px 16px;"
+    "font-family:-apple-system,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;"
+    "font-size:16px;"
+    "line-height:1.8;"
+    "color:#333;"
+    "background:#fff;"
+)
+_BODY_STYLE_FLUSH = (
+    "margin:0;"
+    "padding:0;"
     "font-family:-apple-system,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;"
     "font-size:16px;"
     "line-height:1.8;"
@@ -52,18 +61,29 @@ _BODY_STYLE = (
 def render_mbdoc_to_screenshot(
     doc: MBDoc,
     out_dir: Optional[Path] = None,
+    *,
+    width: int = 375,
+    flush: bool = False,
 ) -> Path:
     """Render an MBDoc to a PNG screenshot via headless Chromium.
 
     Simulates the MBEditor preview iframe chrome:
-      - viewport 375×800px (iPhone SE / mp.weixin mobile preview)
-      - body padding/font identical to the iframe wrapper
+      - viewport width defaults to 375px (iPhone SE / mp.weixin mobile preview)
+      - body padding 20x16 by default (matches MBEditor iframe chrome)
       - inline styles are the ONLY style source (no CSS reset injected)
+
+    For visual parity diffing against the WeChat MP backend edit page
+    ``.rich_media_content`` element, set ``width=586, flush=True`` to
+    match WeChat's desktop preview geometry (wider viewport, zero body
+    padding).
 
     Args:
         doc: source document to render.
         out_dir: directory to write the PNG to. Defaults to
             ``backend/tests/visual/_artifacts/``.
+        width: viewport width in pixels. Defaults to 375 (mobile).
+        flush: if True, strip the 20x16 body padding (use for parity
+            diffing). Defaults to False.
 
     Returns:
         Path to the written PNG file.
@@ -76,10 +96,11 @@ def render_mbdoc_to_screenshot(
     ctx = RenderContext(upload_images=False)
     fragment = render_for_wechat(doc, ctx)
 
+    body_style = _BODY_STYLE_FLUSH if flush else _BODY_STYLE_PADDED
     wrapper_html = (
         "<!DOCTYPE html>"
         "<html>"
-        f'<body style="{_BODY_STYLE}">'
+        f'<body style="{body_style}">'
         f"{fragment}"
         "</body>"
         "</html>"
@@ -90,7 +111,7 @@ def render_mbdoc_to_screenshot(
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
         page = browser.new_page()
-        page.set_viewport_size({"width": 375, "height": 800})
+        page.set_viewport_size({"width": width, "height": 800})
         page.set_content(wrapper_html, wait_until="networkidle")
         page.screenshot(path=str(out_path), full_page=True)
         browser.close()
@@ -136,34 +157,55 @@ def push_mbdoc_to_wechat_draft(doc: MBDoc) -> str:
 def screenshot_wechat_draft(
     media_id: str,
     out_dir: Optional[Path] = None,
+    *,
+    title_hint: Optional[str] = None,
 ) -> Path:
-    """Screenshot a WeChat draft article using a persisted login session.
+    """Screenshot a WeChat draft's rendered content in the MP backend edit page.
 
     Requires a prior successful run of ``auth_login.py`` which saves
     ``backend/tests/visual/.auth/state.json``.
 
-    The WeChat MP draft preview page URL pattern is:
-        https://mp.weixin.qq.com/cgi-bin/appmsgpublish?sub=list&type=101
+    Navigation flow (confirmed against MB科技 test account on 2026-04-11):
 
-    From the draft list, the function attempts to locate the first draft card
-    that links to an article preview and navigate to it.
+    1. Navigate to ``https://mp.weixin.qq.com/`` — server redirects to
+       ``/cgi-bin/home?...&token=<TOKEN>``. Extract the token.
+    2. Navigate to the drafts list
+       ``/cgi-bin/appmsg?begin=0&count=10&type=77&action=list_card&token=<TOKEN>&lang=zh_CN``
+    3. Locate the ``.weui-desktop-card`` whose ``.weui-desktop-publish__cover__title``
+       text matches ``title_hint`` (falls back to the first non-"新的创作" card).
+    4. Click the second ``a.weui-desktop-icon20.weui-desktop-icon-btn`` inside
+       that card (the edit icon — the first is trash, the third/last is 发表).
+       Clicking edit opens a new popup tab at
+       ``/cgi-bin/appmsg?t=media/appmsg_edit&action=edit&appmsgid=<ID>&...``.
+    5. Wait for ``.rich_media_content`` to appear in the popup and screenshot
+       just that element (not the full page) — that div contains the
+       article body rendered exactly as WeChat will display it in-app.
 
-    TODO (Task 11): Once a user has completed the first auth_login run and
-    confirmed the exact draft preview selectors in the WeChat MP backend UI,
-    update the selector constants below. The current implementation captures
-    the full draft list page as a fallback if the specific draft cannot be
-    isolated.
+    Notes:
+        * ``media_id`` is the API-level media_id returned by create_draft;
+          it is NOT the same as the backend ``appmsgid``. We cannot navigate
+          directly to the edit page by ``media_id``, so we find the draft
+          by its title instead. Pass ``title_hint`` (typically ``doc.meta.title``)
+          for robust matching.
+        * The screenshot is the bounding box of ``.rich_media_content`` at
+          the default desktop viewport, not a mobile-chrome 375px frame.
+          ``diff_images`` will resize as needed for comparison.
 
     Args:
-        media_id: media_id returned by push_mbdoc_to_wechat_draft.
+        media_id: media_id returned by push_mbdoc_to_wechat_draft. Used
+            only for the output filename; see ``title_hint`` for card
+            lookup.
         out_dir: directory to write the PNG to. Defaults to _artifacts/.
+        title_hint: draft title to match against card titles. Highly
+            recommended; if omitted, uses the first non-"新的创作" card.
 
     Returns:
-        Path to the written PNG.
+        Path to the written PNG (cropped to the article body).
 
     Raises:
-        RuntimeError: if .auth/state.json does not exist (not yet logged in)
-            or if the WeChat session has expired.
+        RuntimeError: if .auth/state.json does not exist (not yet logged in),
+            if the WeChat session has expired, or if the draft card cannot
+            be located.
     """
     from playwright.sync_api import sync_playwright
 
@@ -176,50 +218,63 @@ def screenshot_wechat_draft(
 
     out_dir = out_dir or _ARTIFACTS_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / f"{media_id}_draft.png"
-
-    # Draft list URL — confirmed entry point for WeChat MP backend draft view
-    _DRAFT_LIST_URL = (
-        "https://mp.weixin.qq.com/cgi-bin/appmsgpublish?sub=list&type=101"
-    )
-    # TODO (Task 11): Confirm the exact selector for the draft preview button
-    # after the first auth_login run. Options:
-    #   - ".weui-desktop-mass-appmsg__meta-title a"  (draft title link)
-    #   - "[data-mediaid='<media_id>']"               (if data attr exists)
-    # For now we fall back to screenshotting the whole draft list page.
-    _DRAFT_PREVIEW_SELECTOR = None  # type: Optional[str]
+    # Sanitize media_id for filename (WeChat media_ids contain '/' sometimes)
+    safe_mid = media_id.replace("/", "_").replace("\\", "_")[:40]
+    out_path = out_dir / f"{safe_mid}_draft.png"
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
         context = browser.new_context(
             storage_state=str(state_path),
-            viewport={"width": 375, "height": 800},
-            device_scale_factor=2,
+            viewport={"width": 1440, "height": 900},
         )
         page = context.new_page()
-        page.goto(_DRAFT_LIST_URL, wait_until="networkidle", timeout=30_000)
+        try:
+            # Step 1: land on home to pick up token
+            page.goto("https://mp.weixin.qq.com/", wait_until="networkidle", timeout=30_000)
+            if "/cgi-bin/" not in page.url or "token=" not in page.url:
+                raise RuntimeError(
+                    f"WeChat session expired or not logged in (landed on {page.url}). "
+                    "Re-run auth_login."
+                )
+            token = page.url.split("token=")[1].split("&")[0]
 
-        # Check if we are still logged in (WeChat MP redirects to login page if not)
-        if "mp.weixin.qq.com/cgi-bin" not in page.url:
+            # Step 2: drafts list
+            drafts_url = (
+                f"https://mp.weixin.qq.com/cgi-bin/appmsg?begin=0&count=10&type=77"
+                f"&action=list_card&token={token}&lang=zh_CN"
+            )
+            page.goto(drafts_url, wait_until="networkidle", timeout=30_000)
+
+            # Step 3: find the card matching title_hint
+            if title_hint:
+                card = page.locator(".weui-desktop-card", has_text=title_hint).first
+            else:
+                # First non-"新的创作" card
+                cards = page.locator(".weui-desktop-card:not(.weui-desktop-card_new)")
+                card = cards.first
+            if card.count() == 0:
+                raise RuntimeError(
+                    f"Could not find draft card (title_hint={title_hint!r}) in list"
+                )
+            card.hover()
+
+            # Step 4: click the edit icon (second icon20 button) and expect popup
+            edit_icon = card.locator("a.weui-desktop-icon20.weui-desktop-icon-btn").nth(1)
+            with context.expect_page(timeout=15_000) as popup_info:
+                edit_icon.click()
+            popup = popup_info.value
+            popup.wait_for_load_state("networkidle", timeout=30_000)
+
+            # Step 5: wait for .rich_media_content and screenshot that element
+            content = popup.locator(".rich_media_content").first
+            content.wait_for(state="visible", timeout=20_000)
+            content.screenshot(path=str(out_path))
+        except Exception as exc:
             browser.close()
             raise RuntimeError(
-                f"WeChat session expired or not logged in (landed on {page.url}). "
-                "Re-run auth_login."
-            )
-
-        if _DRAFT_PREVIEW_SELECTOR:
-            # Attempt to navigate to the specific draft preview
-            try:
-                page.click(_DRAFT_PREVIEW_SELECTOR, timeout=5_000)
-                page.wait_for_load_state("networkidle", timeout=15_000)
-            except Exception as exc:
-                browser.close()
-                raise RuntimeError(
-                    f"Draft preview selector not found or click timed out: {exc}"
-                ) from exc
-
-        # Screenshot whatever page we landed on
-        page.screenshot(path=str(out_path), full_page=True)
+                f"screenshot_wechat_draft failed: {exc}"
+            ) from exc
         browser.close()
 
     return out_path
