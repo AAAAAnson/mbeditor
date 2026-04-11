@@ -34,7 +34,11 @@ export default function WechatPreview({
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [iframeHeight, setIframeHeight] = useState(400);
 
-  // In "wechat" mode the iframe body is contenteditable for in-place editing.
+  // Post-Stage-0: in wechat mode the iframe body is unconditionally
+  // contenteditable. Previously this was gated by a `cleanMode` toggle that
+  // defaulted to true (read-only). The toggle has been removed so that
+  // preview == final output. Upstream (Editor.tsx) controls whether
+  // onHtmlChange is wired.
   const editable = mode === "wechat";
 
   // Listen for iframe resize messages (validate source to prevent spoofing).
@@ -52,6 +56,11 @@ export default function WechatPreview({
     return () => window.removeEventListener("message", handler);
   }, []);
 
+  // NOTE: if `onHtmlChange` is an unstable reference (inline lambda), every
+  // parent render reconstructs this callback, which re-runs the sync effect
+  // below and redraws the iframe. Callers SHOULD memoize onHtmlChange via
+  // useCallback. This is not fixed in Stage 0 — Stage 1 may refactor the
+  // write path into a ref-based side effect to sever the dep.
   const writeToIframe = useCallback(
     (content: string, canEdit: boolean) => {
       const iframe = iframeRef.current;
@@ -77,6 +86,7 @@ export default function WechatPreview({
     -webkit-user-modify: ${canEdit ? "read-write" : "read-only"};
   }
   body *::selection { background: rgba(232, 85, 58, 0.12); }
+  img { max-width: 100%; }
   ${css}
 </style>
 </head><body${canEdit ? ' contenteditable="true"' : ""}>${content}${js ? `<script>${js}<\/script>` : ""}<script>(function(){var post=function(){try{window.parent.postMessage({type:'mbeditor:preview-resize',height:document.body.scrollHeight},'*');}catch(e){}};if(typeof ResizeObserver!=='undefined'){var ro=new ResizeObserver(post);ro.observe(document.body);}Array.from(document.images).forEach(function(img){if(!img.complete)img.addEventListener('load',post);});post();setTimeout(post,100);setTimeout(post,500);})();<\/script></body></html>`;
