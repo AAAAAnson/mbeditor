@@ -30,6 +30,8 @@ data/*.html
 Thumbs.db
 
 # Development tools
-docs/superpowers/
+# NOTE: docs/superpowers/ is tracked so any future session / collaborator
+# can resume the WYSIWYG refactor from any stage (plans, handoff,
+# orchestration framework, research reports).
 CLAUDE.md
 .playwright-mcp/
