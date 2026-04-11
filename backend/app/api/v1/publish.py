@@ -442,6 +442,26 @@ def _sanitize_for_wechat(html: str) -> str:
     html = re.sub(r'(<table\b[^>]*?)\s+bgcolor="[^"]*"', r'\1', html)
     html = re.sub(r'(<tr\b[^>]*?)\s+bgcolor="[^"]*"', r'\1', html)
 
+    # ---- inject border:0 on <td> without full border shorthand --------------
+    # WeChat article rendering applies `td { border:1px solid #ddd }` by default,
+    # which creates visible gray frames around every bare td cell (e.g. the 3
+    # download badge cells, the model list rows). Inline style wins over the
+    # stylesheet, so we prepend `border:0` when no full `border:` shorthand is
+    # declared. Prepended so any per-side `border-bottom:...` declaration still
+    # overrides the zero base.
+    def _td_border_fix(m: re.Match) -> str:
+        head = m.group(0)
+        style_m = re.search(r'style="([^"]*)"', head)
+        if style_m:
+            inner = style_m.group(1)
+            # Skip if a full `border:` shorthand is present (not border-top etc.)
+            if re.search(r'(?:^|;)\s*border\s*:', inner):
+                return head
+            new_inner = ('border:0; ' + inner.strip()).strip().strip(';').strip()
+            return head.replace(style_m.group(0), f'style="{new_inner}"')
+        return head[:-1] + ' style="border:0">'
+    html = re.sub(r'<td\b[^>]*>', _td_border_fix, html)
+
     # ---- remove empty decorative absolute-positioned elements -----------------
     html = re.sub(
         r'<(\w+)\s+style="[^"]*position\s*:\s*absolute[^"]*"\s*>\s*</\1>',
