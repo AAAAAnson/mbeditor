@@ -2,8 +2,25 @@ import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
 import WechatPreview from "../WechatPreview";
 
-describe("WechatPreview baseline behavior (pre-Stage-0 cleanup)", () => {
-  it("renders an iframe", () => {
+/**
+ * Baseline freeze for the WechatPreview component.
+ *
+ * These tests document the critical static behaviors that must NOT break
+ * during the Stage 0 pipeline cleanup (Task 5 will rewrite internals of
+ * this component). If Task 5 breaks any test here, it's a regression.
+ *
+ * Intentionally NOT tested (deferred to integration tests in later Stages):
+ * - iframe content rendering (requires async DOM write tracking)
+ * - postMessage-driven height synchronization (requires async event plumbing)
+ *
+ * The 375px wrapper class selector is deliberately coupled to the Tailwind
+ * class `w-[375px]`. This is acceptable because the 375px mobile-simulation
+ * width is a fixed design constant of this component — if a refactor changes
+ * HOW the width is applied, the test SHOULD fail so a human re-confirms the
+ * intent is preserved.
+ */
+describe("WechatPreview contract (baseline freeze)", () => {
+  it("renders an iframe with title='preview'", () => {
     const { container } = render(
       <WechatPreview html="<p>hello</p>" css="" mode="wechat" />
     );
@@ -12,15 +29,20 @@ describe("WechatPreview baseline behavior (pre-Stage-0 cleanup)", () => {
     expect(iframe?.getAttribute("title")).toBe("preview");
   });
 
-  it("wraps the iframe in a 375px container", () => {
+  it("wraps the iframe in a 375px mobile-simulation container", () => {
     const { container } = render(
       <WechatPreview html="<p>hello</p>" css="" mode="wechat" />
     );
+    // White-box selector intentional — see file header for rationale.
     const wrapper = container.querySelector(".w-\\[375px\\]");
     expect(wrapper).not.toBeNull();
   });
 
-  it("accepts mode=raw without crashing", () => {
+  it("renders successfully when mode='raw' (smoke check for the raw-mode code path)", () => {
+    // Raw mode takes a different conditional branch in writeToIframe.
+    // This test ensures that branch does not crash on render. We don't
+    // assert anything about sanitization differences — Task 5 is free to
+    // restructure the raw/wechat branching internally.
     const { container } = render(
       <WechatPreview html="<p>hello</p>" css="" mode="raw" />
     );
