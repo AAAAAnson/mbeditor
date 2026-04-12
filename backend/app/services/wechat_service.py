@@ -33,20 +33,30 @@ def save_config(appid: str, appsecret: str) -> dict:
     return config
 
 
-def get_access_token() -> str:
-    if _token_cache["access_token"] and time.time() < _token_cache["expires_at"]:
+def get_access_token(force_refresh: bool = False) -> str:
+    """Fetch access_token via stable_token API.
+
+    WeChat's legacy /cgi-bin/token endpoint issues a new token on every
+    call and invalidates previously issued ones — which breaks any parallel
+    caller (other services, scripts, backoffice tools) sharing the same app.
+    /cgi-bin/stable_token returns the same token until it actually expires,
+    unless force_refresh is set. This is WeChat's official recommended
+    approach since 2023.
+    """
+    if not force_refresh and _token_cache["access_token"] and time.time() < _token_cache["expires_at"]:
         return _token_cache["access_token"]
 
     config = load_config()
     if not config.get("appid") or not config.get("appsecret"):
         raise AppError(code=400, message="WeChat AppID/AppSecret not configured")
 
-    resp = httpx.get(
-        "https://api.weixin.qq.com/cgi-bin/token",
-        params={
+    resp = httpx.post(
+        "https://api.weixin.qq.com/cgi-bin/stable_token",
+        json={
             "grant_type": "client_credential",
             "appid": config["appid"],
             "secret": config["appsecret"],
+            "force_refresh": force_refresh,
         },
         timeout=10,
     )
@@ -59,29 +69,51 @@ def get_access_token() -> str:
     return _token_cache["access_token"]
 
 
+def _is_invalid_credential(data: dict) -> bool:
+    """Detect token-invalid errors so callers can force-refresh and retry."""
+    return data.get("errcode") in (40001, 42001, 40014)
+
+
+def _post_with_token_retry(url_fmt: str, *, files=None, json_body=None, success_key: str, err_label: str, timeout: int = 30) -> dict:
+    """POST to a WeChat API that takes access_token in the query string, with
+    automatic force-refresh + single retry on token-invalid errors (40001 etc).
+    url_fmt must contain a single `{token}` placeholder.
+    """
+    for attempt in (0, 1):
+        token = get_access_token(force_refresh=(attempt == 1))
+        url = url_fmt.format(token=token)
+        if files is not None:
+            resp = httpx.post(url, files=files, timeout=timeout)
+        else:
+            resp = httpx.post(url, json=json_body, timeout=timeout)
+        data = resp.json()
+        if success_key in data:
+            return data
+        if attempt == 0 and _is_invalid_credential(data):
+            _token_cache["access_token"] = ""
+            _token_cache["expires_at"] = 0
+            continue
+        raise AppError(code=500, message=f"{err_label}: {data.get('errmsg', 'unknown')}")
+    raise AppError(code=500, message=f"{err_label}: retry exhausted")
+
+
 def upload_image_to_wechat(image_bytes: bytes, filename: str) -> str:
-    token = get_access_token()
-    resp = httpx.post(
-        f"https://api.weixin.qq.com/cgi-bin/media/uploadimg?access_token={token}",
+    data = _post_with_token_retry(
+        "https://api.weixin.qq.com/cgi-bin/media/uploadimg?access_token={token}",
         files={"media": (filename, image_bytes, "image/png")},
-        timeout=30,
+        success_key="url",
+        err_label="WeChat upload error",
     )
-    data = resp.json()
-    if "url" not in data:
-        raise AppError(code=500, message=f"WeChat upload error: {data.get('errmsg', 'unknown')}")
     return data["url"]
 
 
 def upload_thumb_to_wechat(image_bytes: bytes, filename: str) -> str:
-    token = get_access_token()
-    resp = httpx.post(
-        f"https://api.weixin.qq.com/cgi-bin/material/add_material?access_token={token}&type=thumb",
+    data = _post_with_token_retry(
+        "https://api.weixin.qq.com/cgi-bin/material/add_material?access_token={token}&type=thumb",
         files={"media": (filename, image_bytes, "image/jpeg")},
-        timeout=30,
+        success_key="media_id",
+        err_label="WeChat thumb upload error",
     )
-    data = resp.json()
-    if "media_id" not in data:
-        raise AppError(code=500, message=f"WeChat thumb upload error: {data.get('errmsg', 'unknown')}")
     return data["media_id"]
 
 
@@ -181,10 +213,7 @@ def create_draft(title: str, html: str, author: str = "", digest: str = "", thum
     import logging
     logger = logging.getLogger(__name__)
 
-    token = get_access_token()
-
     if not thumb_media_id:
-        # Auto-generate a default cover
         cover_bytes = _generate_default_cover(title)
         thumb_media_id = upload_thumb_to_wechat(cover_bytes, "auto_cover.jpg")
 
@@ -201,13 +230,11 @@ def create_draft(title: str, html: str, author: str = "", digest: str = "", thum
 
     logger.info(f"[draft] title={title!r}, content_length={len(html)}")
 
-    resp = httpx.post(
-        f"https://api.weixin.qq.com/cgi-bin/draft/add?access_token={token}",
-        json={"articles": [article]},
-        timeout=30,
+    data = _post_with_token_retry(
+        "https://api.weixin.qq.com/cgi-bin/draft/add?access_token={token}",
+        json_body={"articles": [article]},
+        success_key="media_id",
+        err_label="WeChat draft error",
     )
-    data = resp.json()
     logger.info(f"[draft] WeChat response: media_id={data.get('media_id', 'N/A')}")
-    if "media_id" not in data:
-        raise AppError(code=500, message=f"WeChat draft error: {data.get('errmsg', 'unknown')}")
     return {"media_id": data["media_id"]}
