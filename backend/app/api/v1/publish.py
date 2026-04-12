@@ -25,6 +25,7 @@ body, section.wechat-root {
     word-break: break-all;
 }
 img { border-radius: 8px; max-width: 100% !important; box-sizing: border-box; }
+pre, pre code { white-space: pre-wrap; word-break: break-word; word-wrap: break-word; overflow-x: auto; }
 """
 
 
@@ -567,6 +568,47 @@ def _sanitize_for_wechat(html: str) -> str:
 
     html = re.sub(r'style="([^"]*)"', _fix_style, html)
     html = re.sub(r'\s+style="\s*"', '', html)
+
+    # ---- convert <pre> code blocks to WeChat-friendly format ---------------
+    # WeChat overrides <pre> styling. Replace with <section><code> using
+    # <br> for newlines and &nbsp; for spaces (doocs-style approach).
+    def _convert_pre_block(m: re.Match) -> str:
+        pre_attrs = m.group(1) or ""
+        content = m.group(2)
+        # Extract background color from pre style if present
+        bg = "#0d1117"
+        fg = "#e6edf3"
+        bg_match = re.search(r'background(?:-color)?\s*:\s*([^;]+)', pre_attrs)
+        if bg_match:
+            bg = bg_match.group(1).strip()
+        fg_match = re.search(r'(?:^|;)\s*color\s*:\s*([^;]+)', pre_attrs)
+        if fg_match:
+            fg = fg_match.group(1).strip()
+        # Strip HTML tags from content but keep text
+        inner = re.sub(r'<[^>]+>', '', content)
+        # Decode HTML entities
+        import html as html_mod
+        inner = html_mod.unescape(inner)
+        # Convert whitespace: spaces → &nbsp;, newlines → <br>
+        lines = inner.split('\n')
+        formatted_lines = []
+        for line in lines:
+            line = html_mod.escape(line)
+            line = line.replace(' ', '&nbsp;')
+            formatted_lines.append(line)
+        formatted = '<br>'.join(formatted_lines)
+        return (
+            f'<section style="background:{bg};border-radius:8px;'
+            f'padding:16px;margin:18px 0;overflow:hidden;">'
+            f'<code style="color:{fg};font-size:12px;line-height:1.6;'
+            f'font-family:Menlo,Monaco,Courier New,monospace;'
+            f'display:block;white-space:normal;word-break:break-all;">'
+            f'{formatted}</code></section>'
+        )
+    html = re.sub(
+        r'<pre([^>]*)>(.*?)</pre>',
+        _convert_pre_block, html, flags=re.DOTALL,
+    )
 
     # ---- width/height attributes — KEEP. Premailer adds width="..." on some
     # elements; SVGs and images depend on these for correct sizing. Stripping
