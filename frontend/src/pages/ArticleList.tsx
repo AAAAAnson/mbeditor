@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Trash2, ChevronDown } from "lucide-react";
 import api from "@/lib/api";
@@ -441,6 +441,36 @@ export default function ArticleList() {
     createArticle("html");
   };
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  const startRename = (id: string, title: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingId(id);
+    setEditingTitle(title || "");
+    setTimeout(() => editInputRef.current?.select(), 0);
+  };
+
+  const commitRename = async () => {
+    if (!editingId) return;
+    const trimmed = editingTitle.trim();
+    const target = articles.find((a) => a.id === editingId);
+    if (target && trimmed !== target.title) {
+      try {
+        await api.put(`/articles/${editingId}`, { title: trimmed });
+        setArticles((prev) =>
+          prev.map((a) => (a.id === editingId ? { ...a, title: trimmed } : a))
+        );
+      } catch {
+        toast.error("重命名失败");
+      }
+    }
+    setEditingId(null);
+  };
+
+  const cancelRename = () => setEditingId(null);
+
   const deleteArticle = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -524,9 +554,30 @@ export default function ArticleList() {
 
                       {/* Body — generous padding, clear hierarchy */}
                       <div className="px-6 pt-5 pb-5 flex flex-col gap-3">
-                        <h3 className="text-[15px] font-bold text-fg-primary leading-[1.45] line-clamp-2 min-h-[44px] tracking-tight">
-                          {a.title || "未命名文章"}
-                        </h3>
+                        {editingId === a.id ? (
+                          <input
+                            ref={editInputRef}
+                            autoFocus
+                            value={editingTitle}
+                            onChange={(e) => setEditingTitle(e.target.value)}
+                            onBlur={commitRename}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") commitRename();
+                              if (e.key === "Escape") cancelRename();
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full text-[15px] font-bold text-fg-primary leading-[1.45] min-h-[44px] tracking-tight bg-transparent border-b-2 border-accent outline-none px-0"
+                            placeholder="输入文章标题..."
+                          />
+                        ) : (
+                          <h3
+                            className="text-[15px] font-bold text-fg-primary leading-[1.45] line-clamp-2 min-h-[44px] tracking-tight cursor-text"
+                            onClick={(e) => e.stopPropagation()}
+                            onDoubleClick={(e) => startRename(a.id, a.title, e)}
+                          >
+                            {a.title || "未命名文章"}
+                          </h3>
+                        )}
 
                         <div className="flex items-center flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-fg-muted">
                           <span
