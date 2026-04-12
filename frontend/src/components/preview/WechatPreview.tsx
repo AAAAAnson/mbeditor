@@ -139,12 +139,51 @@ export default function WechatPreview({
     return () => clearTimeout(timer);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const [previewWidth, setPreviewWidth] = useState(375);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleResizeStart = useCallback((side: "left" | "right") => (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = previewWidth;
+    const onMove = (ev: MouseEvent) => {
+      const delta = ev.clientX - startX;
+      const change = side === "right" ? delta : -delta;
+      setPreviewWidth(Math.max(320, Math.min(800, startWidth + change * 2)));
+    };
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, [previewWidth]);
+
   return (
-    <div className="w-full flex flex-col items-center">
-      <div className="w-[375px] shrink-0 rounded-xl overflow-hidden border border-border-primary shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex flex-col">
-        <div className="h-6 bg-surface-tertiary flex items-center justify-between px-2 shrink-0">
+    <div className="w-full flex items-start justify-center">
+      {/* Left resize handle */}
+      <div
+        className="w-3 shrink-0 cursor-col-resize flex items-center justify-center self-stretch max-h-screen sticky top-0 group"
+        onMouseDown={handleResizeStart("left")}
+      >
+        <div className="w-1 h-12 rounded-full bg-fg-muted/20 group-hover:bg-accent group-hover:h-16 transition-all" />
+      </div>
+
+      <div
+        ref={containerRef}
+        className="shrink-0 rounded-xl overflow-hidden border border-border-primary shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex flex-col"
+        style={{ width: `${previewWidth}px` }}
+      >
+        <div className="h-6 bg-surface-tertiary flex items-center justify-between px-3 shrink-0">
           <span className="text-[10px] text-fg-muted font-mono">
             {mode === "raw" ? "原始预览" : "公众号预览"}
+          </span>
+          <span className="text-[10px] text-fg-muted font-mono">
+            {previewWidth}px
           </span>
         </div>
         <iframe
@@ -157,6 +196,14 @@ export default function WechatPreview({
           }}
           title="preview"
         />
+      </div>
+
+      {/* Right resize handle */}
+      <div
+        className="w-3 shrink-0 cursor-col-resize flex items-center justify-center self-stretch max-h-screen sticky top-0 group"
+        onMouseDown={handleResizeStart("right")}
+      >
+        <div className="w-1 h-12 rounded-full bg-fg-muted/20 group-hover:bg-accent group-hover:h-16 transition-all" />
       </div>
     </div>
   );

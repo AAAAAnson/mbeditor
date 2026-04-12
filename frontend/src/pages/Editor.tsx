@@ -38,6 +38,8 @@ export default function EditorPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("split");
   const [mdTheme, setMdTheme] = useState("default");
   const [saved, setSaved] = useState(true);
+  const [splitRatio, setSplitRatio] = useState(0.5);
+  const splitContainerRef = useRef<HTMLDivElement>(null);
   const [publishOpen, setPublishOpen] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const htmlEditorRef = useRef<MonacoEditorHandle>(null);
@@ -176,6 +178,31 @@ export default function EditorPage() {
     };
   }, [rawPreview.html, rawPreview.css]);
 
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const container = splitContainerRef.current;
+    if (!container) return;
+    const startX = e.clientX;
+    const startRatio = splitRatio;
+    const rect = container.getBoundingClientRect();
+
+    const onMove = (ev: MouseEvent) => {
+      const delta = ev.clientX - startX;
+      const newRatio = Math.min(0.8, Math.max(0.2, startRatio + delta / rect.width));
+      setSplitRatio(newRatio);
+    };
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, [splitRatio]);
+
   if (!article) {
     return (
       <div className="flex items-center justify-center h-full bg-bg-primary">
@@ -185,13 +212,13 @@ export default function EditorPage() {
   }
 
   const editorValue = (article[activeTab as keyof Article] as string) || "";
-  // When processed HTML is ready, show it (WYSIWYG); otherwise fall back to raw
   const previewHtml = processedHtml || rawPreview.html;
   const previewCss = processedHtml ? "" : rawPreview.css;
   const previewJs = processedHtml ? "" : rawPreview.js;
 
   const showCode = viewMode === "code" || viewMode === "split";
   const showPreview = viewMode === "preview" || viewMode === "split";
+  const showBoth = showCode && showPreview;
 
   return (
     <div className="h-full flex flex-col bg-bg-primary">
@@ -287,10 +314,13 @@ export default function EditorPage() {
         {/* Center area */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Editor + Preview */}
-          <div className="flex-1 flex min-w-0 overflow-hidden">
+          <div ref={splitContainerRef} className="flex-1 flex min-w-0 overflow-hidden">
             {/* Code editor pane */}
             {showCode && (
-              <div className={`flex flex-col min-w-0 ${showPreview ? "flex-1 border-r border-border-primary" : "flex-1"}`}>
+              <div
+                className="flex flex-col min-w-0 overflow-hidden"
+                style={showBoth ? { width: `${splitRatio * 100}%`, flexShrink: 0 } : { flex: 1 }}
+              >
                 {article.mode === "html" ? (
                   <>
                     <EditorTabs
@@ -326,9 +356,20 @@ export default function EditorPage() {
               </div>
             )}
 
+            {/* Drag handle */}
+            {showBoth && (
+              <div
+                className="w-1 shrink-0 cursor-col-resize bg-border-primary hover:bg-accent active:bg-accent transition-colors"
+                onMouseDown={handleDragStart}
+              />
+            )}
+
             {/* Preview pane */}
             {showPreview && (
-              <div className="flex-1 min-w-[400px] shrink-0 flex flex-col bg-bg-primary overflow-hidden">
+              <div
+                className="flex flex-col bg-bg-primary overflow-hidden"
+                style={showBoth ? { width: `${(1 - splitRatio) * 100}%`, flexShrink: 0 } : { flex: 1 }}
+              >
                 <div className="flex-1 overflow-y-auto overflow-x-auto">
                   <div className="p-8 flex justify-center">
                     <WechatPreview
