@@ -39,12 +39,33 @@ MBEditor 给 Agent 两个承诺：
 - `class` + 外部 `<style>` → 微信会剥光 style 标签
 - `<script>` 任何形式 → 微信会删除
 - `<input>` / `<label>` checkbox hack → 微信会删除
-- `display: grid` → 微信不支持，会退化错乱
-- `position: fixed / absolute` → 不生效
+- ~~`display: grid` → 微信不支持，会退化错乱~~ **已过时**：v4.0 起 publish 流水线正确保留 grid，微信编辑视图完整支持（见下方"Publish Pipeline 已知陷阱"章节）
+- `position: fixed / absolute` → v4.0 起 publish 流水线检测到会转 `display:none`（微信后端全删 `position` 属性），装饰元素**彻底消失**。不要依赖这个做装饰
 - CSS `@keyframes` / `animation` → 依赖 style 标签，会失效
 - `:hover` / `:active` / `::before` / `::after` → 不生效
 
 **正确的 HTML 层写法：所有样式写 inline，不使用任何 class / 外部 CSS。**
+
+**⚠️ 注意：上面几条"100% 失效"都是针对"直接发布原始 HTML 到微信"。MBEditor 的 publish 流水线会帮你自动处理其中大部分**：
+
+| 原始写法 | MBEditor 自动处理（v4.0+） | 结果 |
+|---|---|---|
+| `display:grid` + `grid-template-columns` | **保留** | ✅ 激活正常 |
+| `display:flex` | **保留** | ✅ 激活正常 |
+| `position:absolute` 装饰元素 | 转 `display:none` | ⚠️ 元素不显示（WeChat 后端全删 position）|
+| `<a href="https://外部">` | 转 `<section>` 保留按钮样式 | ⚠️ 失去点击，URL 进"阅读原文" |
+| `opacity:0` + `<script>` scroll-reveal | `opacity:0` → `opacity:1` | ✅ 内容可见 |
+| `transform:translateY(...)` hide | 转 `transform:none` | ✅ 位置正确 |
+| `transition` / `animation` 属性 | 全 strip | ⚠️ 无动画（静态草稿本来也看不见）|
+| `@keyframes` / `@media` / `:hover` / `::before` | 全 strip | ⚠️ 规则被丢 |
+| `class` 属性 | 全删 | ⚠️ 外部 CSS 失效，写 inline |
+
+**Agent 设计建议**：
+- **放心用 grid / flex** 做多列布局，publish 流水线保留完整
+- **不要依赖 `position:absolute` 做装饰**（orb、badge overlay、角标等）——会被 hidden，装饰需求改用 background-image 或 inline flex
+- **下载 / 外链按钮**放末尾当 `<a>`，它会被转 section 保留视觉，真实外链通过公众号"阅读原文"访问（唯一可点击的外部入口）
+- **不要依赖 scroll-reveal / opacity:0 等 JS 动画** 做"首次加载才显示"——publish 流水线虽然把默认状态 unhide 了，但设计意图还是错的
+- **动画只用 SVG SMIL `begin="click"`**，不要用 CSS transition/animation（会被 strip）
 
 ### 问题 2：这个效果是"点击触发、图形装饰、矢量图标、简单动画"吗？
 
@@ -65,10 +86,10 @@ SVG 的 CSS 必须直接写在元素的 `style="..."` 属性里，或作为 `fil
 ### 问题 3：既不能 HTML 表达、也不能 SVG 表达？
 
 **走 Raster 层（栅格化）。** 适用场景：
-- `display: grid` 复杂布局
 - 3D 翻转 / perspective
 - 复杂的 CSS 动画背景
 - 任何你觉得"微信肯定不支持"的花哨效果
+- （~~display:grid~~ 在 v4.0 起不再需要 raster，publish 流水线保留 grid）
 
 Raster 层把你的 HTML+CSS 送到 Playwright 服务端用 headless Chromium 截图成 PNG，上传到微信 CDN，content 里最终只有一个 `<img>` 标签。**代价：** PNG 里的文字用户**不能选中复制**，也不能点击交互。但视觉上 100% 像素级还原。
 
@@ -383,16 +404,22 @@ curl -X PUT http://localhost:7072/api/v1/config \
 - 行高 `1.8` 阅读最舒适
 - 正文字号 `16px`，一级标题 `26px`，二级标题 `22px`，三级标题 `19px`
 
-**禁止（写了会出视觉问题）：**
+**v4.0 起可以用（publish 流水线帮你处理）：**
 
-- ❌ `display: grid`（微信不支持，会变成堆叠）
-- ❌ `position: fixed / absolute / sticky`（不生效）
-- ❌ `transform: rotate() / translate() / scale()`（不稳定）
-- ❌ `@keyframes`、`animation:`（依赖 style 标签）
+- ✅ `display: grid` + `grid-template-columns` + `gap` — 正确保留激活
+- ✅ `display: flex` + 复杂嵌套 — 正确保留
+- ✅ 原 `opacity:0` / `transform:translate` 动画初态 — 自动改为可见状态
+
+**仍禁止（写了会出视觉问题）：**
+
+- ⚠️ `position: fixed / absolute / sticky` — v4.0 publish 会转 `display:none`，装饰元素**彻底消失**。不要用这个做装饰（orb / badge overlay / 角标），改用 background-image / linear-gradient / flex align
+- ❌ `transform: rotate() / scale()`（非 translate） — 不稳定
+- ❌ `@keyframes`、`animation:` — v4.0 publish 直接 strip，没有动画效果（草稿本来也看不见）
+- ❌ `transition:` — 同上 strip
 - ❌ `:hover`、`:active`、`::before`、`::after`（伪类/伪元素不生效）
-- ❌ `flex` 的复杂嵌套（简单水平/垂直排列可以，嵌套 3 层以上不行）
 - ❌ `backdrop-filter`、`mix-blend-mode`（WebView 不支持）
-- ❌ 任何引用 `class` 的选择器
+- ❌ 任何引用 `class` 的选择器（class 属性会被删）
+- ⚠️ `<a href="外部 URL">` — v4.0 publish 会转 `<section>` 保留视觉但失去点击。真正要外链就只有一个"阅读原文"位（`content_source_url`）
 
 **如果用户的设计要求必须用以上禁止写法，你应该把这一块改投到 SVG 层或 Raster 层**，而不是强行写 HTML。
 
@@ -516,3 +543,106 @@ curl -X POST http://localhost:7072/api/v1/publish/draft \
 
 1. **Stage 1 之前（当前）**：告诉用户"这种效果需要栅格化兜底，等 MBEditor 的 raster block 上线后可用。"或者先用 HTML2Canvas 在前端截图上传，作为静态图片插入。
 2. **Stage 5 之后（可用后）**：用 MBDoc 的 `raster` block，传 `{"type":"raster","html":"...","css":"..."}`，后端会自动用 Playwright 渲染为 PNG。
+
+---
+
+## 🛠️ Publish Pipeline 已知陷阱（v4.0 记录）
+
+下面是 2026-04-12 校准 MB 科技测试公众号时踩过的坑。遇到"内容发不出去"、"高度爆炸"、"按钮不见"的症状先查这里。
+
+### 陷阱 1：`.reveal` / scroll-reveal 让内容隐形
+
+**症状**：push 到草稿后，hero / footer 能看到，中间内容（段落、卡片、列表）**全部空白**。
+
+**机制**：源 HTML 有这种 CSS：
+```css
+.reveal{opacity:0;transform:translateY(32px);transition:...;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+```
+和一段 JS `IntersectionObserver` 在滚到视口时加 `.visible`。微信禁 JS，`.visible` 永远不会加，所有 `.reveal` 元素保持 `opacity:0` 永远不可见。
+
+**自动修复**：publish 流水线把 `opacity:0` 改写成 `opacity:1`、`transform:translateY(...)` 改写成 `transform:none`，strip 所有 `transition*` / `animation*`。
+
+**Agent 预防**：不要设计依赖 scroll-reveal / fade-in / slide-up 的视觉效果。静态内容就静态内容，动画只在 SVG 层用 SMIL `begin="click"`。
+
+### 陷阱 2：`position:absolute` 装饰撑爆父容器
+
+**症状**：hero 区域高度从 366 px 暴涨到 1100+ px，floating orbs / 角标 / overlay 按钮跑到容器的正中间挤压正文。
+
+**机制**：微信 MP 后端 ingest 时**把所有 `position` 属性全删**（实测：push 7 个 `position:absolute` + 15 个 `position:relative`，draft 里 0 个）。装饰元素（例如 `<div class="orb">` 220×220 浮动圆球）失去 absolute 后变 static block，占据 220 px 纵向空间。3 个 orb 瞬间加了 660 px。
+
+**自动修复**：publish 流水线检测 `position:absolute|fixed` → 替换 `display:none` + strip `top/right/bottom/left/inset`。装饰性 absolute 元素直接消失。
+
+**Agent 预防**：
+- 不要用 absolute 定位做装饰（orb、角标、overlay badge）
+- 需要装饰图形，用 `background-image` / `background: linear-gradient(...)` / `background-size`
+- 需要角标用 `display:inline-block` + `float:right` 或 flex container 的 `justify-content: space-between`
+- **特殊后果**：publish 流水线会把你的装饰元素完全隐藏。Agent 生成 HTML 时就不要指望 absolute 能工作。
+
+### 陷阱 3：`<a>` 标签全部被微信 strip
+
+**症状**：写在正文里的下载按钮 / 链接按钮视觉上消失；原位是其他内容直接上挤。
+
+**机制**：微信只允许以下三类链接出现在正文：
+1. 小程序跳转
+2. 同公众号历史文章
+3. 底部"阅读原文"（每篇文章只能一个）
+
+任何 `<a href="https://外部">` 都会被 **ingest 时整个元素删除**，连内部文字一起没。
+
+**自动修复**：publish 流水线把 `<a ...>text</a>` 转成 `<section ...>text</section>`，丢弃 `href`/`target`/`rel`/`download` 但保留 inline style（按钮视觉保留）。同时 `_publish_draft_sync` 会抽取原始 HTML 中第一个外部 `<a href="https://...">` 的 URL 塞进草稿的 `content_source_url` 字段，变成公众号"阅读原文"按钮 — 这是读者**唯一能点击的外部入口**。
+
+**Agent 预防**：
+- 下载 / 注册 / 购买按钮写成带 inline 样式的 `<a href="外部 URL">按钮文字</a>`，publish 流水线会帮你保留视觉 + 绑定阅读原文
+- **每篇文章最多一个外部 URL**（`content_source_url` 只能设一个）。如果写了多个 `<a href>`，第一个会被抽取，其余失去点击
+- 需要引导多个外部地址时，文案写"访问 www.xxx.com"让读者手抄/复制，不要依赖 `<a>` 点击
+
+### 陷阱 4：`display:grid` / `display:flex` 能用，以前不能用
+
+2026-04 前的 skill 文档声称 "display:grid → 微信不支持，会退化错乱"。**这条已过时**。实测（2026-04-12）：
+
+- 微信 MP 草稿编辑视图（ProseMirror contenteditable）基于 Chromium 渲染，**完整支持 grid / flex**
+- 只要把 grid rule 写成 inline `style="display:grid; grid-template-columns:1fr 1fr; gap:12px"`，grid 激活正常
+- publish 流水线（premailer + cssutils）正确 inline grid properties
+
+**Agent 可放心用**：多列卡片、数据仪表盘、兼容品牌网格等。但注意 grid item 的 `position:absolute` 子元素（陷阱 2）和 hover 样式（静态不生效）。
+
+### 陷阱 5：host-port shadowing（部署侧）
+
+**症状**：docker compose up 后，镜像内 `config.py` 显示 v4.0.0，但 curl API 返回旧版本号。
+
+**机制**：Windows 主机上有另一个 Python 进程（例如之前手工 `uvicorn` 开的开发后端，或者别的项目）在监听相同端口（例如 7072）。docker 的 vpnkit port proxy 尝试 bind 失败，请求被僵尸 listener 截获。
+
+**排查**：
+```powershell
+Get-NetTCPConnection -LocalPort 7072 -State Listen | ForEach-Object {
+    Get-Process -Id $_.OwningProcess | Select-Object Id,ProcessName,StartTime
+}
+```
+如果看到非 `com.docker.backend` 的进程，kill 它再 `docker compose down && docker compose up -d`。
+
+### 陷阱 6：uvicorn 不用 `--reload` 时缓存旧字节码
+
+**症状**：改了 `publish.py` 后 API 表现仍然是旧逻辑；重启 backend 立刻好。
+
+**机制**：生产用 `uvicorn app.main:app` 启动，进程加载后**不会 reload**。docker 部署下重启容器会正常拉新代码；本地开发直接跑 uvicorn 改完代码要手工 kill 重启。
+
+**开发建议**：本地开发一律用 `uvicorn app.main:app --reload --port 8001`。写自动化测试时用 `scripts/test_publish_direct.py` 绕开 API，直接 import `_process_for_wechat` 避免字节码陷阱。
+
+### 校准工具（踩坑后必备）
+
+- `backend/tests/visual/dump_wechat_computed_styles.py` — 推基线 doc 到草稿并 dump 编辑器视图的完整 computed style 到 JSON。校准视觉一致度的 ground truth。
+- `scripts/test_publish_html.py <html>` — 一条龙：创建 article → 上传 HTML → preview → draft → screenshot。
+- `scripts/compare_source_vs_draft.py <html> <media_id>` — source HTML ↔ draft 草稿 side-by-side 四象限对比。
+- `backend/tests/visual/_artifacts/wechat_computed_styles.json` — 最近一次 dump 的参考数据（letter-spacing 0.578px、padding 0 4px、font-family 完整栈等）。
+
+### 视觉还原度参考（printmaster_wechat_animated.html 基线）
+
+| 阶段 | Draft 高度 | vs source 4564 |
+|---|---|---|
+| 未修复（旧 backend） | 7496 | +64.24% |
+| 修复 reveal hide | 5212 | +14.20% |
+| 修复 absolute→display:none | 4519 | -0.99% |
+| 修复 `<a>`→`<section>` | **4547** | **-0.37%** |
+
+结构还原度 100%，几何还原度 99.6%。剩余的 sub-pixel 字符漂移来自 WeChat 容器的 `letter-spacing: 0.578px`，无法通过 publish 流程消除（需要改源文本）。

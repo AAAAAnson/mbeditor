@@ -64,6 +64,28 @@ def _strip_wechat_unsupported_css(css: str) -> str:
         r'|first-child|last-child|nth-child\([^)]*\))\s*\{[^}]*\}',
         '', css,
     )
+    # ----- Animation/transition properties (no JS in WeChat → useless) ------
+    # opacity:0 / opacity: 0 — kills any "scroll-reveal" pattern that hides
+    # content by default and depends on JS to add a .visible class. WeChat
+    # never runs JS so the content would otherwise be permanently invisible.
+    # We replace with opacity:1 (instead of removing) so any rule cascade
+    # that explicitly sets opacity later still works.
+    css = re.sub(r'opacity\s*:\s*0(?:\.0+)?\s*(?=;|\})', 'opacity:1', css)
+    # transform: translateY/translateX/translate3d/scale that hide-by-offset
+    # rules use to push content off-screen until JS reveals it. Strip any
+    # transform that sets a non-zero translation — keep transforms whose
+    # values are 0/none, since those don't hide.
+    css = re.sub(
+        r'transform\s*:\s*translate[XYxy3d]*\([^)]*\)\s*(?=;|\})',
+        'transform:none',
+        css,
+    )
+    # transition / transition-* / animation / animation-* — all rely on the
+    # browser running over time, but the WeChat draft is a static snapshot.
+    # Strip the whole property so it doesn't trigger sub-pixel layer compose
+    # differences either.
+    css = re.sub(r'(?:^|;)\s*transition[\w-]*\s*:[^;}]*', '', css)
+    css = re.sub(r'(?:^|;)\s*animation[\w-]*\s*:[^;}]*', '', css)
     return css
 
 
@@ -149,6 +171,24 @@ def _sanitize_for_wechat(html: str) -> str:
     html = re.sub(r'<div\b', '<section', html)
     html = re.sub(r'</div>', '</section>', html)
 
+    # ---- <a> → <section> (WeChat strips arbitrary external anchors) --------
+    # WeChat MP backend strips every <a> tag from article body during draft
+    # ingest (verified 2026-04-12: pushed HTML had 1 cta-btn <a>, draft
+    # stored 0 anchors). External URLs cannot be linked from article body —
+    # WeChat only allows in-app navigation links (mini-program / 阅读原文 /
+    # other public-account articles). To preserve the visual button shape,
+    # rewrite each <a> into a <section> that keeps the inline style. The
+    # destination URL is exposed via the publish endpoint's content_source_url
+    # field (the article's "阅读原文" link), set automatically below.
+    def _anchor_to_section(m: re.Match) -> str:
+        attrs = m.group(1)
+        # Drop href / target / rel / download — keep style/title etc.
+        attrs = re.sub(r'\s*(?:href|target|rel|download)\s*=\s*"[^"]*"', '', attrs)
+        attrs = re.sub(r"\s*(?:href|target|rel|download)\s*=\s*'[^']*'", '', attrs)
+        return f'<section{attrs}>'
+    html = re.sub(r'<a\b([^>]*)>', _anchor_to_section, html)
+    html = re.sub(r'</a>', '</section>', html)
+
     # ---- normalize style quotes: premailer may emit style='...' (single)
     # Must escape any inner double quotes to &quot; before swapping the
     # wrapper, otherwise font-family:"PingFang SC","Hiragino Sans GB" gets
@@ -158,6 +198,47 @@ def _sanitize_for_wechat(html: str) -> str:
         return f'style="{inner}"'
 
     html = re.sub(r"style='([^']*)'", _single_to_double_quoted_style, html)
+
+    # ---- strip animation/transition props inside inline styles -------------
+    # premailer has already inlined the source CSS into style="..." attrs,
+    # so stripping rules from the <style> block isn't enough — we also have
+    # to scrub the inline result. Same rationale as
+    # _strip_wechat_unsupported_css: WeChat runs no JS, so any animation
+    # initial-state hide pattern (opacity:0 + transform:translateY(...))
+    # would leave content permanently invisible.
+    #
+    # Also: WeChat's draft ingest STRIPS the `position` property entirely
+    # from every element (verified 2026-04-12 against MB科技 test account).
+    # An element written as `position:absolute; top:-80px; right:-60px`
+    # therefore lands in the draft as a static block, occupying its full
+    # width/height in normal flow. For decorative absolute elements (eg
+    # the .orb floating circles in printmaster_wechat_animated.html) this
+    # ruins the parent layout — three 220×220 orbs added 660 px to the
+    # hero. We pre-emptively replace `position:absolute|fixed` with
+    # `display:none` so these elements are removed from layout rather
+    # than ending up as accidental block boxes.
+    def _scrub_inline(match: re.Match) -> str:
+        s = match.group(1)
+        s = re.sub(r'opacity\s*:\s*0(?:\.0+)?\s*;?', 'opacity:1;', s)
+        s = re.sub(
+            r'transform\s*:\s*translate[XYxy3d]*\([^)]*\)\s*;?',
+            'transform:none;',
+            s,
+        )
+        s = re.sub(r'transition[\w-]*\s*:[^;"]*;?', '', s)
+        s = re.sub(r'animation[\w-]*\s*:[^;"]*;?', '', s)
+        if re.search(r'position\s*:\s*(?:absolute|fixed)', s):
+            # Element relies on absolute/fixed positioning. WeChat will
+            # strip the position property in draft ingest, leaving a stray
+            # block box. Hide it instead.
+            s = re.sub(r'position\s*:\s*(?:absolute|fixed)\s*;?', '', s)
+            s = re.sub(r'(?:^|;)\s*(?:top|right|bottom|left|inset)\s*:[^;"]*;?', '', s)
+            if 'display:none' not in s:
+                s = 'display:none;' + s
+        # tidy up double semicolons / leading whitespace
+        s = re.sub(r';\s*;', ';', s).strip(' ;')
+        return f'style="{s}"'
+    html = re.sub(r'style="([^"]*)"', _scrub_inline, html)
 
     # ---- collapse blank lines ----------------------------------------------
     html = re.sub(r'\n\s*\n', '\n', html)
@@ -279,7 +360,7 @@ def _publish_draft_sync(req_article_id: str, req_author: str, req_digest: str) -
     if comment_match:
         source_url = comment_match.group(1)
     else:
-        url_match = re.search(r'<a\s+href="(https?://[^"]+)"', html)
+        url_match = re.search(r'<a\s[^>]*href="(https?://[^"]+)"', html)
         if url_match:
             source_url = url_match.group(1)
 

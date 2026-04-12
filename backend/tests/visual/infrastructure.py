@@ -47,13 +47,48 @@ _BODY_STYLE_PADDED = (
     "color:#333;"
     "background:#fff;"
 )
+# Match the WeChat MP backend draft edit page chrome (dumped 2026-04-11,
+# see docs/research/RESEARCH_CORRECTIONS.md). The draft edit page wraps
+# .rich_media_content in a <div class="ProseMirror"> contenteditable host
+# that injects two non-obvious properties inherited by every block:
+#   - padding:0 4px + box-sizing:border-box  → 8px horizontal inset on
+#     a 586px-wide column, so the actual text column is 578px
+#   - letter-spacing:0.578px                  → measurably widens every
+#     CJK glyph and shifts paragraph line wraps to the left of the editor
+# Replicating both is required for pixel parity in flush/parity mode. The
+# font-family stack and font-size 17 / line-height 1.6 mirror the
+# .rich_media_content container's computed style so that any element that
+# does not set its own typography (e.g. inline <span> for marks added in
+# later stages) inherits exactly what WeChat does.
 _BODY_STYLE_FLUSH = (
     "margin:0;"
-    "padding:0;"
-    "font-family:-apple-system,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;"
-    "font-size:16px;"
-    "line-height:1.8;"
-    "color:#333;"
+    "padding:0 4px;"
+    "box-sizing:border-box;"
+    # display:flow-root + 1px transparent top border together establish a
+    # BFC that contains BOTH the first child's marginTop (h1: 24px) and
+    # the last child's marginBottom (lastP: 12px) without adding any
+    # padding. The 1px border matches the ~1px residual extent that
+    # WeChat's .rich_media_content shows below its last paragraph.
+    "display:flow-root;"
+    "border-top:1px solid transparent;"
+    "font-family:mp-quote,'PingFang SC',system-ui,-apple-system,BlinkMacSystemFont,"
+    "'Helvetica Neue','Hiragino Sans GB','Microsoft YaHei UI','Microsoft YaHei',Arial,sans-serif;"
+    "font-size:17px;"
+    "line-height:1.6;"
+    "letter-spacing:0.578px;"
+    "color:rgba(0,0,0,0.9);"
+    "text-align:justify;"
+    # ProseMirror contenteditable injects these (dumped 2026-04-11):
+    # word-break:break-word + overflow-wrap:break-word affect how
+    # text-align:justify distributes space around Latin words like
+    # "margin-bottom" — without them the editor places ~17 rows of
+    # sub-pixel character offsets that don't match the WeChat draft.
+    # white-space is kept default (NOT break-spaces) because the latter
+    # turns inter-tag whitespace in render_for_wechat into visible lines.
+    "word-break:break-word;"
+    "overflow-wrap:break-word;"
+    "hyphens:auto;"
+    "font-feature-settings:'liga' 0;"
     "background:#fff;"
 )
 
@@ -96,11 +131,23 @@ def render_mbdoc_to_screenshot(
     ctx = RenderContext(upload_images=False)
     fragment = render_for_wechat(doc, ctx)
 
+    if flush:
+        # render_for_wechat joins blocks with "\n". WeChat's MP backend
+        # strips those inter-block newlines when ingesting the draft, but
+        # white-space:break-spaces on the editor body would render them as
+        # extra blank lines. Strip them here so the parity wrapper matches
+        # WeChat's visible content exactly.
+        fragment = fragment.replace("\n", "")
+
     body_style = _BODY_STYLE_FLUSH if flush else _BODY_STYLE_PADDED
+    body_attrs = (
+        f'style="{body_style}" contenteditable="true"' if flush
+        else f'style="{body_style}"'
+    )
     wrapper_html = (
         "<!DOCTYPE html>"
         "<html>"
-        f'<body style="{body_style}">'
+        f'<body {body_attrs}>'
         f"{fragment}"
         "</body>"
         "</html>"
@@ -111,9 +158,32 @@ def render_mbdoc_to_screenshot(
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
         page = browser.new_page()
-        page.set_viewport_size({"width": width, "height": 800})
-        page.set_content(wrapper_html, wait_until="networkidle")
-        page.screenshot(path=str(out_path), full_page=True)
+        if flush:
+            # Parity mode: use the same desktop viewport as
+            # screenshot_wechat_draft (1440×900) so that Chromium's
+            # sub-pixel font hinting matches the WeChat draft screenshot.
+            # Body width is constrained to ``width`` via inline CSS so the
+            # text column matches the WeChat .rich_media_content geometry.
+            page.set_viewport_size({"width": 1440, "height": 900})
+        else:
+            page.set_viewport_size({"width": width, "height": 800})
+        # In flush/parity mode constrain the body to the parity column
+        # width (586px). The body still has padding 1px 4px 0 from
+        # _BODY_STYLE_FLUSH which together with box-sizing:border-box
+        # leaves a 578px text column matching ProseMirror's inset.
+        if flush:
+            wrapper_html_eff = wrapper_html.replace(
+                f'style="{body_style}"',
+                f'style="{body_style}width:{width}px;"',
+            )
+            assert "width:" in wrapper_html_eff, "body width injection failed"
+        else:
+            wrapper_html_eff = wrapper_html
+        page.set_content(wrapper_html_eff, wait_until="networkidle")
+        if flush:
+            page.locator("body").screenshot(path=str(out_path))
+        else:
+            page.screenshot(path=str(out_path), full_page=True)
         browser.close()
 
     return out_path
