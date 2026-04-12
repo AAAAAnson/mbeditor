@@ -170,6 +170,24 @@ def process_html_images(html: str, images_dir: str) -> str:
                 logger.warning(f"Failed to upload image {src[:80]}: {e}")
                 return match.group(0)
 
+        if src.startswith("data:image/"):
+            try:
+                import base64 as b64mod
+                # Parse data URI: data:image/png;base64,xxxx
+                header, b64data = src.split(",", 1)
+                mime = header.split(";")[0].removeprefix("data:")
+                ext = mime.split("/")[-1].replace("jpeg", "jpg").replace("svg+xml", "svg")
+                img_bytes = b64mod.b64decode(b64data)
+                fname = f"inline_image.{ext}"
+                img_bytes, fname = _convert_to_png(img_bytes, fname)
+                wx_url = upload_image_to_wechat(img_bytes, fname)
+                _wx_image_cache[src] = wx_url
+                logger.info(f"Uploaded base64 image ({len(b64data)} chars) -> {wx_url[:60]}")
+                return f'src="{wx_url}"'
+            except Exception as e:
+                logger.warning(f"Failed to upload base64 image: {e}")
+                return match.group(0)
+
         if local_path and local_path.exists():
             img_bytes = local_path.read_bytes()
             fname = local_path.name
