@@ -46,3 +46,10 @@ CLAUDE.md
 # Playwright visual test artifacts and auth state
 backend/tests/visual/.auth/
 backend/tests/visual/_artifacts/
+
+# graphify
+.graphify_*
+graphify-out/
+
+.omx/
+.claude/
