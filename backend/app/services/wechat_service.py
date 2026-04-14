@@ -10,6 +10,20 @@ from app.core.exceptions import AppError
 
 _token_cache: dict = {"access_token": "", "expires_at": 0}
 _wx_image_cache: dict[str, str] = {}  # local_path -> wechat_url
+_proxy_client_cache: dict = {}  # proxy_url -> httpx.Client
+
+
+def get_http_client() -> httpx.Client:
+    config = load_config()
+    proxy = config.get("proxy_url") or None
+    cache_key = proxy or "__no_proxy__"
+
+    if cache_key not in _proxy_client_cache:
+        _proxy_client_cache[cache_key] = httpx.Client(
+            proxy=proxy,
+            timeout=30,
+        )
+    return _proxy_client_cache[cache_key]
 
 
 def _config_path() -> Path:
@@ -23,8 +37,8 @@ def load_config() -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def save_config(appid: str, appsecret: str) -> dict:
-    config = {"appid": appid, "appsecret": appsecret}
+def save_config(appid: str, appsecret: str, proxy_url: str = "") -> dict:
+    config = {"appid": appid, "appsecret": appsecret, "proxy_url": proxy_url}
     path = _config_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(config, ensure_ascii=False), encoding="utf-8")
@@ -43,14 +57,19 @@ def get_access_token(force_refresh: bool = False) -> str:
     unless force_refresh is set. This is WeChat's official recommended
     approach since 2023.
     """
-    if not force_refresh and _token_cache["access_token"] and time.time() < _token_cache["expires_at"]:
+    if (
+        not force_refresh
+        and _token_cache["access_token"]
+        and time.time() < _token_cache["expires_at"]
+    ):
         return _token_cache["access_token"]
 
     config = load_config()
     if not config.get("appid") or not config.get("appsecret"):
         raise AppError(code=400, message="WeChat AppID/AppSecret not configured")
 
-    resp = httpx.post(
+    client = get_http_client()
+    resp = client.post(
         "https://api.weixin.qq.com/cgi-bin/stable_token",
         json={
             "grant_type": "client_credential",
@@ -58,11 +77,12 @@ def get_access_token(force_refresh: bool = False) -> str:
             "secret": config["appsecret"],
             "force_refresh": force_refresh,
         },
-        timeout=10,
     )
     data = resp.json()
     if "access_token" not in data:
-        raise AppError(code=500, message=f"WeChat token error: {data.get('errmsg', 'unknown')}")
+        raise AppError(
+            code=500, message=f"WeChat token error: {data.get('errmsg', 'unknown')}"
+        )
 
     _token_cache["access_token"] = data["access_token"]
     _token_cache["expires_at"] = time.time() + data.get("expires_in", 7200) - 300
@@ -74,7 +94,15 @@ def _is_invalid_credential(data: dict) -> bool:
     return data.get("errcode") in (40001, 42001, 40014)
 
 
-def _post_with_token_retry(url_fmt: str, *, files=None, json_body=None, success_key: str, err_label: str, timeout: int = 30) -> dict:
+def _post_with_token_retry(
+    url_fmt: str,
+    *,
+    files=None,
+    json_body=None,
+    success_key: str,
+    err_label: str,
+    timeout: int = 30,
+) -> dict:
     """POST to a WeChat API that takes access_token in the query string, with
     automatic force-refresh + single retry on token-invalid errors (40001 etc).
     url_fmt must contain a single `{token}` placeholder.
@@ -82,10 +110,11 @@ def _post_with_token_retry(url_fmt: str, *, files=None, json_body=None, success_
     for attempt in (0, 1):
         token = get_access_token(force_refresh=(attempt == 1))
         url = url_fmt.format(token=token)
+        client = get_http_client()
         if files is not None:
-            resp = httpx.post(url, files=files, timeout=timeout)
+            resp = client.post(url, files=files)
         else:
-            resp = httpx.post(url, json=json_body, timeout=timeout)
+            resp = client.post(url, json=json_body)
         data = resp.json()
         if success_key in data:
             return data
@@ -93,7 +122,9 @@ def _post_with_token_retry(url_fmt: str, *, files=None, json_body=None, success_
             _token_cache["access_token"] = ""
             _token_cache["expires_at"] = 0
             continue
-        raise AppError(code=500, message=f"{err_label}: {data.get('errmsg', 'unknown')}")
+        raise AppError(
+            code=500, message=f"{err_label}: {data.get('errmsg', 'unknown')}"
+        )
     raise AppError(code=500, message=f"{err_label}: retry exhausted")
 
 
@@ -124,6 +155,7 @@ def _convert_to_png(img_bytes: bytes, filename: str) -> tuple[bytes, str]:
         try:
             from PIL import Image
             import io
+
             img = Image.open(io.BytesIO(img_bytes))
             if img.mode in ("RGBA", "P"):
                 img = img.convert("RGBA")
@@ -139,6 +171,7 @@ def _convert_to_png(img_bytes: bytes, filename: str) -> tuple[bytes, str]:
 
 def process_html_images(html: str, images_dir: str) -> str:
     import logging
+
     logger = logging.getLogger(__name__)
 
     def replace_src(match: re.Match) -> str:
@@ -153,9 +186,12 @@ def process_html_images(html: str, images_dir: str) -> str:
             local_path = Path(images_dir) / src.removeprefix("/images/")
         elif src.startswith("http"):
             try:
-                resp = httpx.get(
-                    src, timeout=20,
-                    headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
+                client = get_http_client()
+                resp = client.get(
+                    src,
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                    },
                     follow_redirects=True,
                 )
                 resp.raise_for_status()
@@ -173,16 +209,21 @@ def process_html_images(html: str, images_dir: str) -> str:
         if src.startswith("data:image/"):
             try:
                 import base64 as b64mod
+
                 # Parse data URI: data:image/png;base64,xxxx
                 header, b64data = src.split(",", 1)
                 mime = header.split(";")[0].removeprefix("data:")
-                ext = mime.split("/")[-1].replace("jpeg", "jpg").replace("svg+xml", "svg")
+                ext = (
+                    mime.split("/")[-1].replace("jpeg", "jpg").replace("svg+xml", "svg")
+                )
                 img_bytes = b64mod.b64decode(b64data)
                 fname = f"inline_image.{ext}"
                 img_bytes, fname = _convert_to_png(img_bytes, fname)
                 wx_url = upload_image_to_wechat(img_bytes, fname)
                 _wx_image_cache[src] = wx_url
-                logger.info(f"Uploaded base64 image ({len(b64data)} chars) -> {wx_url[:60]}")
+                logger.info(
+                    f"Uploaded base64 image ({len(b64data)} chars) -> {wx_url[:60]}"
+                )
                 return f'src="{wx_url}"'
             except Exception as e:
                 logger.warning(f"Failed to upload base64 image: {e}")
@@ -210,8 +251,12 @@ def _generate_default_cover(title: str) -> bytes:
     draw = ImageDraw.Draw(img)
     # Simple centered title text
     try:
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)
-        small_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
+        font = ImageFont.truetype(
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36
+        )
+        small_font = ImageFont.truetype(
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18
+        )
     except (OSError, IOError):
         font = ImageFont.load_default()
         small_font = font
@@ -227,8 +272,16 @@ def _generate_default_cover(title: str) -> bytes:
     return buf.getvalue()
 
 
-def create_draft(title: str, html: str, author: str = "", digest: str = "", thumb_media_id: str = "", content_source_url: str = "") -> dict:
+def create_draft(
+    title: str,
+    html: str,
+    author: str = "",
+    digest: str = "",
+    thumb_media_id: str = "",
+    content_source_url: str = "",
+) -> dict:
     import logging
+
     logger = logging.getLogger(__name__)
 
     if not thumb_media_id:
