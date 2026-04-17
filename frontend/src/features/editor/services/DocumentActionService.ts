@@ -64,6 +64,15 @@ export interface PublishArticleResult {
   message: string;
 }
 
+function isWechatConfigMissingMessage(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("wechat appid/appsecret not configured") ||
+    normalized.includes("appid/appsecret not configured") ||
+    normalized.includes("not configured")
+  );
+}
+
 function getErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message) {
     return error.message;
@@ -234,14 +243,19 @@ export async function copyProjectedArticleRichText(
           html,
           stage: "upload",
         };
-  } catch {
+  } catch (error: unknown) {
     const html = fallbackHtml ?? article.html;
     const copied = await writeHtmlToClipboard(html);
+    const errorMessage = getErrorMessage(error, "");
+    const fallbackMessage = isWechatConfigMissingMessage(errorMessage)
+      ? "已复制，但未配置微信公众号，Bridge MBDoc 已回退到本地 HTML。"
+      : "已复制，但 Bridge MBDoc 上传失败，已回退到本地 HTML。";
+
     return copied
       ? {
           kind: "warn",
           copied: true,
-          message: "已复制，但 Bridge MBDoc 上传失败，已回退到本地 HTML。",
+          message: fallbackMessage,
           html,
           stage: "fallback",
         }
@@ -260,7 +274,10 @@ export async function exportArticleHtml(
   processedHtml?: string,
 ): Promise<void> {
   const bodyHtml = await resolvePreviewHtml(article, processedHtml);
-  downloadHtml(`${article.title || "article"}.html`, buildHtmlDocument(article.title, bodyHtml));
+  downloadHtml(
+    `${article.title || "article"}.html`,
+    buildHtmlDocument(article.title, bodyHtml),
+  );
 }
 
 export async function saveArticleDraft(

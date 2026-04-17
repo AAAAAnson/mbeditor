@@ -141,6 +141,26 @@ def test_render_missing_mbdoc_returns_404(client: TestClient):
     assert resp.status_code == 404
 
 
+def test_project_render_route_is_not_captured_by_dynamic_mbdoc_id(client: TestClient):
+    payload = {
+        "id": "article-projection-1",
+        "title": "Projected Article",
+        "mode": "html",
+        "html": "<p>Hello projected route</p>",
+        "css": "",
+        "js": "",
+        "markdown": "",
+        "cover": "",
+        "author": "",
+        "digest": "",
+    }
+    resp = client.post("/api/v1/mbdoc/project/render?upload_images=false", json=payload)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["data"]["projected"] is True
+    assert "Hello projected route" in body["data"]["html"]
+
+
 def test_create_mbdoc_validation_error(client: TestClient):
     """Invalid payload returns 422."""
     bad = {"id": "x", "blocks": [{"id": "b", "type": "heading", "level": 99}]}

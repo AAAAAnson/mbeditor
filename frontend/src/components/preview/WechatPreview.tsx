@@ -9,17 +9,6 @@ interface WechatPreviewProps {
   onHtmlChange?: (html: string) => void;
 }
 
-/**
- * WeChat article preview iframe.
- *
- * Renders the provided HTML inside an iframe that mimics the WeChat mobile
- * article view (375px width, PingFang font, line-height 1.8).
- *
- * Post-Stage-0 invariant: the HTML written into the iframe body is EXACTLY
- * what the caller passes in. No second-pass HTML rewriting is permitted here;
- * any transformation must happen upstream in the renderForWechat pipeline so
- * that preview, copy, and draft-box outputs are byte-identical.
- */
 export default function WechatPreview({
   html,
   css,
@@ -33,13 +22,8 @@ export default function WechatPreview({
   const lastSemanticKey = useRef("");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [iframeHeight, setIframeHeight] = useState(400);
-
-  // Post-Stage-0: in wechat mode the iframe body is unconditionally
-  // contenteditable so that preview == final output. Upstream (Editor.tsx)
-  // controls whether onHtmlChange is wired.
   const editable = mode === "wechat";
 
-  // Listen for iframe resize messages (validate source to prevent spoofing).
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (e.source !== iframeRef.current?.contentWindow) return;
@@ -54,11 +38,6 @@ export default function WechatPreview({
     return () => window.removeEventListener("message", handler);
   }, []);
 
-  // NOTE: if `onHtmlChange` is an unstable reference (inline lambda), every
-  // parent render reconstructs this callback, which re-runs the sync effect
-  // below and redraws the iframe. Callers SHOULD memoize onHtmlChange via
-  // useCallback. This is not fixed in Stage 0 — Stage 1 may refactor the
-  // write path into a ref-based side effect to sever the dep.
   const writeToIframe = useCallback(
     (content: string, canEdit: boolean) => {
       const iframe = iframeRef.current;
@@ -67,9 +46,6 @@ export default function WechatPreview({
       const doc = iframe.contentDocument;
       if (!doc) return;
 
-      // The iframe chrome (font, padding, line-height) mimics the WeChat
-      // article reader page. It is NOT part of the content — it is the
-      // viewport. The content HTML is written AS-IS into body.
       const fullHtml = `<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <style>
@@ -121,17 +97,15 @@ export default function WechatPreview({
         });
       }
     },
-    [css, js, onHtmlChange]
+    [css, js, onHtmlChange],
   );
 
-  // Sync external html changes.
   useEffect(() => {
     if (isUserEditing.current) return;
     if (html === lastSetHtml.current) return;
     writeToIframe(html, editable);
   }, [html, editable, writeToIframe]);
 
-  // Initial write on mount.
   useEffect(() => {
     const timer = setTimeout(() => {
       writeToIframe(html, editable);
@@ -142,30 +116,32 @@ export default function WechatPreview({
   const [previewWidth, setPreviewWidth] = useState(375);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleResizeStart = useCallback((side: "left" | "right") => (e: React.MouseEvent) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const startWidth = previewWidth;
-    const onMove = (ev: MouseEvent) => {
-      const delta = ev.clientX - startX;
-      const change = side === "right" ? delta : -delta;
-      setPreviewWidth(Math.max(320, Math.min(800, startWidth + change * 2)));
-    };
-    const onUp = () => {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
-  }, [previewWidth]);
+  const handleResizeStart = useCallback(
+    (side: "left" | "right") => (e: React.MouseEvent) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startWidth = previewWidth;
+      const onMove = (ev: MouseEvent) => {
+        const delta = ev.clientX - startX;
+        const change = side === "right" ? delta : -delta;
+        setPreviewWidth(Math.max(320, Math.min(800, startWidth + change * 2)));
+      };
+      const onUp = () => {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      };
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    },
+    [previewWidth],
+  );
 
   return (
     <div className="w-full flex items-start justify-center">
-      {/* Left resize handle */}
       <div
         className="w-3 shrink-0 cursor-col-resize flex items-center justify-center self-stretch max-h-screen sticky top-0 group"
         onMouseDown={handleResizeStart("left")}
@@ -198,7 +174,6 @@ export default function WechatPreview({
         />
       </div>
 
-      {/* Right resize handle */}
       <div
         className="w-3 shrink-0 cursor-col-resize flex items-center justify-center self-stretch max-h-screen sticky top-0 group"
         onMouseDown={handleResizeStart("right")}

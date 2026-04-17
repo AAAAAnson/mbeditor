@@ -12,7 +12,7 @@ export async function projectArticleToMBDoc(
     `/mbdoc/project/article/${articleId}?persist=${String(persist)}`,
   );
   if (response.data.code !== 0) {
-    throw new Error(response.data.message || "Failed to project article to MBDoc");
+    throw new Error(response.data.message || "投影文章到 MBDoc 失败。");
   }
   return response.data.data;
 }
@@ -41,7 +41,7 @@ export async function renderProjectedArticleAsMBDoc(
     sourceArticle,
   );
   if (response.data.code !== 0) {
-    throw new Error(response.data.message || "Failed to render projected article as MBDoc");
+    throw new Error(response.data.message || "Bridge MBDoc 渲染失败。");
   }
   return response.data.data.html;
 }
@@ -71,7 +71,7 @@ export async function publishProjectedArticleAsMBDoc(
     { timeout: timeoutMs },
   );
   if (response.data.code !== 0) {
-    throw new Error(response.data.message || "Failed to publish projected article as MBDoc");
+    throw new Error(response.data.message || "Bridge MBDoc 发布失败。");
   }
   return response.data.data;
 }

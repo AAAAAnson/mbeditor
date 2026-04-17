@@ -4,11 +4,17 @@ import {
   buildArticleUpdatePayload,
   buildHtmlDocument,
   copyArticleRichText,
+  copyProjectedArticleRichText,
 } from "../DocumentActionService";
 
-const { mockPost, mockWriteHtmlToClipboard } = vi.hoisted(() => ({
+const {
+  mockPost,
+  mockWriteHtmlToClipboard,
+  mockRenderProjectedArticleAsMBDoc,
+} = vi.hoisted(() => ({
   mockPost: vi.fn(),
   mockWriteHtmlToClipboard: vi.fn(),
+  mockRenderProjectedArticleAsMBDoc: vi.fn(),
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -19,6 +25,11 @@ vi.mock("@/lib/api", () => ({
 
 vi.mock("@/hooks/useClipboard", () => ({
   writeHtmlToClipboard: mockWriteHtmlToClipboard,
+}));
+
+vi.mock("@/features/editor/api/mbdocApi", () => ({
+  renderProjectedArticleAsMBDoc: mockRenderProjectedArticleAsMBDoc,
+  publishProjectedArticleAsMBDoc: vi.fn(),
 }));
 
 const article: Article = {
@@ -40,6 +51,7 @@ describe("DocumentActionService", () => {
   beforeEach(() => {
     mockPost.mockReset();
     mockWriteHtmlToClipboard.mockReset();
+    mockRenderProjectedArticleAsMBDoc.mockReset();
   });
 
   it("builds an article update payload by merging metadata overrides", () => {
@@ -83,8 +95,41 @@ describe("DocumentActionService", () => {
       kind: "warn",
       copied: true,
       html: "<p>Processed</p>",
+      message: "已复制，但微信配置缺失，图片可能无法显示。",
     });
 
     expect(mockWriteHtmlToClipboard).toHaveBeenCalledWith("<p>Processed</p>");
+  });
+
+  it("shows a clear Chinese fallback message when Bridge MBDoc is not configured", async () => {
+    mockRenderProjectedArticleAsMBDoc.mockRejectedValueOnce(
+      new Error("WeChat AppID/AppSecret not configured"),
+    );
+    mockWriteHtmlToClipboard.mockResolvedValueOnce(true);
+
+    await expect(
+      copyProjectedArticleRichText(article, "<p>Processed Bridge</p>"),
+    ).resolves.toMatchObject({
+      kind: "warn",
+      copied: true,
+      html: "<p>Processed Bridge</p>",
+      message: "已复制，但未配置微信公众号，Bridge MBDoc 已回退到本地 HTML。",
+    });
+  });
+
+  it("keeps the generic Bridge fallback message for non-config upload failures", async () => {
+    mockRenderProjectedArticleAsMBDoc.mockRejectedValueOnce(
+      new Error("WeChat upload error: timeout"),
+    );
+    mockWriteHtmlToClipboard.mockResolvedValueOnce(true);
+
+    await expect(
+      copyProjectedArticleRichText(article, "<p>Processed Bridge</p>"),
+    ).resolves.toMatchObject({
+      kind: "warn",
+      copied: true,
+      html: "<p>Processed Bridge</p>",
+      message: "已复制，但 Bridge MBDoc 上传失败，已回退到本地 HTML。",
+    });
   });
 });

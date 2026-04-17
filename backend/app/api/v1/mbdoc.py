@@ -76,62 +76,6 @@ async def list_mbdocs():
     return success(summaries)
 
 
-@router.get("/{mbdoc_id}")
-async def get_mbdoc(mbdoc_id: str):
-    try:
-        doc = _storage().get(mbdoc_id)
-    except MBDocNotFoundError:
-        raise HTTPException(status_code=404, detail=f"MBDoc not found: {mbdoc_id}")
-    return success(doc.model_dump())
-
-
-@router.put("/{mbdoc_id}")
-async def update_mbdoc(mbdoc_id: str, doc: MBDoc):
-    if doc.id != mbdoc_id:
-        raise HTTPException(
-            status_code=400,
-            detail=f"MBDoc id mismatch: path={mbdoc_id!r} body={doc.id!r}",
-        )
-    _storage().save(doc)
-    return success(doc.model_dump())
-
-
-@router.delete("/{mbdoc_id}")
-async def delete_mbdoc(mbdoc_id: str):
-    try:
-        _storage().delete(mbdoc_id)
-    except MBDocNotFoundError:
-        raise HTTPException(status_code=404, detail=f"MBDoc not found: {mbdoc_id}")
-    return success({"id": mbdoc_id})
-
-
-@router.post("/{mbdoc_id}/render")
-async def render_mbdoc(
-    mbdoc_id: str,
-    upload_images: bool = Query(
-        default=False,
-        description="When true, renderers should swap image src to WeChat CDN URLs.",
-    ),
-):
-    """Render an MBDoc to final HTML.
-
-    Stage 1: ``upload_images`` is accepted but no real uploader is wired.
-    Text-only docs yield identical HTML for both values. Stage 3 adds
-    the real uploader for image blocks.
-    """
-    try:
-        doc = _storage().get(mbdoc_id)
-    except MBDocNotFoundError:
-        raise HTTPException(status_code=404, detail=f"MBDoc not found: {mbdoc_id}")
-
-    ctx = RenderContext(
-        upload_images=upload_images,
-        image_uploader=_image_uploader_for(upload_images),
-    )
-    html = render_for_wechat(doc, ctx)
-    return success({"html": html, "uploaded_images": upload_images})
-
-
 @router.post("/project/article/{article_id}")
 async def project_article_to_mbdoc(
     article_id: str,
@@ -204,3 +148,59 @@ async def publish_projected_article_payload_as_mbdoc(
         digest=article.get("digest", ""),
     )
     return success(result)
+
+
+@router.get("/{mbdoc_id}")
+async def get_mbdoc(mbdoc_id: str):
+    try:
+        doc = _storage().get(mbdoc_id)
+    except MBDocNotFoundError:
+        raise HTTPException(status_code=404, detail=f"MBDoc not found: {mbdoc_id}")
+    return success(doc.model_dump())
+
+
+@router.put("/{mbdoc_id}")
+async def update_mbdoc(mbdoc_id: str, doc: MBDoc):
+    if doc.id != mbdoc_id:
+        raise HTTPException(
+            status_code=400,
+            detail=f"MBDoc id mismatch: path={mbdoc_id!r} body={doc.id!r}",
+        )
+    _storage().save(doc)
+    return success(doc.model_dump())
+
+
+@router.delete("/{mbdoc_id}")
+async def delete_mbdoc(mbdoc_id: str):
+    try:
+        _storage().delete(mbdoc_id)
+    except MBDocNotFoundError:
+        raise HTTPException(status_code=404, detail=f"MBDoc not found: {mbdoc_id}")
+    return success({"id": mbdoc_id})
+
+
+@router.post("/{mbdoc_id}/render")
+async def render_mbdoc(
+    mbdoc_id: str,
+    upload_images: bool = Query(
+        default=False,
+        description="When true, renderers should swap image src to WeChat CDN URLs.",
+    ),
+):
+    """Render an MBDoc to final HTML.
+
+    Stage 1: ``upload_images`` is accepted but no real uploader is wired.
+    Text-only docs yield identical HTML for both values. Stage 3 adds
+    the real uploader for image blocks.
+    """
+    try:
+        doc = _storage().get(mbdoc_id)
+    except MBDocNotFoundError:
+        raise HTTPException(status_code=404, detail=f"MBDoc not found: {mbdoc_id}")
+
+    ctx = RenderContext(
+        upload_images=upload_images,
+        image_uploader=_image_uploader_for(upload_images),
+    )
+    html = render_for_wechat(doc, ctx)
+    return success({"html": html, "uploaded_images": upload_images})

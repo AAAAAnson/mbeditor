@@ -5,7 +5,7 @@ import type { ArticleUpdatePayload } from "@/features/editor/types";
 export async function fetchArticle(articleId: string): Promise<Article> {
   const response = await api.get<ApiResponse<Article>>(`/articles/${articleId}`);
   if (response.data.code !== 0) {
-    throw new Error(response.data.message || "Failed to load article");
+    throw new Error(response.data.message || "加载文章失败。");
   }
   return response.data.data;
 }

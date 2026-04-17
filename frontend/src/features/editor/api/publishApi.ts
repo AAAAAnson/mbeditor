@@ -8,7 +8,7 @@ interface PreviewResponse {
 export async function previewWechatHtml(html: string, css: string): Promise<string> {
   const response = await api.post<ApiResponse<PreviewResponse>>("/publish/preview", { html, css });
   if (response.data.code !== 0) {
-    throw new Error(response.data.message || "Failed to preview article");
+    throw new Error(response.data.message || "生成公众号预览失败。");
   }
   return response.data.data.html;
 }
