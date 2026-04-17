@@ -1,9 +1,12 @@
 """
 Baseline tests for _sanitize_for_wechat.
 
-After Stage 0, this function should ONLY strip tags that WeChat's backend
-renderer removes (script, style, link, input, label, class attr, data-* attr).
-It should NOT rewrite CSS values, delete positioning, etc.
+Contract (post 2026-04-17 refactor - drift-prevention allowlist):
+  The sanitizer strips both unsafe tags AND CSS properties that WeChat's
+  paste-handler and draft-API server-filter treat inconsistently. Flex,
+  grid, absolute positioning, animations, transforms, and friends all get
+  dropped so that "copy to WeChat backend" and "push via /draft/add"
+  produce the same rendered output.
 """
 import pytest
 
@@ -52,27 +55,30 @@ def test_converts_div_to_section():
     assert "<div" not in result
 
 
-def test_preserves_inline_style_grid():
-    """Stage-0 rule: sanitizer MUST NOT rewrite display:grid."""
+def test_strips_display_grid():
+    """Allowlist rule: display:grid is dropped - values are constrained to block/inline/inline-block/none/table-*."""
     html = '<section style="display:grid;color:red;">hi</section>'
     result = _sanitize_for_wechat(html)
-    assert "display:grid" in result
-    assert "display:block" not in result
+    assert "display:grid" not in result
+    # The color survives; the grid declaration is dropped entirely.
+    assert "color:red" in result
 
 
-def test_preserves_position_absolute():
-    """Stage-0 rule: sanitizer MUST NOT strip position:absolute.
-    If the user writes it, we send it. Failing at runtime is WeChat's problem,
-    not ours — we don't silently mutate authored intent."""
+def test_strips_position_absolute_and_hides_element():
+    """Allowlist rule: position:absolute is hidden via display:none to avoid
+    overlap with flow content when WeChat strips it server-side."""
     html = '<section style="position:absolute;top:0;left:0;">hi</section>'
     result = _sanitize_for_wechat(html)
-    assert "position:absolute" in result
-    assert "top:0" in result
-    assert "left:0" in result
+    assert "position:absolute" not in result
+    # top/left are also stripped because they depend on positioning
+    assert "top:0" not in result
+    assert "left:0" not in result
+    assert "display:none" in result
 
 
-def test_preserves_animation():
-    """Stage-0 rule: sanitizer MUST NOT strip animation property."""
+def test_strips_animation():
+    """Allowlist rule: animation is dropped - neither WeChat surface honors it."""
     html = '<section style="animation:fadeIn 1s;color:red;">hi</section>'
     result = _sanitize_for_wechat(html)
-    assert "animation:fadeIn" in result
+    assert "animation" not in result
+    assert "color:red" in result
