@@ -3,7 +3,6 @@ import { Code, LayoutGrid, Columns2, Eye, Send, Settings } from "lucide-react";
 
 interface EditorHeaderProps {
   title: string;
-  mode: "html" | "markdown";
   viewMode: "code" | "split" | "preview";
   onViewModeChange: (mode: "code" | "split" | "preview") => void;
   onPreview: () => void;
@@ -12,7 +11,7 @@ interface EditorHeaderProps {
 
 const viewModes = [
   { key: "code" as const, label: "代码", icon: Code },
-  { key: "split" as const, label: "分屏", icon: LayoutGrid },
+  { key: "split" as const, label: "分栏", icon: LayoutGrid },
   { key: "preview" as const, label: "预览", icon: Columns2 },
 ];
 
@@ -24,9 +23,9 @@ export default function EditorHeader({
   onPublish,
 }: EditorHeaderProps) {
   const navigate = useNavigate();
+
   return (
     <header className="h-[52px] bg-bg-primary border-b border-border-primary px-4 flex items-center justify-between shrink-0">
-      {/* Left: Logo + Breadcrumb */}
       <div className="flex items-center gap-3.5">
         <Link
           to="/"
@@ -36,14 +35,13 @@ export default function EditorHeader({
           MBEditor
         </Link>
         <div className="flex items-center gap-1.5">
-          <span className="text-border-secondary select-none">›</span>
+          <span className="text-border-secondary select-none">/</span>
           <span className="text-xs text-fg-secondary truncate max-w-[200px]">
-            {title}
+            {title || "未命名文章"}
           </span>
         </div>
       </div>
 
-      {/* Center: View mode tabs */}
       <div className="flex items-center bg-surface-secondary border border-border-primary rounded-lg p-[3px] gap-0.5">
         {viewModes.map(({ key, label, icon: Icon }) => {
           const isActive = viewMode === key;
@@ -64,7 +62,6 @@ export default function EditorHeader({
         })}
       </div>
 
-      {/* Right: Preview + Publish + Avatar */}
       <div className="flex items-center gap-1.5">
         <button
           onClick={onPreview}

@@ -13,11 +13,9 @@ import WechatPreview from "../WechatPreview";
  * - iframe content rendering (requires async DOM write tracking)
  * - postMessage-driven height synchronization (requires async event plumbing)
  *
- * The 375px wrapper class selector is deliberately coupled to the Tailwind
- * class `w-[375px]`. This is acceptable because the 375px mobile-simulation
- * width is a fixed design constant of this component — if a refactor changes
- * HOW the width is applied, the test SHOULD fail so a human re-confirms the
- * intent is preserved.
+ * The 375px preview width is a fixed design constant of this component.
+ * This test is intentionally coupled to that contract, but not to a specific
+ * Tailwind class implementation.
  */
 describe("WechatPreview contract (baseline freeze)", () => {
   it("renders an iframe with title='preview'", () => {
@@ -33,9 +31,10 @@ describe("WechatPreview contract (baseline freeze)", () => {
     const { container } = render(
       <WechatPreview html="<p>hello</p>" css="" mode="wechat" />
     );
-    // White-box selector intentional — see file header for rationale.
-    const wrapper = container.querySelector(".w-\\[375px\\]");
+    const iframe = container.querySelector("iframe");
+    const wrapper = iframe?.parentElement;
     expect(wrapper).not.toBeNull();
+    expect((wrapper as HTMLElement).style.width).toBe("375px");
   });
 
   it("renders successfully when mode='raw' (smoke check for the raw-mode code path)", () => {

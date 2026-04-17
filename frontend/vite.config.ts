@@ -10,6 +10,34 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("monaco-editor") || id.includes("@monaco-editor")) {
+            return "monaco";
+          }
+          if (id.includes("marked") || id.includes("highlight.js")) {
+            return "markdown-vendor";
+          }
+          if (id.includes("@tiptap") || id.includes("prosemirror")) {
+            return "tiptap";
+          }
+          if (
+            id.includes("/react/") ||
+            id.includes("/react-dom/") ||
+            id.includes("react-router-dom")
+          ) {
+            return "react-vendor";
+          }
+          if (id.includes("lucide-react")) {
+            return "icons";
+          }
+          return undefined;
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       "/api": {

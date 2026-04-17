@@ -11,30 +11,24 @@ export default function CommandBar({ wordCount, saved }: CommandBarProps) {
 
   return (
     <div className="h-10 bg-surface-secondary border-t border-border-primary flex items-center justify-between px-4 shrink-0">
-      {/* Left side */}
       <div className="flex items-center gap-3">
-        {/* Command input */}
         <div className="w-[340px] h-7 bg-surface-tertiary border border-border-secondary rounded-lg flex items-center px-2.5 gap-1.5">
           <span className="text-accent font-mono text-xs font-semibold">/</span>
           <span className="text-fg-muted text-xs truncate">
-            输入 / 插入组件，{mod}K 打开命令面板
+            输入 / 插入组件，按 {mod}K 打开命令面板
           </span>
         </div>
 
-        {/* Shortcut hints */}
         <div className="flex items-center gap-3 text-[10px] text-fg-muted font-mono">
           <span>
-            <kbd className="text-fg-secondary">{mod}K</kbd>{" "}
-            命令
+            <kbd className="text-fg-secondary">{mod}K</kbd> 命令
           </span>
           <span>
-            <kbd className="text-fg-secondary">{mod}S</kbd>{" "}
-            保存
+            <kbd className="text-fg-secondary">{mod}S</kbd> 保存
           </span>
         </div>
       </div>
 
-      {/* Right side */}
       <div className="flex items-center gap-3.5 text-[10px] text-fg-muted font-mono">
         <span>100%</span>
         <span title={WORD_COUNT_TOOLTIP}>{wordCount.toLocaleString()} 字</span>
