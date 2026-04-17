@@ -4,6 +4,7 @@ python-multipart
 pydantic-settings
 Pillow
 httpx
+typer>=0.12,<1.0
 aiofiles
 cryptography
 premailer

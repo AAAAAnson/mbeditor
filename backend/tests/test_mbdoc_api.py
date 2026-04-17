@@ -161,3 +161,104 @@ def test_legacy_articles_endpoint_still_responds(client: TestClient):
     resp = client.get("/api/v1/articles")
     # Must NOT be 404 (which would indicate the route was unregistered).
     assert resp.status_code != 404
+
+
+def test_render_mbdoc_html_block(client: TestClient):
+    payload = {
+        "id": "doc-html-1",
+        "version": "1",
+        "meta": {"title": "HTML Doc"},
+        "blocks": [
+            {
+                "id": "html1",
+                "type": "html",
+                "source": "<p>Hello HTML</p>",
+                "css": "p{color:#e8553a;}",
+            }
+        ],
+    }
+    client.post("/api/v1/mbdoc", json=payload)
+    resp = client.post("/api/v1/mbdoc/doc-html-1/render?upload_images=false")
+    assert resp.status_code == 200
+    html = resp.json()["data"]["html"]
+    assert "Hello HTML" in html
+    assert "stub" not in html.lower()
+
+
+def test_render_mbdoc_markdown_block(client: TestClient):
+    payload = {
+        "id": "doc-md-1",
+        "version": "1",
+        "meta": {"title": "Markdown Doc"},
+        "blocks": [
+            {
+                "id": "md1",
+                "type": "markdown",
+                "source": "# Hello Markdown\n\nWorld",
+            }
+        ],
+    }
+    client.post("/api/v1/mbdoc", json=payload)
+    resp = client.post("/api/v1/mbdoc/doc-md-1/render?upload_images=false")
+    assert resp.status_code == 200
+    html = resp.json()["data"]["html"]
+    assert "Hello Markdown" in html
+    assert "stub" not in html.lower()
+
+
+def test_render_mbdoc_svg_block(client: TestClient):
+    payload = {
+        "id": "doc-svg-1",
+        "version": "1",
+        "meta": {"title": "SVG Doc"},
+        "blocks": [
+            {
+                "id": "svg1",
+                "type": "svg",
+                "source": (
+                    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+                    '<rect x="2" y="2" width="28" height="28" rx="6" fill="#0ea5e9"/>'
+                    "</svg>"
+                ),
+            }
+        ],
+    }
+    client.post("/api/v1/mbdoc", json=payload)
+    resp = client.post("/api/v1/mbdoc/doc-svg-1/render?upload_images=false")
+    assert resp.status_code == 200
+    html = resp.json()["data"]["html"]
+    assert "<svg" in html
+    assert "<rect" in html
+    assert "stub" not in html.lower()
+
+
+def test_render_mbdoc_raster_block(client: TestClient):
+    from app.services.renderers import raster_renderer as raster_renderer_mod
+
+    original = raster_renderer_mod.render_raster_png
+    raster_renderer_mod.render_raster_png = lambda block: b"fake-png"
+    payload = {
+        "id": "doc-raster-1",
+        "version": "1",
+        "meta": {"title": "Raster Doc"},
+        "blocks": [
+            {
+                "id": "r1",
+                "type": "raster",
+                "html": "<div><strong>Raster card</strong><p>Body copy</p></div>",
+                "css": "div{padding:20px;background:#ecfeff;border:1px solid #67e8f9;border-radius:14px;}",
+                "width": 620,
+            }
+        ],
+    }
+    try:
+        client.post("/api/v1/mbdoc", json=payload)
+        resp = client.post("/api/v1/mbdoc/doc-raster-1/render?upload_images=false")
+        assert resp.status_code == 200
+        html = resp.json()["data"]["html"]
+        assert "<img" in html
+        assert "data:image/png;base64" in html
+        assert "max-width:620px" in html
+        assert "stub" not in html.lower()
+    finally:
+        raster_renderer_mod.render_raster_png = original

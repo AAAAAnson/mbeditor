@@ -3,7 +3,11 @@ from app.models.mbdoc import (
     MBDoc,
     MBDocMeta,
     HeadingBlock,
+    HtmlBlock,
+    ImageBlock,
+    MarkdownBlock,
     ParagraphBlock,
+    RasterBlock,
     SvgBlock,
 )
 from app.services.block_registry import BlockRegistry, RenderContext
@@ -63,19 +67,27 @@ def test_render_for_wechat_two_calls_identical_for_text_blocks():
     assert a == b
 
 
-def test_render_for_wechat_stub_block_shows_warning():
-    """A block whose renderer is a stub produces visible warning markup."""
+def test_render_for_wechat_svg_block_is_real_not_stub():
+    """SVG blocks should now render through a real renderer."""
     doc = MBDoc(
         id="d1",
         meta=MBDocMeta(title="T"),
         blocks=[
             HeadingBlock(id="h1", level=1, text="Title"),
-            SvgBlock(id="s1", source="<svg></svg>"),
+            SvgBlock(
+                id="s1",
+                source=(
+                    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+                    '<circle cx="8" cy="8" r="6" fill="#e8553a"/>'
+                    "</svg>"
+                ),
+            ),
         ],
     )
     html = render_for_wechat(doc, RenderContext())
-    assert "stub" in html.lower()
-    assert "s1" in html
+    assert "<svg" in html
+    assert "<circle" in html
+    assert "stub" not in html.lower()
 
 
 def test_render_for_wechat_empty_doc():
@@ -91,3 +103,107 @@ def test_render_for_wechat_accepts_custom_registry():
     doc = _sample_doc()
     html = render_for_wechat(doc, RenderContext(), registry=custom)
     assert "Welcome" in html
+
+
+def test_render_for_wechat_html_block_is_real_not_stub():
+    doc = MBDoc(
+        id="d-html",
+        meta=MBDocMeta(title="T"),
+        blocks=[HtmlBlock(id="html1", source="<p>Hello</p>", css="p{color:red;}")],
+    )
+    html = render_for_wechat(doc, RenderContext())
+    assert "Hello" in html
+    assert "stub" not in html.lower()
+
+
+def test_render_for_wechat_markdown_block_is_real_not_stub():
+    doc = MBDoc(
+        id="d-md",
+        meta=MBDocMeta(title="T"),
+        blocks=[MarkdownBlock(id="md1", source="# Hello\n\nWorld")],
+    )
+    html = render_for_wechat(doc, RenderContext())
+    assert "Hello" in html
+    assert "World" in html
+    assert "stub" not in html.lower()
+
+
+def test_render_for_wechat_image_block_is_real_not_stub():
+    doc = MBDoc(
+        id="d-image",
+        meta=MBDocMeta(title="T"),
+        blocks=[
+            ImageBlock(
+                id="img1",
+                src="/images/sample.png",
+                alt="Sample",
+                width=640,
+                height=480,
+            )
+        ],
+    )
+    html = render_for_wechat(doc, RenderContext())
+    assert '<img src="/images/sample.png"' in html
+    assert 'alt="Sample"' in html
+    assert "width:100%" in html
+    assert "max-width:640px" in html
+    assert "stub" not in html.lower()
+
+
+def test_render_for_wechat_image_block_upload_changes_only_src(tmp_path, monkeypatch):
+    from app.core import config as config_mod
+
+    images_dir = tmp_path / "images"
+    images_dir.mkdir()
+    (images_dir / "sample.png").write_bytes(b"fake-image")
+    monkeypatch.setattr(config_mod.settings, "IMAGES_DIR", str(images_dir))
+
+    doc = MBDoc(
+        id="d-image-upload",
+        meta=MBDocMeta(title="T"),
+        blocks=[
+            ImageBlock(
+                id="img1",
+                src="/images/sample.png",
+                alt="Sample",
+                width=640,
+                height=480,
+            )
+        ],
+    )
+    preview_html = render_for_wechat(doc, RenderContext(upload_images=False))
+    publish_html = render_for_wechat(
+        doc,
+        RenderContext(
+            upload_images=True,
+            image_uploader=lambda data, name: f"https://cdn.example/{name}",
+        ),
+    )
+    assert preview_html.replace("/images/sample.png", "https://cdn.example/sample.png") == publish_html
+
+
+def test_render_for_wechat_raster_block_is_real_not_stub():
+    from app.services.renderers import raster_renderer as raster_renderer_mod
+
+    original = raster_renderer_mod.render_raster_png
+    raster_renderer_mod.render_raster_png = lambda block: b"fake-png"
+    try:
+        doc = MBDoc(
+            id="d-raster",
+            meta=MBDocMeta(title="T"),
+            blocks=[
+                RasterBlock(
+                    id="r1",
+                    html="<div><h2>Card</h2><p>Body</p></div>",
+                    css="div{padding:20px;background:#f5f3ff;border-radius:12px;}",
+                    width=600,
+                )
+            ],
+        )
+        html = render_for_wechat(doc, RenderContext())
+    finally:
+        raster_renderer_mod.render_raster_png = original
+    assert "<img" in html
+    assert "data:image/png;base64" in html
+    assert "max-width:600px" in html
+    assert "stub" not in html.lower()

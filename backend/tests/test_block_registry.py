@@ -78,13 +78,23 @@ def test_registry_default_heading_and_paragraph_are_real():
 
 
 def test_registry_default_others_are_stubs():
-    from app.services.renderers.stub import StubBlockRenderer
+    from app.services.renderers.raster_renderer import RasterRenderer
+    from app.services.renderers.svg_renderer import SvgRenderer
     r = BlockRegistry.default()
-    for bt in (
-        BlockType.MARKDOWN,
-        BlockType.HTML,
-        BlockType.IMAGE,
-        BlockType.SVG,
-        BlockType.RASTER,
-    ):
-        assert isinstance(r.find(bt), StubBlockRenderer)
+    assert isinstance(r.find(BlockType.SVG), SvgRenderer)
+    assert isinstance(r.find(BlockType.RASTER), RasterRenderer)
+
+
+def test_registry_default_html_and_markdown_are_real():
+    from app.services.renderers.html_renderer import HtmlRenderer
+    from app.services.renderers.image_renderer import ImageRenderer
+    from app.services.renderers.markdown_renderer import MarkdownRenderer
+    from app.services.renderers.raster_renderer import RasterRenderer
+    from app.services.renderers.svg_renderer import SvgRenderer
+
+    r = BlockRegistry.default()
+    assert isinstance(r.find(BlockType.HTML), HtmlRenderer)
+    assert isinstance(r.find(BlockType.MARKDOWN), MarkdownRenderer)
+    assert isinstance(r.find(BlockType.IMAGE), ImageRenderer)
+    assert isinstance(r.find(BlockType.SVG), SvgRenderer)
+    assert isinstance(r.find(BlockType.RASTER), RasterRenderer)

@@ -73,13 +73,7 @@ class BlockRegistry:
 
     @classmethod
     def default(cls) -> "BlockRegistry":
-        """Return a registry with all 7 block types registered.
-
-        Stage 1: HEADING and PARAGRAPH use minimal working renderers;
-        the other 5 block types (MARKDOWN, HTML, IMAGE, SVG, RASTER)
-        use StubBlockRenderer placeholders. Stage 2-5 replace the stubs
-        with real renderers by updating this method.
-        """
+        """Return a registry with all 7 built-in block types registered."""
         # Local import to avoid import cycle: heading_paragraph imports
         # from block_registry (via BlockRenderer base), so we must import
         # it lazily here.
@@ -87,14 +81,18 @@ class BlockRegistry:
             HeadingRenderer,
             ParagraphRenderer,
         )
-        from app.services.renderers.stub import StubBlockRenderer
+        from app.services.renderers.html_renderer import HtmlRenderer
+        from app.services.renderers.image_renderer import ImageRenderer
+        from app.services.renderers.markdown_renderer import MarkdownRenderer
+        from app.services.renderers.raster_renderer import RasterRenderer
+        from app.services.renderers.svg_renderer import SvgRenderer
 
         registry = cls()
         registry.register(HeadingRenderer())
         registry.register(ParagraphRenderer())
-        registry.register(StubBlockRenderer(BlockType.MARKDOWN))
-        registry.register(StubBlockRenderer(BlockType.HTML))
-        registry.register(StubBlockRenderer(BlockType.IMAGE))
-        registry.register(StubBlockRenderer(BlockType.SVG))
-        registry.register(StubBlockRenderer(BlockType.RASTER))
+        registry.register(MarkdownRenderer())
+        registry.register(HtmlRenderer())
+        registry.register(ImageRenderer())
+        registry.register(SvgRenderer())
+        registry.register(RasterRenderer())
         return registry

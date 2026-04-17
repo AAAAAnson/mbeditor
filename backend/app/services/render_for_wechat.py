@@ -8,9 +8,9 @@ and ``upload_images=True`` calls MUST be confined to ``<img src>``
 attributes; this invariant is verified in
 ``tests/test_render_for_wechat.py``.
 
-Stage 1 uses the minimal Heading/Paragraph renderers plus stubs for the
-remaining 5 block types. Stage 2-5 replace stubs with real renderers by
-updating ``BlockRegistry.default()``; this function does not change.
+The registry now wires real renderers for all current built-in block types.
+Future work extends renderer behavior, but this function remains the single
+orchestrator and does not change.
 """
 from typing import Optional
 
@@ -30,8 +30,8 @@ def render_for_wechat(
         doc: the source document.
         ctx: rendering context (``upload_images`` flag, image uploader, etc.).
         registry: optional custom registry. Defaults to
-            ``BlockRegistry.default()`` which wires up all 7 Stage-1
-            renderers (2 real + 5 stubs).
+            ``BlockRegistry.default()`` which wires up all current built-in
+            renderers.
 
     Returns:
         A concatenated HTML string ready to be:
