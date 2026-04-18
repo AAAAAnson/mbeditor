@@ -8,6 +8,17 @@ export type Density = "compact" | "comfy" | "spacious";
 export type Layout = "focus" | "split" | "triptych";
 export type AgentPosition = "right" | "bottom";
 
+const DEFAULT_PREVIEW_FRAME_WIDTH = 420;
+const DEFAULT_PREVIEW_FRAME_HEIGHT = 760;
+
+function clampPreviewWidth(width: number) {
+  return Math.min(960, Math.max(320, Math.round(width)));
+}
+
+function clampPreviewHeight(height: number) {
+  return Math.min(1400, Math.max(360, Math.round(height)));
+}
+
 interface UIState {
   theme: Theme;
   accent: Accent;
@@ -17,6 +28,8 @@ interface UIState {
   editorDefaultMode: ArticleMode;
   editorAutoSave: boolean;
   editorFontSize: number;
+  editorPreviewWidth: number;
+  editorPreviewHeight: number;
   tweaksOpen: boolean;
   setTheme: (t: Theme) => void;
   setAccent: (a: Accent) => void;
@@ -26,6 +39,8 @@ interface UIState {
   setEditorDefaultMode: (mode: ArticleMode) => void;
   setEditorAutoSave: (enabled: boolean) => void;
   setEditorFontSize: (size: number) => void;
+  setEditorPreviewSize: (size: { width?: number; height?: number }) => void;
+  resetEditorPreviewSize: () => void;
   setTweaksOpen: (open: boolean) => void;
 }
 
@@ -40,6 +55,8 @@ export const useUIStore = create<UIState>()(
       editorDefaultMode: "html",
       editorAutoSave: true,
       editorFontSize: 14,
+      editorPreviewWidth: DEFAULT_PREVIEW_FRAME_WIDTH,
+      editorPreviewHeight: DEFAULT_PREVIEW_FRAME_HEIGHT,
       tweaksOpen: false,
       setTheme: (theme) => set({ theme }),
       setAccent: (accent) => set({ accent }),
@@ -49,6 +66,16 @@ export const useUIStore = create<UIState>()(
       setEditorDefaultMode: (editorDefaultMode) => set({ editorDefaultMode }),
       setEditorAutoSave: (editorAutoSave) => set({ editorAutoSave }),
       setEditorFontSize: (editorFontSize) => set({ editorFontSize }),
+      setEditorPreviewSize: ({ width, height }) =>
+        set((state) => ({
+          editorPreviewWidth: clampPreviewWidth(width ?? state.editorPreviewWidth),
+          editorPreviewHeight: clampPreviewHeight(height ?? state.editorPreviewHeight),
+        })),
+      resetEditorPreviewSize: () =>
+        set({
+          editorPreviewWidth: DEFAULT_PREVIEW_FRAME_WIDTH,
+          editorPreviewHeight: DEFAULT_PREVIEW_FRAME_HEIGHT,
+        }),
       setTweaksOpen: (tweaksOpen) => set({ tweaksOpen }),
     }),
     {
@@ -62,6 +89,8 @@ export const useUIStore = create<UIState>()(
         editorDefaultMode: state.editorDefaultMode,
         editorAutoSave: state.editorAutoSave,
         editorFontSize: state.editorFontSize,
+        editorPreviewWidth: state.editorPreviewWidth,
+        editorPreviewHeight: state.editorPreviewHeight,
       }),
     }
   )

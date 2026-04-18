@@ -6,17 +6,17 @@ import type { AgentMessage } from "@/types";
 
 const MOCK_AGENT_STREAM: AgentMessage[] = [
   { t: "17:02:14", kind: "user", text: "把第三段卡片改成带图的样式，图用刚上传的 warm 01" },
-  { t: "17:02:15", kind: "think", text: "识别 Block b4 · Card · Markdown 模式" },
+  { t: "17:02:15", kind: "think", text: "已识别第三段卡片，准备改成带图样式" },
   { t: "17:02:16", kind: "tool", method: "GET", path: "/api/v1/articles/MB-2604-018" },
   { t: "17:02:17", kind: "tool", method: "PUT", path: "/api/v1/articles/MB-2604-018" },
   { t: "17:02:18", kind: "diff", add: 6, remove: 2, hint: "Card b4 + img" },
-  { t: "17:02:19", kind: "assistant", text: "已为卡片 Markdown 模式加上顶部图片，保留原文字节奏。需要同步到其他卡片吗？" },
+  { t: "17:02:19", kind: "assistant", text: "第三段已经改成带图样式了。要不要顺手同步到其他卡片？" },
   { t: "17:04:03", kind: "user", text: "预览一下微信兼容样式" },
   { t: "17:04:04", kind: "tool", method: "POST", path: "/api/v1/publish/preview" },
-  { t: "17:04:05", kind: "assistant", text: "已内联所有 CSS，剥除 Wx 不兼容属性。可推送草稿。" },
+  { t: "17:04:05", kind: "assistant", text: "已经按公众号兼容规则处理好了，可以继续预览或发到草稿箱。" },
 ];
 
-const SUGGESTED_ACTIONS = ["生成封面图", "改写第一段", "加入对比表格", "推送到草稿箱"];
+const SUGGESTED_ACTIONS = ["生成封面", "润色开头", "插入对比表", "发到草稿箱"];
 
 // ── Stream item renderer ──
 function AgentStreamItem({ e }: { e: AgentMessage }) {
@@ -27,7 +27,7 @@ function AgentStreamItem({ e }: { e: AgentMessage }) {
           className="mono"
           style={{ fontSize: 9, color: "var(--fg-5)", letterSpacing: "0.1em", marginBottom: 4 }}
         >
-          用户 &middot; {e.t}
+          你 &middot; {e.t}
         </div>
         <div
           style={{
@@ -136,7 +136,7 @@ function AgentStreamItem({ e }: { e: AgentMessage }) {
         }}
       >
         <div className="mono" style={{ fontSize: 10, color: "var(--fg-4)", marginBottom: 4 }}>
-          变更 &middot; {e.hint}
+          改动 &middot; {e.hint}
         </div>
         <div style={{ display: "flex", gap: 10, fontFamily: "var(--f-mono)", fontSize: 10.5 }}>
           <span style={{ color: "var(--forest)" }}>+{e.add}</span>
@@ -186,9 +186,9 @@ export default function AgentCopilot({ open, setOpen }: AgentCopilotProps) {
     const t = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
     const newItems: AgentMessage[] = [
       { t, kind: "user", text: input },
-      { t, kind: "think", text: "分析意图 · 规划调用链" },
+      { t, kind: "think", text: "正在整理需求，准备开始处理" },
       { t, kind: "tool", method: "POST", path: "/api/v1/publish/process" },
-      { t, kind: "assistant", text: "已按要求处理，可在预览中查看效果。" },
+      { t, kind: "assistant", text: "已经处理好了，可以直接在预览里查看效果。" },
     ];
     setStream((prev) => [...prev, ...newItems]);
     setInput("");
@@ -210,7 +210,7 @@ export default function AgentCopilot({ open, setOpen }: AgentCopilotProps) {
         <button
           className="rail-btn active"
           onClick={() => setOpen(true)}
-          title="打开助手面板"
+          title="打开助手"
           style={{
             all: "unset",
             width: 34,
@@ -238,7 +238,7 @@ export default function AgentCopilot({ open, setOpen }: AgentCopilotProps) {
             color: "var(--fg-5)",
           }}
         >
-          助手 &middot; 协作面板
+          助手
         </div>
       </div>
     );
@@ -283,7 +283,7 @@ export default function AgentCopilot({ open, setOpen }: AgentCopilotProps) {
                 fontFamily: "var(--f-display)",
               }}
             >
-              助手 · 协作面板
+              助手
             </div>
             <div className="mono" style={{ fontSize: 10, color: "var(--fg-4)" }}>
               claude-sonnet-4.5 &middot; mbeditor.skill
@@ -302,7 +302,7 @@ export default function AgentCopilot({ open, setOpen }: AgentCopilotProps) {
             <Pulse size={6} />
             在线
           </Chip>
-          <Chip tone="gold">已连接编辑器</Chip>
+          <Chip tone="gold">已连接</Chip>
           <Chip>3 次调用</Chip>
         </div>
       </div>
@@ -313,7 +313,7 @@ export default function AgentCopilot({ open, setOpen }: AgentCopilotProps) {
         style={{ flex: 1, overflow: "auto", padding: "14px 18px", minHeight: 0 }}
       >
         <div className="caps" style={{ marginBottom: 10 }}>
-          活动流 · 记录
+          最近操作
         </div>
         {stream.map((e, i) => (
           <AgentStreamItem key={i} e={e} />
@@ -323,7 +323,7 @@ export default function AgentCopilot({ open, setOpen }: AgentCopilotProps) {
       {/* Suggested actions */}
       <div style={{ padding: "10px 18px", borderTop: "1px solid var(--border)" }}>
         <div className="caps" style={{ marginBottom: 8 }}>
-          建议 · 快捷操作
+          快捷操作
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {SUGGESTED_ACTIONS.map((t) => (
@@ -358,7 +358,7 @@ export default function AgentCopilot({ open, setOpen }: AgentCopilotProps) {
             onKeyDown={(e) => {
               if (e.key === "Enter") send();
             }}
-            placeholder="给助手下一条指令…"
+            placeholder="告诉助手你想改什么…"
             style={{
               all: "unset",
               flex: 1,
@@ -385,7 +385,7 @@ export default function AgentCopilot({ open, setOpen }: AgentCopilotProps) {
             justifyContent: "space-between",
           }}
         >
-          <span>{"⌘↵ 发送 · ⎋ 撤销最后一步"}</span>
+          <span>{"⌘↵ 发送 · Esc 撤销上一步"}</span>
           <span>{toolCallCount} 次调用</span>
         </div>
       </div>

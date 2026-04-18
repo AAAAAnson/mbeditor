@@ -24,9 +24,9 @@ export default function TweaksPanel() {
         zIndex: 100,
         fontSize: 12,
       }}
-    >
-      <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
-        <span className="caps caps-gold">外观调节</span>
+      >
+        <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
+        <span className="caps caps-gold">界面设置</span>
         <button className="btn btn-ghost btn-sm" style={{ padding: 4 }} onClick={() => setTweaksOpen(false)}>
           <IconClose size={12} />
         </button>

@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Seg from "@/components/ui/Seg";
-import { IconEye, IconSend } from "@/components/icons";
+import { IconArrowLeft, IconEye, IconSend } from "@/components/icons";
 import { useUIStore } from "@/stores/uiStore";
 import type { EditorDraft, EditorField } from "@/types";
 
@@ -8,6 +8,7 @@ type SaveState = "idle" | "dirty" | "saving" | "saved" | "error";
 
 interface CenterStageProps {
   articleId?: string;
+  canGoBack: boolean;
   draft: EditorDraft;
   view: string;
   setView: (value: string) => void;
@@ -19,6 +20,7 @@ interface CenterStageProps {
   previewLoading: boolean;
   previewError: string | null;
   publishing: boolean;
+  onBack: () => void;
   onFieldChange: (field: EditorField, value: string) => void;
   onRefreshPreview: () => void;
   onPublish: () => void;
@@ -32,8 +34,11 @@ const SAVE_META: Record<SaveState, { label: string; color: string }> = {
   error: { label: "保存失败", color: "var(--accent)" },
 };
 
+type PreviewResizeDirection = "width" | "height" | "both";
+
 export default function CenterStage({
   articleId,
+  canGoBack,
   draft,
   view,
   setView,
@@ -45,11 +50,24 @@ export default function CenterStage({
   previewLoading,
   previewError,
   publishing,
+  onBack,
   onFieldChange,
   onRefreshPreview,
   onPublish,
 }: CenterStageProps) {
   const editorFontSize = useUIStore((state) => state.editorFontSize);
+  const editorPreviewWidth = useUIStore((state) => state.editorPreviewWidth);
+  const editorPreviewHeight = useUIStore((state) => state.editorPreviewHeight);
+  const setEditorPreviewSize = useUIStore((state) => state.setEditorPreviewSize);
+  const resetEditorPreviewSize = useUIStore((state) => state.resetEditorPreviewSize);
+  const previewResizeRef = useRef<{
+    direction: PreviewResizeDirection;
+    startX: number;
+    startY: number;
+    startWidth: number;
+    startHeight: number;
+  } | null>(null);
+  const [previewResizeDirection, setPreviewResizeDirection] = useState<PreviewResizeDirection | null>(null);
   const tabs = draft.mode === "markdown"
     ? ["markdown", "css", "js"]
     : ["html", "css", "js"];
@@ -73,15 +91,88 @@ export default function CenterStage({
   const wordCount = visibleSource.replace(/\s+/g, "").length;
   const previewBody = previewHtml || `
     <div style="padding: 36px 18px; text-align: center; color: #8a7e6e; font-size: 13px; line-height: 1.8;">
-      ${previewLoading ? "正在生成公众号预览…" : "预览内容会显示在这里。"}
+      ${previewLoading ? "正在生成预览…" : "这里会显示预览内容。"}
     </div>
   `;
 
   const previewHint = useMemo(() => {
-    if (draft.mode === "markdown") return "Markdown 会先转换成 HTML，再交给后端生成公众号预览。";
-    if (draft.js.trim()) return "JS 会被保存，但不会参与公众号预览与发布。";
-    return "预览由后端完成 CSS 内联和微信兼容处理。";
+    if (draft.mode === "markdown") return "Markdown 会先转成 HTML，再生成公众号预览。";
+    if (draft.js.trim()) return "JS 会保留下来，但不会出现在公众号预览和草稿里。";
+    return "预览内容已经按公众号兼容规则处理。";
   }, [draft.js, draft.mode]);
+  const previewFrameLabel = `${editorPreviewWidth} × ${editorPreviewHeight}`;
+
+  useEffect(() => {
+    if (!previewResizeDirection) return;
+
+    const previousCursor = document.body.style.cursor;
+    const previousUserSelect = document.body.style.userSelect;
+    document.body.style.cursor = previewResizeDirection === "width"
+      ? "ew-resize"
+      : previewResizeDirection === "height"
+        ? "ns-resize"
+        : "nwse-resize";
+    document.body.style.userSelect = "none";
+
+    const updatePreviewSize = (clientX: number, clientY: number) => {
+      const dragState = previewResizeRef.current;
+      if (!dragState) return;
+
+      const deltaX = clientX - dragState.startX;
+      const deltaY = clientY - dragState.startY;
+
+      setEditorPreviewSize({
+        width: dragState.direction === "width" || dragState.direction === "both"
+          ? dragState.startWidth + deltaX
+          : dragState.startWidth,
+        height: dragState.direction === "height" || dragState.direction === "both"
+          ? dragState.startHeight + deltaY
+          : dragState.startHeight,
+      });
+    };
+
+    const stopResizing = () => {
+      previewResizeRef.current = null;
+      setPreviewResizeDirection(null);
+    };
+
+    const handleMouseMove = (event: MouseEvent) => {
+      updatePreviewSize(event.clientX, event.clientY);
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      const touch = event.touches[0];
+      if (!touch) return;
+      updatePreviewSize(touch.clientX, touch.clientY);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", stopResizing);
+    window.addEventListener("touchmove", handleTouchMove);
+    window.addEventListener("touchend", stopResizing);
+    window.addEventListener("touchcancel", stopResizing);
+
+    return () => {
+      document.body.style.cursor = previousCursor;
+      document.body.style.userSelect = previousUserSelect;
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", stopResizing);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", stopResizing);
+      window.removeEventListener("touchcancel", stopResizing);
+    };
+  }, [previewResizeDirection, setEditorPreviewSize]);
+
+  const startPreviewResize = (direction: PreviewResizeDirection, clientX: number, clientY: number) => {
+    previewResizeRef.current = {
+      direction,
+      startX: clientX,
+      startY: clientY,
+      startWidth: editorPreviewWidth,
+      startHeight: editorPreviewHeight,
+    };
+    setPreviewResizeDirection(direction);
+  };
 
   return (
     <div
@@ -103,13 +194,20 @@ export default function CenterStage({
           background: "var(--surface)",
         }}
       >
-        <div className="caps">编辑 · 工作台</div>
+        <div className="caps">编辑器</div>
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={onBack}
+          title={canGoBack ? "返回上一页" : "返回稿库"}
+        >
+          <IconArrowLeft size={12} /> {canGoBack ? "返回上一页" : "返回稿库"}
+        </button>
         <div style={{ flex: 1 }} />
 
         <Seg
           options={[
-            { value: "code", label: "代码" },
-            { value: "split", label: "分屏" },
+            { value: "code", label: "编辑" },
+            { value: "split", label: "分栏" },
             { value: "preview", label: "预览" },
           ]}
           value={view}
@@ -135,14 +233,14 @@ export default function CenterStage({
           }}
           disabled={!articleId || previewLoading}
         >
-          <IconEye size={12} /> {previewLoading ? "生成中" : "刷新预览"}
+          <IconEye size={12} /> {previewLoading ? "更新中" : "更新预览"}
         </button>
         <button
           className="btn btn-primary btn-sm"
           onClick={onPublish}
           disabled={!articleId || publishing}
         >
-          <IconSend size={12} /> {publishing ? "投递中" : "投递草稿"}
+          <IconSend size={12} /> {publishing ? "发送中" : "发到草稿箱"}
         </button>
       </div>
 
@@ -270,20 +368,41 @@ export default function CenterStage({
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                maxWidth: 420,
+                maxWidth: 720,
                 margin: "0 auto 14px",
                 gap: 8,
+                flexWrap: "wrap",
               }}
             >
-              <div className="caps">公众号预览 · iPhone 15</div>
-              <div className="mono" style={{ fontSize: 10, color: "var(--fg-5)" }}>
-                375 &times; 812
+              <div className="caps">公众号预览</div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  flexWrap: "wrap",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <div className="mono" style={{ fontSize: 10, color: "var(--fg-5)" }}>
+                  当前尺寸 {previewFrameLabel}
+                </div>
+                <div className="mono" style={{ fontSize: 10, color: "var(--fg-5)" }}>
+                  拖右边或下边调整大小
+                </div>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={resetEditorPreviewSize}
+                >
+                  还原尺寸
+                </button>
               </div>
             </div>
 
             <div
               style={{
-                maxWidth: 420,
+                width: Math.min(editorPreviewWidth, 640),
+                maxWidth: "100%",
                 margin: "0 auto 12px",
                 padding: "10px 14px",
                 border: "1px solid var(--border)",
@@ -299,61 +418,141 @@ export default function CenterStage({
             </div>
 
             <div
+              data-testid="preview-frame-shell"
               style={{
-                maxWidth: 420,
+                width: editorPreviewWidth,
+                height: editorPreviewHeight,
                 margin: "0 auto",
-                borderRadius: "var(--r-md)",
-                overflow: "hidden",
-                boxShadow: "0 24px 48px -24px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.1)",
-                background: "#FAF6EB",
                 position: "relative",
+                maxWidth: "100%",
               }}
             >
-              {previewLoading && (
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    background: "rgba(250,246,235,0.72)",
-                    display: "grid",
-                    placeItems: "center",
-                    zIndex: 1,
-                    fontFamily: "var(--f-mono)",
-                    fontSize: 11,
-                    color: "#8A7E6E",
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  正在渲染…
-                </div>
-              )}
               <div
+                data-testid="preview-frame"
                 style={{
-                  minHeight: 520,
-                  padding: "28px 22px 32px",
-                  fontFamily: "'Noto Serif SC', 'Source Han Serif SC', serif",
-                  fontSize: 14,
-                  lineHeight: 1.8,
-                  color: "#1A1512",
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: "var(--r-md)",
+                  overflow: "hidden",
+                  boxShadow: "0 24px 48px -24px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.1)",
+                  background: "#FAF6EB",
+                  position: "relative",
                 }}
               >
-                {previewError ? (
+                {previewLoading && (
                   <div
                     style={{
-                      padding: "24px 18px",
-                      borderRadius: 12,
-                      border: "1px solid rgba(193,74,58,0.24)",
-                      background: "rgba(193,74,58,0.08)",
-                      color: "#8A3B2E",
+                      position: "absolute",
+                      inset: 0,
+                      background: "rgba(250,246,235,0.72)",
+                      display: "grid",
+                      placeItems: "center",
+                      zIndex: 1,
+                      fontFamily: "var(--f-mono)",
+                      fontSize: 11,
+                      color: "#8A7E6E",
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
                     }}
                   >
-                    {previewError}
+                    正在更新预览…
                   </div>
-                ) : (
-                  <div dangerouslySetInnerHTML={{ __html: previewBody }} />
                 )}
+                <div
+                  style={{
+                    height: "100%",
+                    padding: "28px 22px 32px",
+                    fontFamily: "'Noto Serif SC', 'Source Han Serif SC', serif",
+                    fontSize: 14,
+                    lineHeight: 1.8,
+                    color: "#1A1512",
+                    overflow: "auto",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  {previewError ? (
+                    <div
+                      style={{
+                        padding: "24px 18px",
+                        borderRadius: 12,
+                        border: "1px solid rgba(193,74,58,0.24)",
+                        background: "rgba(193,74,58,0.08)",
+                        color: "#8A3B2E",
+                      }}
+                    >
+                      {previewError}
+                    </div>
+                  ) : (
+                    <div dangerouslySetInnerHTML={{ __html: previewBody }} />
+                  )}
+                </div>
               </div>
+              <div
+                data-testid="preview-resize-right"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  startPreviewResize("width", event.clientX, event.clientY);
+                }}
+                onTouchStart={(event) => {
+                  const touch = event.touches[0];
+                  if (!touch) return;
+                  startPreviewResize("width", touch.clientX, touch.clientY);
+                }}
+                style={{
+                  position: "absolute",
+                  top: 10,
+                  right: -6,
+                  bottom: 10,
+                  width: 12,
+                  cursor: "ew-resize",
+                }}
+              />
+              <div
+                data-testid="preview-resize-bottom"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  startPreviewResize("height", event.clientX, event.clientY);
+                }}
+                onTouchStart={(event) => {
+                  const touch = event.touches[0];
+                  if (!touch) return;
+                  startPreviewResize("height", touch.clientX, touch.clientY);
+                }}
+                style={{
+                  position: "absolute",
+                  left: 10,
+                  right: 10,
+                  bottom: -6,
+                  height: 12,
+                  cursor: "ns-resize",
+                }}
+              />
+              <button
+                type="button"
+                aria-label="拖动调整预览大小"
+                data-testid="preview-resize-corner"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  startPreviewResize("both", event.clientX, event.clientY);
+                }}
+                onTouchStart={(event) => {
+                  const touch = event.touches[0];
+                  if (!touch) return;
+                  startPreviewResize("both", touch.clientX, touch.clientY);
+                }}
+                style={{
+                  all: "unset",
+                  position: "absolute",
+                  right: -8,
+                  bottom: -8,
+                  width: 18,
+                  height: 18,
+                  borderRadius: "50%",
+                  background: "var(--accent)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.18)",
+                  cursor: "nwse-resize",
+                }}
+              />
             </div>
           </div>
         )}
@@ -377,11 +576,11 @@ export default function CenterStage({
         <span style={{ color: saveMeta.color }}>&bull; {saveMeta.label}</span>
         <span>行 {lineCount}</span>
         <span>{draft.mode.toUpperCase()}</span>
-        <span>当前块 · {selected}</span>
+        <span>当前位置 · {selected}</span>
         <div style={{ flex: 1 }} />
         <span>{wordCount.toLocaleString()} 字</span>
         <span>&middot; {(new Blob([draft.html + draft.css + draft.js + draft.markdown]).size / 1024).toFixed(1)}KB</span>
-        <span>&middot; 稿件 {articleId?.toUpperCase() ?? "未载入"}</span>
+        <span>&middot; 文章 {articleId?.toUpperCase() ?? "未打开"}</span>
       </div>
     </div>
   );

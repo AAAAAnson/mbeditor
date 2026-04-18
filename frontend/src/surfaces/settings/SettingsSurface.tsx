@@ -9,9 +9,9 @@ import type { Route } from "@/types";
 type Section = "wechat" | "appearance" | "editor" | "about";
 
 const NAV_ITEMS: { key: Section; label: string }[] = [
-  { key: "wechat", label: "公众号配置" },
-  { key: "appearance", label: "外观" },
-  { key: "editor", label: "编辑器" },
+  { key: "wechat", label: "公众号" },
+  { key: "appearance", label: "界面" },
+  { key: "editor", label: "编辑" },
   { key: "about", label: "关于" },
 ];
 
@@ -22,9 +22,9 @@ const THEMES: { key: Theme; label: string; fg: string; bg: string; accent: strin
 ];
 
 const LAYOUTS: { key: Layout; label: string; desc: string }[] = [
-  { key: "focus", label: "单栏", desc: "单编辑器模式" },
-  { key: "split", label: "双栏", desc: "编辑 + 预览" },
-  { key: "triptych", label: "三栏", desc: "结构 + 编辑 + 预览" },
+  { key: "focus", label: "单栏", desc: "只看编辑区" },
+  { key: "split", label: "双栏", desc: "编辑区 + 预览区" },
+  { key: "triptych", label: "三栏", desc: "大纲 + 编辑区 + 预览区" },
 ];
 
 interface Props {
@@ -218,10 +218,10 @@ function WeChatSection() {
       setConfigured(true);
       setHasStoredSecret(true);
       setAppSecret("");
-      setAccountName(data?.account_name || accountName || "已配置公众号");
+      setAccountName(data?.account_name || accountName || "已连接公众号");
       toast.success("连接成功");
     } catch (error) {
-      toast.error(getErrorMessage(error, "连接失败，请检查配置"));
+      toast.error(getErrorMessage(error, "连接失败，请检查 AppID 和 AppSecret"));
     } finally {
       setTesting(false);
     }
@@ -242,9 +242,9 @@ function WeChatSection() {
       if (data.accountName) {
         setAccountName(data.accountName);
       }
-      toast.success("配置已保存");
+      toast.success("设置已保存");
     } catch (error) {
-      toast.error(getErrorMessage(error, "保存失败"));
+      toast.error(getErrorMessage(error, "保存失败，请稍后再试"));
     } finally {
       setSaving(false);
     }
@@ -252,12 +252,12 @@ function WeChatSection() {
 
   return (
     <div style={{ maxWidth: 520 }}>
-      <SectionHeader label="公众号配置" />
+      <SectionHeader label="公众号" />
 
       <div className="flex items-center" style={{ gap: 8, marginBottom: 24 }}>
         <IconWechat size={16} />
         <span style={{ fontFamily: "var(--f-mono)", fontSize: 12, color: "var(--fg-2)" }}>
-          微信公众号接入
+          连接公众号
         </span>
         {configured ? (
           <Chip tone="forest" style={{ marginLeft: "auto" }}>
@@ -270,7 +270,7 @@ function WeChatSection() {
 
       {accountName && (
         <div style={{ marginBottom: 20, padding: "8px 12px", background: "var(--surface-2)", borderRadius: "var(--r-sm)" }}>
-          <span className="caps" style={{ fontSize: 9, color: "var(--fg-4)", letterSpacing: "0.1em" }}>账号名称</span>
+          <span className="caps" style={{ fontSize: 9, color: "var(--fg-4)", letterSpacing: "0.1em" }}>公众号名称</span>
           <div style={{ fontFamily: "var(--f-mono)", fontSize: 13, color: "var(--fg)", marginTop: 4 }}>{accountName}</div>
         </div>
       )}
@@ -285,28 +285,28 @@ function WeChatSection() {
         />
       </FieldGroup>
 
-      <FieldGroup label="AppSecret（密钥）">
+      <FieldGroup label="AppSecret">
         <input
           type="password"
           value={appSecret}
           onChange={(e) => setAppSecret(e.target.value)}
-          placeholder={hasStoredSecret ? "已保存，留空则沿用当前密钥" : "••••••••••••"}
+          placeholder={hasStoredSecret ? "已保存，留空会继续使用当前密钥" : "请输入 AppSecret"}
           style={inputStyle}
         />
       </FieldGroup>
 
       {hasStoredSecret && (
         <div style={{ marginTop: -8, marginBottom: 16, fontFamily: "var(--f-mono)", fontSize: 11, color: "var(--fg-4)" }}>
-          当前密钥已保存。测试或保存时留空会保留现有值，输入新值才会覆盖。
+          当前密钥已经保存。只有输入新值时，才会覆盖原来的密钥。
         </div>
       )}
 
       <div className="flex" style={{ gap: 8, marginTop: 24 }}>
         <button className="btn btn-ghost btn-sm" onClick={handleTest} disabled={testing || !appId.trim()}>
-          {testing ? "测试中..." : "测试连接"}
+          {testing ? "连接中..." : "测试连接"}
         </button>
         <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={saving || !appId.trim()}>
-          {saving ? "保存中..." : "保存"}
+          {saving ? "保存中..." : "保存设置"}
         </button>
       </div>
     </div>
@@ -323,7 +323,7 @@ function AppearanceSection() {
 
   return (
     <div style={{ maxWidth: 560 }}>
-      <SectionHeader label="外观" />
+      <SectionHeader label="界面" />
 
       <SubLabel>主题</SubLabel>
       <div className="flex" style={{ gap: 12, marginBottom: 28 }}>
@@ -487,14 +487,14 @@ function AboutSection() {
         <span style={{ fontFamily: "var(--f-mono)", fontSize: 13, color: "var(--fg)" }}>{version}</span>
       </FieldGroup>
 
-      <FieldGroup label="链接">
+      <FieldGroup label="项目地址">
         <a
           href={buildRepoUrl(repo)}
           target="_blank"
           rel="noopener noreferrer"
           style={{ fontFamily: "var(--f-mono)", fontSize: 12, color: "var(--accent)", textDecoration: "none" }}
         >
-          代码仓库 · {repo}
+          GitHub · {repo}
         </a>
       </FieldGroup>
 

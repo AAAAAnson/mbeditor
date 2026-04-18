@@ -12,8 +12,8 @@ interface TopBarProps {
 }
 
 const NAV_ITEMS: { key: Route; label: string }[] = [
-  { key: "list", label: "稿库" },
-  { key: "editor", label: "编辑台" },
+  { key: "list", label: "文章" },
+  { key: "editor", label: "编辑器" },
 ];
 
 function backendLabel() {
@@ -91,15 +91,15 @@ export default function TopBar({ route, onNavigate }: TopBarProps) {
         }}
       >
         <Chip tone="forest" style={{ gap: 8 }}>
-          <Pulse size={6} />在线 &middot; {apiHost}
+          <Pulse size={6} />后端在线 &middot; {apiHost}
         </Chip>
         <Chip className="mono tnum" style={{ color: "var(--fg-3)" }}>{time}</Chip>
         <button
           className="btn btn-ghost btn-sm"
           onClick={() => setTweaksOpen(!tweaksOpen)}
-          title="外观调节"
+          title="界面设置"
         >
-          <IconTweak size={13} /> 调节
+          <IconTweak size={13} /> 界面
         </button>
       </div>
     </div>

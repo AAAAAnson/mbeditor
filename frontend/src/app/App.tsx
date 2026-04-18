@@ -12,16 +12,23 @@ export default function App() {
   return (
     <>
       <Shell>
-        {(route: Route, params, navigate) => {
+        {(route: Route, params, navigation) => {
           switch (route) {
             case "list":
-              return <ArticleList go={navigate} />;
+              return <ArticleList go={navigation.navigate} />;
             case "editor":
-              return <EditorSurface articleId={params.articleId ?? currentArticleId ?? undefined} go={navigate} />;
+              return (
+                <EditorSurface
+                  articleId={params.articleId ?? currentArticleId ?? undefined}
+                  go={navigation.navigate}
+                  canGoBack={navigation.canGoBack}
+                  onBack={navigation.goBack}
+                />
+              );
             case "settings":
-              return <SettingsSurface go={navigate} />;
+              return <SettingsSurface go={navigation.navigate} />;
             default:
-              return <ArticleList go={navigate} />;
+              return <ArticleList go={navigation.navigate} />;
           }
         }}
       </Shell>

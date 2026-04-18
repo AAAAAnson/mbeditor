@@ -80,7 +80,7 @@ function articleStatus(article: ArticleRow) {
 
   if (Number.isNaN(created) || Number.isNaN(updated)) return { label: "草稿", tone: "gold" as StatusTone };
   if (updated - created > 60_000) return { label: "已保存", tone: "forest" as StatusTone };
-  return { label: "新稿", tone: "gold" as StatusTone };
+  return { label: "新建", tone: "gold" as StatusTone };
 }
 
 function extractErrorMessage(error: unknown) {
@@ -217,7 +217,7 @@ export default function ArticleList({ go }: ArticleListProps) {
     setCreating(true);
     try {
       const article = await createArticle("未命名文章", defaultMode);
-      toast.success("已创建新稿");
+      toast.success("已创建文章");
       openEditor(article.id);
     } catch (error) {
       toast.error(extractErrorMessage(error));
@@ -226,10 +226,10 @@ export default function ArticleList({ go }: ArticleListProps) {
     }
   };
 
-  const emptyStateTitle = articles.length === 0 ? "还没有文章" : "没有匹配的稿件";
+  const emptyStateTitle = articles.length === 0 ? "还没有文章" : "没有找到相关文章";
   const emptyStateBody = articles.length === 0
-    ? "先创建一篇真实文章，列表会直接从后端稿库读取。"
-    : "换个筛选条件或搜索词试试。";
+    ? "先创建一篇文章，创建后会显示在这里。"
+    : "换个关键词或筛选条件再试试。";
 
   return (
     <div style={{ height: "100%", overflow: "auto", background: "var(--bg)" }}>
@@ -237,7 +237,7 @@ export default function ArticleList({ go }: ArticleListProps) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 32 }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 10 }}>
-              <span className="caps">第 2604 期 · 稿件总库</span>
+              <span className="caps">文章列表</span>
               <div className="hair-rule" style={{ flex: 1 }} />
               <span className="caps tnum">
                 {articles.length.toString().padStart(3, "0")} / 篇
@@ -247,7 +247,7 @@ export default function ArticleList({ go }: ArticleListProps) {
               className="title-serif"
               style={{ fontSize: 72, margin: "10px 0 8px", color: "var(--fg)" }}
             >
-              稿&nbsp;库<span style={{ color: "var(--accent)" }}>.</span>
+              文&nbsp;章<span style={{ color: "var(--accent)" }}>.</span>
             </h1>
             <p
               style={{
@@ -259,7 +259,7 @@ export default function ArticleList({ go }: ArticleListProps) {
                 letterSpacing: "0.01em",
               }}
             >
-              助手与编辑在同一张稿桌上协作。
+              专注内容，排版交给我。
             </p>
           </div>
 
@@ -272,9 +272,9 @@ export default function ArticleList({ go }: ArticleListProps) {
               lineHeight: 1.7,
             }}
           >
-            <div>本地 · {new Date().toLocaleDateString("zh-CN")}</div>
+            <div>今天 · {new Date().toLocaleDateString("zh-CN")}</div>
             <div>
-              助手 · <span style={{ color: "var(--gold)" }}>CLAUDE · CODEX · OPENCLAW</span>
+              支持 · <span style={{ color: "var(--gold)" }}>CLAUDE · CODEX · OPENCLAW</span>
             </div>
             <div>接口 · :7072/api/v1/articles</div>
             <div
@@ -285,7 +285,7 @@ export default function ArticleList({ go }: ArticleListProps) {
                 fontFamily: "var(--f-display)",
               }}
             >
-              &mdash; 第三卷 · 第四页
+              已连接本地服务
             </div>
           </div>
         </div>
@@ -330,7 +330,7 @@ export default function ArticleList({ go }: ArticleListProps) {
             <input
               value={q}
               onChange={(event) => setQ(event.target.value)}
-              placeholder="搜索标题"
+              placeholder="搜索文章标题"
               style={{
                 all: "unset",
                 fontFamily: "var(--f-mono)",
@@ -371,13 +371,13 @@ export default function ArticleList({ go }: ArticleListProps) {
               cursor: "pointer",
             }}
           >
-            <option value="updated">↓ 最近修改</option>
-            <option value="created">↓ 创建时间</option>
-            <option value="title">↓ 标题</option>
+            <option value="updated">最近修改</option>
+            <option value="created">创建时间</option>
+            <option value="title">标题</option>
           </select>
 
           <button className="btn btn-primary btn-sm" onClick={handleCreate} disabled={creating}>
-            <IconPlus size={12} /> {creating ? "创建中" : "新建"}
+            <IconPlus size={12} /> {creating ? "创建中" : "新建文章"}
           </button>
         </div>
       </div>
@@ -395,7 +395,7 @@ export default function ArticleList({ go }: ArticleListProps) {
           <span className="caps">№</span>
           <span className="caps">封面</span>
           <span className="caps">标题</span>
-          <span className="caps">签署</span>
+          <span className="caps">作者</span>
           <span className="caps">状态</span>
           <span className="caps tnum">字数</span>
           <span />
@@ -410,7 +410,7 @@ export default function ArticleList({ go }: ArticleListProps) {
               color: "var(--fg-4)",
             }}
           >
-            正在读取后端稿库…
+            正在加载文章列表…
           </div>
         )}
 
@@ -424,7 +424,7 @@ export default function ArticleList({ go }: ArticleListProps) {
             }}
           >
             <div className="caps" style={{ color: "var(--fg-5)" }}>
-              稿库为空
+              空列表
             </div>
             <div className="title-serif" style={{ fontSize: 32, color: "var(--fg)" }}>
               {emptyStateTitle}
@@ -545,7 +545,7 @@ export default function ArticleList({ go }: ArticleListProps) {
         >
           <span className="mono">+ + +</span>
           <span className="title-serif" style={{ fontSize: 20, fontStyle: "italic" }}>
-            {creating ? "正在建立真实草稿…" : "新建一篇 · 或让助手起草"}
+            {creating ? "正在创建文章…" : "新建文章，或让助手先起草"}
           </span>
           <span>
             <IconPlus size={14} />
@@ -565,7 +565,7 @@ export default function ArticleList({ go }: ArticleListProps) {
             textTransform: "uppercase",
           }}
         >
-          <span>MBEditor · 稿库 · 已到末尾</span>
+          <span>MBEditor · 文章列表</span>
           <span>— / —</span>
           <span>按 N 新建 · 按 / 搜索</span>
         </div>

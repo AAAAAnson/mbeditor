@@ -109,9 +109,11 @@ function viewForLayout(layout: "focus" | "split" | "triptych") {
 interface EditorSurfaceProps {
   articleId?: string;
   go: (route: Route, params?: Record<string, string>) => void;
+  canGoBack: boolean;
+  onBack: () => void;
 }
 
-export default function EditorSurface({ articleId, go }: EditorSurfaceProps) {
+export default function EditorSurface({ articleId, go, canGoBack, onBack }: EditorSurfaceProps) {
   const fetchArticle = useArticlesStore((state) => state.fetchArticle);
   const updateArticle = useArticlesStore((state) => state.updateArticle);
   const setCurrentArticle = useArticlesStore((state) => state.setCurrentArticle);
@@ -157,7 +159,7 @@ export default function EditorSurface({ articleId, go }: EditorSurfaceProps) {
       setPreviewError(null);
       setLoadingArticle(false);
       setSaveState("idle");
-      setLoadError(articleId === "new" ? "请先从稿库创建真实文章。" : null);
+      setLoadError(articleId === "new" ? "请先从列表创建一篇文章。" : null);
       return () => {
         cancelled = true;
       };
@@ -310,7 +312,7 @@ export default function EditorSurface({ articleId, go }: EditorSurfaceProps) {
         digest: draft.digest,
       });
       const data = unwrapResponse(res.data);
-      toast.success(`已投递到微信草稿箱 · ${data.media_id}`);
+      toast.success(`已发送到微信草稿箱 · ${data.media_id}`);
     } catch (error) {
       toast.error(extractErrorMessage(error));
     } finally {
@@ -331,16 +333,16 @@ export default function EditorSurface({ articleId, go }: EditorSurfaceProps) {
       >
         <div style={{ maxWidth: 460, textAlign: "center" }}>
           <div className="caps" style={{ color: "var(--fg-5)", marginBottom: 12 }}>
-            编辑器已就绪
+            编辑器
           </div>
           <h2 className="title-serif" style={{ fontSize: 40, color: "var(--fg)", margin: "0 0 12px" }}>
-            先从稿库打开一篇真实文章
+            先打开一篇文章
           </h2>
           <p style={{ margin: "0 0 20px", color: "var(--fg-3)", lineHeight: 1.8 }}>
-            {loadError || "编辑器已经接到真实后端链路，接下来只需要从稿库进入具体稿件。"}
+            {loadError || "从列表里选一篇文章后，就可以开始编辑和预览。"}
           </p>
           <button className="btn btn-primary btn-sm" onClick={() => go("list")}>
-            返回稿库
+            返回列表
           </button>
         </div>
       </div>
@@ -361,7 +363,7 @@ export default function EditorSurface({ articleId, go }: EditorSurfaceProps) {
           textTransform: "uppercase",
         }}
       >
-        正在载入文章…
+        正在加载文章…
       </div>
     );
   }
@@ -379,16 +381,16 @@ export default function EditorSurface({ articleId, go }: EditorSurfaceProps) {
       >
         <div style={{ maxWidth: 460, textAlign: "center" }}>
           <div className="caps" style={{ color: "var(--fg-5)", marginBottom: 12 }}>
-            加载失败
+            打开失败
           </div>
           <h2 className="title-serif" style={{ fontSize: 40, color: "var(--fg)", margin: "0 0 12px" }}>
-            无法载入这篇文章
+            这篇文章暂时打不开
           </h2>
           <p style={{ margin: "0 0 20px", color: "var(--fg-3)", lineHeight: 1.8 }}>
-            {loadError || "文章不存在，或者后端返回了错误。"}
+            {loadError || "文章不存在，或者服务返回了错误。"}
           </p>
           <button className="btn btn-primary btn-sm" onClick={() => go("list")}>
-            返回稿库
+            返回列表
           </button>
         </div>
       </div>
@@ -415,6 +417,7 @@ export default function EditorSurface({ articleId, go }: EditorSurfaceProps) {
 
       <CenterStage
         articleId={articleId}
+        canGoBack={canGoBack}
         draft={draft}
         view={view}
         setView={setView}
@@ -426,6 +429,7 @@ export default function EditorSurface({ articleId, go }: EditorSurfaceProps) {
         previewLoading={previewLoading}
         previewError={previewError}
         publishing={publishing}
+        onBack={onBack}
         onFieldChange={handleFieldChange}
         onRefreshPreview={() => {
           void refreshPreviewNow(draft, false).catch(() => undefined);

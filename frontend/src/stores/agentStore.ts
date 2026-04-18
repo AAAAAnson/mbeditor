@@ -53,7 +53,7 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
       id: nextId(),
       t: now(),
       kind: "think",
-      text: `正在分析需求：「${prompt.slice(0, 80)}${prompt.length > 80 ? "..." : ""}」`,
+      text: `正在理解你的需求：「${prompt.slice(0, 80)}${prompt.length > 80 ? "..." : ""}」`,
     };
     set((state) => ({
       messages: [...state.messages, thinkMsg],
@@ -81,7 +81,7 @@ export const useAgentStore = create<AgentState>()((set, get) => ({
       id: nextId(),
       t: now(),
       kind: "assistant",
-      text: `已处理你的请求：「${prompt.slice(0, 60)}${prompt.length > 60 ? "..." : ""}」。相关改动已经应用到文章中。`,
+      text: `已经处理好了：「${prompt.slice(0, 60)}${prompt.length > 60 ? "..." : ""}」。改动已同步到文章里。`,
     };
     set((state) => ({
       messages: [...state.messages, assistantMsg],

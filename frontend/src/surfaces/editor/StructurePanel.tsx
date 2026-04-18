@@ -44,7 +44,7 @@ function buildMarkdownOutline(markdown: string): OutlineBlock[] {
     const heading = line.match(/^(#{1,6})\s+(.*)$/);
     if (!heading) return;
 
-    const preview = lines.slice(index + 1).find((item) => item.trim())?.trim() || "空段落";
+    const preview = lines.slice(index + 1).find((item) => item.trim())?.trim() || "暂无内容";
     blocks.push({
       id: `md-${index}`,
       type: heading[1].length === 1 ? "hero" : "section",
@@ -63,7 +63,7 @@ function buildMarkdownOutline(markdown: string): OutlineBlock[] {
     .slice(0, 4);
 
   if (fallback.length === 0) {
-    return [{ id: "md-body", type: "body", label: "正文", preview: "Markdown 内容待补充", depth: 0 }];
+    return [{ id: "md-body", type: "body", label: "正文", preview: "还没开始写", depth: 0 }];
   }
 
   return fallback.map((line, index) => ({
@@ -97,7 +97,7 @@ function buildHtmlOutline(html: string): OutlineBlock[] {
       id: `html-image-${index}`,
       type: "image",
       label: `图片 ${index + 1}`,
-      preview: "嵌入图片素材",
+      preview: "已插入图片",
       depth: 1,
     });
   });
@@ -106,7 +106,7 @@ function buildHtmlOutline(html: string): OutlineBlock[] {
 
   const text = stripHtml(html);
   if (!text) {
-    return [{ id: "html-body", type: "body", label: "正文", preview: "HTML 内容待补充", depth: 0 }];
+    return [{ id: "html-body", type: "body", label: "正文", preview: "还没开始写", depth: 0 }];
   }
 
   return text
@@ -117,7 +117,7 @@ function buildHtmlOutline(html: string): OutlineBlock[] {
     .map((item, index) => ({
       id: `html-body-${index}`,
       type: index === 0 ? "hero" : "body",
-      label: index === 0 ? "导语" : `段落 ${index + 1}`,
+      label: index === 0 ? "开头" : `段落 ${index + 1}`,
       preview: item,
       depth: 0,
     }));
@@ -176,12 +176,12 @@ export default function StructurePanel({
     >
       <div style={{ padding: "16px 20px 14px", borderBottom: "1px solid var(--border)" }}>
         <div className="caps" style={{ marginBottom: 8 }}>
-          文件 · 当前稿件
+          当前文章
         </div>
         <input
           value={draft.title}
           onChange={(event) => onTitleChange(event.target.value)}
-          placeholder="未命名文章"
+          placeholder="请输入标题"
           style={{
             all: "unset",
             width: "100%",
@@ -204,14 +204,14 @@ export default function StructurePanel({
             className="mono"
             style={{ fontSize: 10, color: "var(--fg-5)", letterSpacing: "0.1em" }}
           >
-            {articleId ? articleId.toUpperCase() : "未载入稿件"}
+            {articleId ? articleId.toUpperCase() : "未打开"}
           </span>
         </div>
       </div>
 
       <div style={{ padding: "14px 12px 8px", borderBottom: "1px solid var(--border)", overflow: "auto", flex: "0 1 auto" }}>
         <div className="caps" style={{ padding: "0 8px 10px" }}>
-          结构 · 大纲
+          内容大纲
         </div>
         <div>
           {outline.map((block, index) => {
@@ -296,7 +296,7 @@ export default function StructurePanel({
 
       <div style={{ padding: "14px 20px 14px" }}>
         <div className="caps" style={{ marginBottom: 10 }}>
-          素材 · 图片
+          图片
         </div>
 
         {assets.length === 0 ? (
@@ -310,7 +310,7 @@ export default function StructurePanel({
               lineHeight: 1.7,
             }}
           >
-            当前稿件里还没有图片素材。
+            这篇文章还没有图片。
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
