@@ -1,137 +1,196 @@
-import { useState, useEffect, useRef } from "react";
-import { IconTerminal, IconArrowRight } from "@/components/icons";
+import { useEffect, useRef, useState } from "react";
+import { IconArrowRight, IconTerminal } from "@/components/icons";
 import Chip from "@/components/shared/Chip";
-import type { Route, Mission } from "@/types";
+import api from "@/lib/api";
+import type { Route } from "@/types";
 
-/* ---------- mock data ---------- */
+type RunStatus = "empty" | "draft" | "ready";
+type RunEventKind = "meta" | "fact" | "warning";
 
-const RUNS: Mission[] = [
-  { id: "run-018", article: "让公众号排版回归内容本身", status: "running",  step: "写入正文 · 3/5",    pct: 58,  agent: "Claude",   started: "17:02:14", tools: 7  },
-  { id: "run-017", article: "从命令行到草稿箱",         status: "success",  step: "已投递草稿",           pct: 100, agent: "Claude",   started: "16:44:02", tools: 12 },
-  { id: "run-016", article: "Docker 一行命令部署",       status: "success",  step: "已投递草稿",           pct: 100, agent: "Codex",    started: "14:18:40", tools: 9  },
-  { id: "run-015", article: "Skill 装进 Claude Code",    status: "waiting",  step: "等待用户确认封面",      pct: 72,  agent: "Claude",   started: "13:55:11", tools: 6  },
-  { id: "run-014", article: "为什么我不再手动排版",       status: "failed",   step: "Wx 草稿箱 401",        pct: 88,  agent: "OpenClaw", started: "昨天 23:40", tools: 11 },
-  { id: "run-013", article: "Markdown × 瑞士极简",   status: "success",  step: "已投递草稿",           pct: 100, agent: "Claude",   started: "昨天 22:01", tools: 8  },
-];
-
-const STATUS_TONE: Record<string, "" | "gold" | "accent" | "forest" | "info" | "warn"> = {
-  running: "warn",
-  success: "forest",
-  waiting: "info",
-  failed:  "accent",
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  running: "运行中",
-  success: "成功",
-  waiting: "待确认",
-  failed:  "失败",
-};
-
-/* ---------- terminal helpers ---------- */
-
-interface TermEntry {
+interface RunEvent {
   ts: string;
-  k: "meta" | "log" | "tool" | "think";
-  t: string;
+  kind: RunEventKind;
+  text: string;
 }
 
-function initialTerm(run: Mission): TermEntry[] {
-  return [
-    { ts: "17:02:14", k: "meta",  t: `>> start ${run.id} · agent=${run.agent}` },
-    { ts: "17:02:14", k: "log",   t: "loaded skill · mbeditor.skill.md" },
-    { ts: "17:02:14", k: "tool",  t: "GET  /api/v1/articles/MB-2604-018  →  ok" },
-    { ts: "17:02:15", k: "think", t: "plan: rewrite hero, upload cover, update 3 cards, preview, draft" },
-    { ts: "17:02:15", k: "log",   t: "tone: 克制 · length: 短 · image: warm_01" },
-    { ts: "17:02:16", k: "tool",  t: "POST /api/v1/images/upload  →  ok" },
-    { ts: "17:02:16", k: "log",   t: "image stored /images/warm_01.png" },
-    { ts: "17:02:17", k: "tool",  t: "PUT  /api/v1/articles/MB-2604-018  →  ok" },
-    { ts: "17:02:18", k: "log",   t: "block b1 · Hero · content rewritten" },
-  ];
+interface RunRecord {
+  id: string;
+  source: string;
+  article_id: string;
+  article_title: string;
+  mode: "html" | "markdown";
+  status: RunStatus;
+  status_label: string;
+  step_label: string;
+  readiness_pct: number;
+  started_at: string;
+  updated_at: string;
+  body_chars: number;
+  has_cover: boolean;
+  has_author: boolean;
+  has_digest: boolean;
+  capabilities: {
+    pause: boolean;
+    command: boolean;
+    live_terminal: boolean;
+    preview: boolean;
+    publish: boolean;
+  };
+  events: RunEvent[];
 }
 
-function progressColor(status: string): string {
-  if (status === "failed")  return "var(--accent)";
-  if (status === "waiting") return "var(--info)";
-  if (status === "running") return "var(--gold)";
-  return "var(--forest)";
+interface RunsPayload {
+  mode: string;
+  generated_at: string;
+  notice: string;
+  summary: {
+    total: number;
+    ready: number;
+    draft: number;
+    empty: number;
+    wechat_configured: boolean;
+  };
+  capabilities: {
+    data_source: string;
+    persisted_runs: boolean;
+    pause: boolean;
+    command: boolean;
+    live_terminal: boolean;
+  };
+  items: RunRecord[];
 }
 
-/* ---------- TermLine ---------- */
+interface ApiResponse<T> {
+  code: number;
+  message: string;
+  data: T;
+}
 
-function TermLine({ ts, k, t }: TermEntry) {
+const STATUS_TONE: Record<RunStatus, "" | "gold" | "accent" | "forest" | "info" | "warn"> = {
+  empty: "info",
+  draft: "gold",
+  ready: "forest",
+};
+
+function progressColor(status: RunStatus): string {
+  if (status === "ready") return "var(--forest)";
+  if (status === "draft") return "var(--gold)";
+  return "var(--info)";
+}
+
+function formatShort(ts: string): string {
+  const date = new Date(ts);
+  if (Number.isNaN(date.getTime())) return ts;
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+}
+
+function formatRelative(ts: string): string {
+  const date = new Date(ts);
+  if (Number.isNaN(date.getTime())) return ts;
+
+  const diff = Date.now() - date.getTime();
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  if (diff < minute) return "刚刚";
+  if (diff < hour) return `${Math.floor(diff / minute)} 分钟前`;
+  if (diff < day) return `${Math.floor(diff / hour)} 小时前`;
+  return `${Math.floor(diff / day)} 天前`;
+}
+
+function EventLine({ ts, kind, text }: RunEvent) {
   const color =
-    k === "tool"  ? "var(--gold)"   :
-    k === "think" ? "var(--fg-4)"   :
-    k === "meta"  ? "var(--accent)" :
-    k === "log"   ? "var(--forest)" :
-    "var(--fg-3)";
-  const marker =
-    k === "tool"  ? "→" :
-    k === "think" ? "◇" :
-    k === "meta"  ? "⊳" :
-    k === "log"   ? "·" :
-    " ";
+    kind === "warning" ? "var(--accent)" :
+    kind === "meta" ? "var(--fg-4)" :
+    "var(--forest)";
+  const marker = kind === "warning" ? "!" : kind === "meta" ? "·" : "→";
 
   return (
     <div className="slide-up" style={{ display: "flex", gap: 10 }}>
-      <span style={{ color: "var(--fg-5)", userSelect: "none" }}>{ts}</span>
+      <span style={{ color: "var(--fg-5)", userSelect: "none" }}>{formatShort(ts)}</span>
       <span style={{ color, width: 12, textAlign: "center", userSelect: "none" }}>{marker}</span>
-      <span style={{ color, flex: 1, fontStyle: k === "think" ? "italic" : "normal" }}>{t}</span>
+      <span style={{ color, flex: 1 }}>{text}</span>
     </div>
   );
 }
 
-/* ---------- LiveRunPanel ---------- */
-
-interface LiveRunPanelProps {
-  run: Mission;
+interface DetailPanelProps {
+  run: RunRecord | null;
+  notice: string;
+  loading: boolean;
+  onRefresh: () => void;
   go: (route: Route, params?: Record<string, string>) => void;
 }
 
-function LiveRunPanel({ run, go }: LiveRunPanelProps) {
-  const [lines, setLines] = useState<TermEntry[]>(initialTerm(run));
+function DetailPanel({ run, notice, loading, onRefresh, go }: DetailPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setLines(initialTerm(run));
-  }, [run.id]);
+    if (!scrollRef.current) return;
+    scrollRef.current.scrollTop = 0;
+  }, [run?.id]);
 
-  // streaming effect for running runs
-  useEffect(() => {
-    if (run.status !== "running") return;
+  if (!run) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", minHeight: 0, background: "var(--bg-deep)" }}>
+        <div style={{ padding: "16px 22px 14px", borderBottom: "1px solid var(--border)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: "50%",
+              background: "var(--accent-soft)", border: "1px solid var(--accent-glow)",
+              display: "grid", placeItems: "center", color: "var(--accent)",
+            }}>
+              <IconTerminal size={16} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div className="mono" style={{ fontSize: 10, color: "var(--fg-4)", letterSpacing: "0.1em" }}>
+                READ ONLY CONTROL ROOM
+              </div>
+              <div className="title-serif" style={{ fontSize: 20, color: "var(--fg)" }}>
+                暂无活动记录
+              </div>
+            </div>
+          </div>
+        </div>
 
-    const lib: Omit<TermEntry, "ts">[] = [
-      { k: "tool",  t: "POST /api/v1/images/upload  →  ok (200, 142KB)" },
-      { k: "think", t: "rewriting hero; tone=克制 ; length≤48" },
-      { k: "tool",  t: "PUT  /api/v1/articles/MB-2604-018  →  ok" },
-      { k: "log",   t: "block b4 · Card · content rewritten" },
-      { k: "tool",  t: "POST /api/v1/publish/preview  →  ok" },
-      { k: "log",   t: "inlined 14 css rules, stripped 3 non-wx" },
-    ];
-
-    let i = 0;
-    const tick = setInterval(() => {
-      const pick = lib[i % lib.length];
-      const now = new Date();
-      const ts = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
-      setLines(prev => [...prev.slice(-80), { ts, ...pick }]);
-      i++;
-    }, 1800);
-
-    return () => clearInterval(tick);
-  }, [run.id, run.status]);
-
-  // auto-scroll to bottom on new lines
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [lines]);
+        <div style={{
+          flex: 1,
+          display: "grid",
+          placeItems: "center",
+          padding: "32px 28px",
+          color: "var(--fg-3)",
+          textAlign: "center",
+        }}>
+          <div style={{ maxWidth: 380 }}>
+            <div className="title-serif" style={{ fontSize: 28, color: "var(--fg)", marginBottom: 10 }}>
+              还没有可展示的稿件活动。
+            </div>
+            <p style={{ margin: 0, lineHeight: 1.8 }}>
+              {notice}
+            </p>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 18, flexWrap: "wrap" }}>
+              <button className="btn btn-outline btn-sm" onClick={onRefresh} disabled={loading}>
+                {loading ? "刷新中…" : "刷新数据"}
+              </button>
+              <button className="btn btn-accent btn-sm" onClick={() => go("list")}>
+                打开稿库 <IconArrowRight size={10} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: 0, background: "var(--bg-deep)" }}>
-      {/* header */}
       <div style={{ padding: "16px 22px 14px", borderBottom: "1px solid var(--border)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{
@@ -143,32 +202,32 @@ function LiveRunPanel({ run, go }: LiveRunPanelProps) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="mono" style={{ fontSize: 10, color: "var(--fg-4)", letterSpacing: "0.1em" }}>
-              {run.id} &middot; {run.agent}
+              {run.article_id} · {run.source}
             </div>
             <div className="title-serif" style={{ fontSize: 20, color: "var(--fg)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {run.article}
+              {run.article_title}
             </div>
           </div>
-          <Chip tone={STATUS_TONE[run.status]}>
-            {run.status === "running" && <span className="pulse" style={{ width: 5, height: 5 }} />}
-            {STATUS_LABEL[run.status]}
-          </Chip>
+          <Chip tone={STATUS_TONE[run.status]}>{run.status_label}</Chip>
         </div>
 
-        {/* action chips */}
         <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-          <Chip>{run.tools} TOOLS</Chip>
-          <Chip tone="gold">{run.pct}% 进度</Chip>
-          <Chip tone="info">开始 {run.started}</Chip>
+          <Chip>{run.mode.toUpperCase()}</Chip>
+          <Chip tone="gold">{run.readiness_pct}% 就绪度</Chip>
+          <Chip tone={run.capabilities.publish ? "forest" : "info"}>
+            {run.capabilities.publish ? "可投递" : "未投递就绪"}
+          </Chip>
+          <Chip>{run.body_chars} chars</Chip>
           <div style={{ flex: 1 }} />
-          <button className="btn btn-outline btn-sm">暂停</button>
-          <button className="btn btn-accent btn-sm" onClick={() => go("editor", { articleId: run.id })}>
-            打开编辑器 <IconArrowRight size={10} />
+          <button className="btn btn-outline btn-sm" onClick={onRefresh} disabled={loading}>
+            {loading ? "刷新中…" : "刷新数据"}
+          </button>
+          <button className="btn btn-accent btn-sm" onClick={() => go("list")}>
+            打开稿库 <IconArrowRight size={10} />
           </button>
         </div>
       </div>
 
-      {/* terminal output */}
       <div
         ref={scrollRef}
         style={{
@@ -177,62 +236,81 @@ function LiveRunPanel({ run, go }: LiveRunPanelProps) {
           color: "var(--fg-3)", minHeight: 0,
         }}
       >
-        {lines.map((l, i) => <TermLine key={i} {...l} />)}
-        {run.status === "running" && (
-          <div style={{ color: "var(--accent)" }}>
-            <span style={{ color: "var(--fg-5)" }}>{lines[lines.length - 1]?.ts || "--:--:--"}</span>
-            &nbsp;&nbsp;<span className="caret">&#x258c;</span>
-          </div>
-        )}
+        {run.events.map((event, index) => <EventLine key={`${run.id}-${index}`} {...event} />)}
       </div>
 
-      {/* command input */}
-      <div style={{ borderTop: "1px solid var(--border)", padding: "10px 16px", display: "flex", gap: 8, alignItems: "center" }}>
-        <span className="mono" style={{ color: "var(--accent)", fontSize: 12 }}>&gt;</span>
-        <input
-          placeholder="对 Agent 下指令…"
-          style={{ all: "unset", flex: 1, fontFamily: "var(--f-mono)", fontSize: 12, color: "var(--fg-2)" }}
-        />
-        <span className="mono" style={{ fontSize: 10, color: "var(--fg-5)" }}>⌘↵</span>
+      <div style={{ borderTop: "1px solid var(--border)", padding: "12px 16px" }}>
+        <div className="caps" style={{ marginBottom: 10 }}>能力边界</div>
+        <div style={{ display: "grid", gap: 8, fontFamily: "var(--f-mono)", fontSize: 12, color: "var(--fg-3)" }}>
+          <div>暂停: {run.capabilities.pause ? "已启用" : "未实现"}</div>
+          <div>下指令: {run.capabilities.command ? "已启用" : "未实现"}</div>
+          <div>实时终端: {run.capabilities.live_terminal ? "已启用" : "未实现"}</div>
+          <div>说明: {notice}</div>
+        </div>
       </div>
     </div>
   );
 }
 
-/* ---------- AgentConsole (main) ---------- */
-
 export default function AgentConsole({ go }: { go: (route: Route, params?: Record<string, string>) => void }) {
-  const [sel, setSel] = useState("run-018");
-  const active = RUNS.find(r => r.id === sel) || RUNS[0];
+  const [payload, setPayload] = useState<RunsPayload | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadRuns = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get<ApiResponse<RunsPayload>>("/runs");
+      const next = res.data.data;
+      setPayload(next);
+      setSelectedId((current) => {
+        if (!next.items.length) return null;
+        if (current && next.items.some((item) => item.id === current)) return current;
+        return next.items[0].id;
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "无法加载 runs 数据");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadRuns();
+  }, []);
+
+  const runs = payload?.items ?? [];
+  const active = runs.find((item) => item.id === selectedId) ?? runs[0] ?? null;
+  const notice = payload?.notice ?? "当前控制台只展示真实已保存数据，不展示伪造终端流。";
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 520px", height: "100%", minHeight: 0, background: "var(--bg)" }}>
-      {/* Left: masthead + runs ledger */}
       <div style={{ overflow: "auto", padding: "36px 40px 40px", borderRight: "1px solid var(--border)" }}>
-        {/* masthead */}
         <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 10 }}>
-          <span className="caps caps-gold">CONTROL ROOM &middot; 代理控制台</span>
+          <span className="caps caps-gold">CONTROL ROOM &middot; 真实活动台</span>
           <div className="hair-rule" style={{ flex: 1 }} />
-          <span className="caps tnum">6 RUNS &middot; 3 AGENTS</span>
+          <span className="caps tnum">
+            {payload ? `${payload.summary.total} RECORDS · ${payload.capabilities.persisted_runs ? "LIVE" : "READ ONLY"}` : "LOADING"}
+          </span>
         </div>
 
-        {/* hero title */}
         <h1 className="title-serif" style={{ fontSize: 64, margin: "6px 0 6px" }}>
-          所有 Agent 的<br />
-          <span style={{ color: "var(--gold)", fontStyle: "italic" }}>工作现场</span>
+          保存下来的稿件<br />
+          <span style={{ color: "var(--gold)", fontStyle: "italic" }}>真实活动台</span>
           <span style={{ color: "var(--accent)" }}>.</span>
         </h1>
         <p style={{ margin: "6px 0 28px", color: "var(--fg-3)", fontSize: 14, fontFamily: "var(--f-display)", fontStyle: "italic" }}>
-          Observe, intervene, approve &mdash; never babysit.
+          {notice}
         </p>
 
-        {/* KPI strip */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 28 }}>
           {([
-            { k: "活跃任务", v: "01", d: "CLAUDE · 正在写入", tone: "gold" },
-            { k: "今日投递", v: "12", d: "↑ 33% vs 昨日",     tone: "forest" },
-            { k: "工具调用", v: "284", d: "avg 12/run",            tone: "" },
-            { k: "平均用时", v: "4′22″", d: "p95 8′10″", tone: "" },
+            { k: "活动记录", v: payload ? String(payload.summary.total).padStart(2, "0") : "--", d: "来自真实稿件存储", tone: "gold" },
+            { k: "可投递", v: payload ? String(payload.summary.ready).padStart(2, "0") : "--", d: payload?.summary.wechat_configured ? "公众号已配置" : "配置缺失", tone: "forest" },
+            { k: "待配置", v: payload ? String(payload.summary.draft).padStart(2, "0") : "--", d: "正文已存在但未打通发布", tone: "" },
+            { k: "控制能力", v: payload?.capabilities.persisted_runs ? "LIVE" : "READ", d: "暂停 / 指令 / 实时流未启用", tone: "" },
           ] as const).map((kpi, i) => (
             <div key={i} style={{
               padding: "16px 16px 14px", background: "var(--surface)",
@@ -262,94 +340,109 @@ export default function AgentConsole({ go }: { go: (route: Route, params?: Recor
           ))}
         </div>
 
-        {/* Runs table header */}
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 10 }}>
-          <span className="caps">运行记录 &middot; RUNS</span>
+          <span className="caps">活动记录 &middot; READ ONLY RUNS</span>
           <div className="hair-rule" style={{ flex: 1 }} />
+          <button className="btn btn-outline btn-sm" onClick={() => void loadRuns()} disabled={loading}>
+            {loading ? "刷新中…" : "刷新"}
+          </button>
         </div>
+
+        {error && (
+          <div style={{
+            marginBottom: 14,
+            padding: "12px 14px",
+            borderRadius: 10,
+            border: "1px solid var(--accent-glow)",
+            background: "var(--accent-soft)",
+            color: "var(--accent)",
+            fontSize: 13,
+          }}>
+            无法获取 runs 数据：{error}
+          </div>
+        )}
+
         <div style={{
           display: "grid", gridTemplateColumns: "90px 1fr 100px 80px 90px",
           padding: "8px 10px", borderBottom: "1px solid var(--border)", marginBottom: 4,
         }}>
           <span className="caps">ID</span>
-          <span className="caps">文章 / 步骤</span>
-          <span className="caps">AGENT</span>
+          <span className="caps">文章 / 就绪度</span>
+          <span className="caps">来源</span>
           <span className="caps">状态</span>
-          <span className="caps tnum" style={{ textAlign: "right" }}>开始</span>
+          <span className="caps tnum" style={{ textAlign: "right" }}>更新</span>
         </div>
 
-        {/* Runs rows */}
-        {RUNS.map(r => (
-          <div
-            key={r.id}
-            onClick={() => setSel(r.id)}
-            style={{
-              display: "grid", gridTemplateColumns: "90px 1fr 100px 80px 90px",
-              gap: "8px", padding: "14px 10px", alignItems: "center",
-              borderBottom: "1px solid var(--border)",
-              cursor: "pointer",
-              background: sel === r.id ? "var(--surface)" : "transparent",
-              position: "relative",
-            }}
-          >
-            {/* active selection bar */}
-            {sel === r.id && (
-              <span style={{
-                position: "absolute", left: 0, top: 10, bottom: 10,
-                width: 2, background: "var(--accent)",
-              }} />
-            )}
-
-            {/* ID */}
-            <span className="mono tnum" style={{ fontSize: 11, color: "var(--fg-3)" }}>{r.id}</span>
-
-            {/* article + progress */}
-            <div style={{ minWidth: 0 }}>
-              <div className="title-serif" style={{
-                fontSize: 17, color: "var(--fg)",
-                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-              }}>
-                {r.article}
-              </div>
-              <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ flex: 1, height: 3, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${r.pct}%`, background: progressColor(r.status) }} />
-                </div>
-                <span className="mono" style={{ fontSize: 10, color: "var(--fg-4)", width: 120, whiteSpace: "nowrap" }}>
-                  {r.step}
-                </span>
-              </div>
-            </div>
-
-            {/* agent */}
-            <span className="mono" style={{ fontSize: 11, color: "var(--fg-2)" }}>{r.agent}</span>
-
-            {/* status chip */}
-            <Chip tone={STATUS_TONE[r.status]}>
-              {r.status === "running" && <span className="pulse" style={{ width: 5, height: 5 }} />}
-              {STATUS_LABEL[r.status]}
-            </Chip>
-
-            {/* start time */}
-            <span className="mono tnum" style={{ fontSize: 10, color: "var(--fg-4)", textAlign: "right" }}>
-              {r.started}
-            </span>
+        {runs.length === 0 && !loading ? (
+          <div style={{
+            padding: "18px 12px",
+            color: "var(--fg-4)",
+            borderBottom: "1px solid var(--border)",
+          }}>
+            当前没有可展示的活动记录。先在稿库创建或保存一篇文章，这里才会出现真实数据。
           </div>
-        ))}
+        ) : (
+          runs.map((run) => (
+            <div
+              key={run.id}
+              onClick={() => setSelectedId(run.id)}
+              style={{
+                display: "grid", gridTemplateColumns: "90px 1fr 100px 80px 90px",
+                gap: "8px", padding: "14px 10px", alignItems: "center",
+                borderBottom: "1px solid var(--border)",
+                cursor: "pointer",
+                background: selectedId === run.id ? "var(--surface)" : "transparent",
+                position: "relative",
+              }}
+            >
+              {selectedId === run.id && (
+                <span style={{
+                  position: "absolute", left: 0, top: 10, bottom: 10,
+                  width: 2, background: "var(--accent)",
+                }} />
+              )}
 
-        {/* footer slug */}
+              <span className="mono tnum" style={{ fontSize: 11, color: "var(--fg-3)" }}>{run.article_id}</span>
+
+              <div style={{ minWidth: 0 }}>
+                <div className="title-serif" style={{
+                  fontSize: 17, color: "var(--fg)",
+                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                }}>
+                  {run.article_title}
+                </div>
+                <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ flex: 1, height: 3, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${run.readiness_pct}%`, background: progressColor(run.status) }} />
+                  </div>
+                  <span className="mono" style={{ fontSize: 10, color: "var(--fg-4)", width: 140, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {run.step_label}
+                  </span>
+                </div>
+              </div>
+
+              <span className="mono" style={{ fontSize: 11, color: "var(--fg-2)" }}>ARTICLE</span>
+
+              <Chip tone={STATUS_TONE[run.status]}>{run.status_label}</Chip>
+
+              <span className="mono tnum" style={{ fontSize: 10, color: "var(--fg-4)", textAlign: "right" }}>
+                {formatRelative(run.updated_at)}
+              </span>
+            </div>
+          ))
+        )}
+
         <div style={{
           marginTop: 40, display: "flex", justifyContent: "space-between",
           fontFamily: "var(--f-mono)", fontSize: 10, color: "var(--fg-5)",
           letterSpacing: "0.12em", textTransform: "uppercase",
         }}>
-          <span>MBEditor &middot; Control Room</span>
-          <span>Endpoint :7072/api/v1/runs</span>
+          <span>MBEditor &middot; Read-only Control Room</span>
+          <span>{payload ? `/api/v1/runs · ${payload.capabilities.data_source}` : "/api/v1/runs"}</span>
         </div>
       </div>
 
-      {/* Right: live terminal of active run */}
-      <LiveRunPanel run={active} go={go} />
+      <DetailPanel run={active} notice={notice} loading={loading} onRefresh={() => void loadRuns()} go={go} />
     </div>
   );
 }

@@ -17,10 +17,20 @@ const NAV_ITEMS: { key: Route; label: string }[] = [
   { key: "agent", label: "代理控制台" },
 ];
 
+function backendLabel() {
+  if (typeof window === "undefined") return "127.0.0.1:7072";
+
+  const { hostname, port } = window.location;
+  if (port === "5173") return `${hostname}:8000`;
+  if (port === "7073") return `${hostname}:7072`;
+  return `${hostname}:7072`;
+}
+
 export default function TopBar({ route, onNavigate }: TopBarProps) {
   const time = useClock();
   const setTweaksOpen = useUIStore((s) => s.setTweaksOpen);
   const tweaksOpen = useUIStore((s) => s.tweaksOpen);
+  const apiHost = backendLabel();
 
   return (
     <div
@@ -82,7 +92,7 @@ export default function TopBar({ route, onNavigate }: TopBarProps) {
         }}
       >
         <Chip tone="forest" style={{ gap: 8 }}>
-          <Pulse size={6} />ONLINE &middot; localhost:7072
+          <Pulse size={6} />ONLINE &middot; {apiHost}
         </Chip>
         <Chip className="mono tnum" style={{ color: "var(--fg-3)" }}>{time}</Chip>
         <button

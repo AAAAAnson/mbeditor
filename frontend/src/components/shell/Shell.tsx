@@ -6,7 +6,11 @@ import { useTheme } from "@/hooks/useTheme";
 import type { Route } from "@/types";
 
 interface ShellProps {
-  children: (route: Route, navigate: (r: Route, params?: Record<string, string>) => void) => React.ReactNode;
+  children: (
+    route: Route,
+    params: Record<string, string>,
+    navigate: (r: Route, params?: Record<string, string>) => void,
+  ) => React.ReactNode;
 }
 
 export default function Shell({ children }: ShellProps) {
@@ -27,7 +31,7 @@ export default function Shell({ children }: ShellProps) {
       <div className="flex" style={{ minHeight: 0 }}>
         <SideRail route={route} onNavigate={navigate} />
         <div className="flex-1" style={{ minWidth: 0, minHeight: 0 }}>
-          {children(route, navigate)}
+          {children(route, params, navigate)}
         </div>
       </div>
       <TweaksPanel />

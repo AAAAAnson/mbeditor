@@ -31,6 +31,92 @@ interface Props {
   go: (route: Route, params?: Record<string, string>) => void;
 }
 
+type ApiEnvelope<T> = {
+  code?: number;
+  message?: string;
+  data?: T;
+};
+
+type ConfigPayload = {
+  appid?: string;
+  app_id?: string;
+  appsecret?: string;
+  app_secret?: string;
+  configured?: boolean;
+  account_name?: string;
+  valid?: boolean;
+};
+
+type VersionPayload = {
+  version?: string;
+  repo?: string;
+};
+
+const FALLBACK_REPO = "AAAAAnson/mbeditor";
+
+function unwrapApiData<T>(payload: unknown): T | undefined {
+  if (!payload || typeof payload !== "object") {
+    return undefined;
+  }
+
+  const envelope = payload as ApiEnvelope<T>;
+  if (typeof envelope.code === "number" || "data" in envelope || "message" in envelope) {
+    if (typeof envelope.code === "number" && envelope.code !== 0) {
+      throw new Error(envelope.message || "请求失败");
+    }
+    return envelope.data;
+  }
+
+  return payload as T;
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === "object" && "response" in error) {
+    const response = (error as { response?: { data?: unknown } }).response;
+    try {
+      const data = unwrapApiData(response?.data);
+      if (typeof data === "string" && data) {
+        return data;
+      }
+    } catch (apiError) {
+      if (apiError instanceof Error && apiError.message) {
+        return apiError.message;
+      }
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
+function normalizeConfig(payload?: ConfigPayload) {
+  const appid = payload?.appid ?? payload?.app_id ?? "";
+  const maskedSecret = payload?.appsecret ?? payload?.app_secret ?? "";
+
+  return {
+    appid,
+    accountName: payload?.account_name ?? "",
+    configured: Boolean(payload?.configured ?? (appid && maskedSecret)),
+    hasStoredSecret: Boolean(maskedSecret),
+  };
+}
+
+function buildRepoUrl(repo?: string): string {
+  const normalized = (repo || FALLBACK_REPO).trim();
+  if (!normalized) {
+    return `https://github.com/${FALLBACK_REPO}`;
+  }
+
+  if (/^https?:\/\//.test(normalized)) {
+    return normalized;
+  }
+
+  return `https://github.com/${normalized.replace(/^github\.com\//, "").replace(/^\/+/, "")}`;
+}
+
 export default function SettingsSurface({ go: _go }: Props) {
   const [section, setSection] = useState<Section>("wechat");
 
@@ -104,32 +190,38 @@ function WeChatSection() {
   const [appId, setAppId] = useState("");
   const [appSecret, setAppSecret] = useState("");
   const [configured, setConfigured] = useState(false);
+  const [hasStoredSecret, setHasStoredSecret] = useState(false);
   const [accountName, setAccountName] = useState("");
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     api.get("/config").then((res) => {
-      if (res.data?.app_id) {
-        setAppId(res.data.app_id);
-        setConfigured(true);
-        setAccountName(res.data.account_name || "");
-      }
+      const data = normalizeConfig(unwrapApiData<ConfigPayload>(res.data));
+      setAppId(data.appid);
+      setConfigured(data.configured);
+      setHasStoredSecret(data.hasStoredSecret);
+      setAccountName(data.accountName);
+      setAppSecret("");
     }).catch(() => {});
   }, []);
 
   const handleTest = async () => {
     setTesting(true);
     try {
-      const res = await api.post("/config/test", { app_id: appId, app_secret: appSecret });
-      if (res.data?.ok) {
-        toast.success("连接成功");
-        setAccountName(res.data.account_name || "");
-      } else {
-        toast.error(res.data?.error || "连接失败");
-      }
-    } catch {
-      toast.error("连接失败，请检查配置");
+      const res = await api.post("/config/test", {
+        appid: appId.trim(),
+        appsecret: appSecret.trim(),
+      });
+      const data = unwrapApiData<ConfigPayload>(res.data);
+
+      setConfigured(true);
+      setHasStoredSecret(true);
+      setAppSecret("");
+      setAccountName(data?.account_name || accountName || "已配置公众号");
+      toast.success("连接成功");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "连接失败，请检查配置"));
     } finally {
       setTesting(false);
     }
@@ -138,11 +230,21 @@ function WeChatSection() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put("/config", { app_id: appId, app_secret: appSecret });
-      setConfigured(true);
+      const res = await api.put("/config", {
+        appid: appId.trim(),
+        appsecret: appSecret.trim(),
+      });
+      const data = normalizeConfig(unwrapApiData<ConfigPayload>(res.data));
+
+      setConfigured(data.configured || true);
+      setHasStoredSecret(data.hasStoredSecret || true);
+      setAppSecret("");
+      if (data.accountName) {
+        setAccountName(data.accountName);
+      }
       toast.success("配置已保存");
-    } catch {
-      toast.error("保存失败");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "保存失败"));
     } finally {
       setSaving(false);
     }
@@ -188,16 +290,22 @@ function WeChatSection() {
           type="password"
           value={appSecret}
           onChange={(e) => setAppSecret(e.target.value)}
-          placeholder="••••••••••••"
+          placeholder={hasStoredSecret ? "已保存，留空则沿用当前 Secret" : "••••••••••••"}
           style={inputStyle}
         />
       </FieldGroup>
 
+      {hasStoredSecret && (
+        <div style={{ marginTop: -8, marginBottom: 16, fontFamily: "var(--f-mono)", fontSize: 11, color: "var(--fg-4)" }}>
+          当前 Secret 已保存。测试或保存时留空会保留现有值，输入新值才会覆盖。
+        </div>
+      )}
+
       <div className="flex" style={{ gap: 8, marginTop: 24 }}>
-        <button className="btn btn-ghost btn-sm" onClick={handleTest} disabled={testing || !appId}>
+        <button className="btn btn-ghost btn-sm" onClick={handleTest} disabled={testing || !appId.trim()}>
           {testing ? "测试中..." : "测试连接"}
         </button>
-        <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={saving || !appId}>
+        <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={saving || !appId.trim()}>
           {saving ? "保存中..." : "保存"}
         </button>
       </div>
@@ -287,9 +395,12 @@ function AppearanceSection() {
 /* ── Editor Section ─────────────────────────────── */
 
 function EditorSection() {
-  const [defaultMode, setDefaultMode] = useState<"html" | "markdown">("html");
-  const [autoSave, setAutoSave] = useState(true);
-  const [fontSize, setFontSize] = useState(14);
+  const defaultMode = useUIStore((s) => s.editorDefaultMode);
+  const setDefaultMode = useUIStore((s) => s.setEditorDefaultMode);
+  const autoSave = useUIStore((s) => s.editorAutoSave);
+  const setAutoSave = useUIStore((s) => s.setEditorAutoSave);
+  const fontSize = useUIStore((s) => s.editorFontSize);
+  const setFontSize = useUIStore((s) => s.setEditorFontSize);
 
   return (
     <div style={{ maxWidth: 520 }}>
@@ -358,10 +469,13 @@ function EditorSection() {
 
 function AboutSection() {
   const [version, setVersion] = useState("...");
+  const [repo, setRepo] = useState(FALLBACK_REPO);
 
   useEffect(() => {
     api.get("/version").then((res) => {
-      setVersion(res.data?.version || res.data || "unknown");
+      const data = unwrapApiData<VersionPayload>(res.data);
+      setVersion(data?.version || "unknown");
+      setRepo(data?.repo || FALLBACK_REPO);
     }).catch(() => setVersion("unknown"));
   }, []);
 
@@ -375,12 +489,12 @@ function AboutSection() {
 
       <FieldGroup label="LINKS">
         <a
-          href="https://github.com/nicekid1/MBEditor"
+          href={buildRepoUrl(repo)}
           target="_blank"
           rel="noopener noreferrer"
           style={{ fontFamily: "var(--f-mono)", fontSize: 12, color: "var(--accent)", textDecoration: "none" }}
         >
-          GitHub Repository
+          GitHub · {repo}
         </a>
       </FieldGroup>
 

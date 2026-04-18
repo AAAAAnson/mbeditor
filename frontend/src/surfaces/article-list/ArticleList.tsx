@@ -1,53 +1,99 @@
-import { useState, useMemo } from "react";
-import type { Route, Article } from "@/types";
+import { useEffect, useMemo, useState } from "react";
+import type { ArticleFull, ArticleSummary, Route } from "@/types";
 import { IconSearch, IconPlus, IconArrowRight } from "@/components/icons";
 import Chip from "@/components/shared/Chip";
+import { useArticlesStore } from "@/stores/articlesStore";
+import { toast } from "@/stores/toastStore";
+import { useUIStore } from "@/stores/uiStore";
 
-/* ------------------------------------------------------------------ */
-/*  Mock data                                                         */
-/* ------------------------------------------------------------------ */
-
-const MOCK_ARTICLES: Article[] = [
-  { id: "a01", title: "让 Agent 写出可直接投递的公众号文章", mode: "html", status: "草稿", updated: "12分钟前", words: 3420, cover: "warm", author: "Claude", stamp: "MB-2604-018" },
-  { id: "a02", title: "从命令行到草稿箱：MBEditor 工作流全景", mode: "markdown", status: "已投递", updated: "今天 09:12", words: 5180, cover: "terminal", author: "Anson", stamp: "MB-2604-017" },
-  { id: "a03", title: "为什么我不再手动排版公众号", mode: "html", status: "草稿", updated: "昨天 23:47", words: 2140, cover: "paper", author: "Claude", stamp: "MB-2604-016" },
-  { id: "a04", title: "Docker 一行命令部署自己的编辑器", mode: "markdown", status: "已投递", updated: "2天前", words: 1860, cover: "neon", author: "Codex", stamp: "MB-2604-015" },
-  { id: "a05", title: "把 Skill 装进 Claude Code —— 15 分钟上手", mode: "html", status: "草稿", updated: "2天前", words: 4720, cover: "earth", author: "Claude", stamp: "MB-2604-014" },
-  { id: "a06", title: "Markdown 模式 × 瑞士极简主题的排版实验", mode: "markdown", status: "审稿中", updated: "3天前", words: 3010, cover: "swiss", author: "Anson", stamp: "MB-2604-013" },
-  { id: "a07", title: "RESTful 公众号：API 设计笔记", mode: "html", status: "草稿", updated: "5天前", words: 2680, cover: "warm", author: "Claude", stamp: "MB-2604-012" },
-  { id: "a08", title: "从选题到发布，完全自动化的一天", mode: "markdown", status: "已投递", updated: "1周前", words: 6120, cover: "terminal", author: "Codex", stamp: "MB-2604-011" },
-];
-
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                           */
-/* ------------------------------------------------------------------ */
-
-type StatusTone = "" | "gold" | "forest" | "warn";
-
-function statusTone(s: string): StatusTone {
-  if (s === "已投递") return "forest";
-  if (s === "审稿中") return "warn";
-  if (s === "草稿") return "gold";
-  return "";
-}
-
-/* ------------------------------------------------------------------ */
-/*  CoverTile — striped SVG gradient placeholder (6 variants)         */
-/* ------------------------------------------------------------------ */
-
+type StatusTone = "" | "gold" | "forest";
 type CoverVariant = "warm" | "terminal" | "paper" | "neon" | "earth" | "swiss";
+type ArticleRow = ArticleSummary | ArticleFull;
+type FilterTab = "全部" | "HTML" | "Markdown";
 
 const COVER_VARIANTS: Record<CoverVariant, { from: string; to: string; stripe: string }> = {
-  warm:     { from: "#C14A3A", to: "#8A3B2E", stripe: "#D97860" },
+  warm: { from: "#C14A3A", to: "#8A3B2E", stripe: "#D97860" },
   terminal: { from: "#1A1714", to: "#2A2225", stripe: "#C4A76C" },
-  paper:    { from: "#F0E8D8", to: "#C4A76C", stripe: "#8A6D5B" },
-  neon:     { from: "#7588B8", to: "#3D3730", stripe: "#C4A76C" },
-  earth:    { from: "#8A6D5B", to: "#C89458", stripe: "#F0E8D8" },
-  swiss:    { from: "#141013", to: "#302629", stripe: "#F0E8D8" },
+  paper: { from: "#F0E8D8", to: "#C4A76C", stripe: "#8A6D5B" },
+  neon: { from: "#7588B8", to: "#3D3730", stripe: "#C4A76C" },
+  earth: { from: "#8A6D5B", to: "#C89458", stripe: "#F0E8D8" },
+  swiss: { from: "#141013", to: "#302629", stripe: "#F0E8D8" },
 };
 
-function CoverTile({ variant }: { variant: string }) {
-  const v = COVER_VARIANTS[variant as CoverVariant] ?? COVER_VARIANTS.warm;
+const GRID_COLS = "48px 72px 1fr 160px 120px 80px 40px";
+const FILTER_TABS: FilterTab[] = ["全部", "HTML", "Markdown"];
+const COVER_KEYS = Object.keys(COVER_VARIANTS) as CoverVariant[];
+
+function isArticleFull(article: ArticleRow): article is ArticleFull {
+  return "html" in article;
+}
+
+function coverVariantForArticle(article: ArticleRow): CoverVariant {
+  if (article.cover && article.cover in COVER_VARIANTS) return article.cover as CoverVariant;
+  const seed = article.id.charCodeAt(article.id.length - 1) || 0;
+  return COVER_KEYS[seed % COVER_KEYS.length];
+}
+
+function formatLedgerTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "未知时间";
+
+  const diff = Date.now() - date.getTime();
+  const minutes = Math.round(diff / 60000);
+  if (minutes < 1) return "刚刚";
+  if (minutes < 60) return `${minutes} 分钟前`;
+
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} 小时前`;
+
+  const days = Math.round(hours / 24);
+  if (days < 7) return `${days} 天前`;
+
+  return date.toLocaleDateString("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatStamp(article: ArticleRow) {
+  const date = new Date(article.created_at);
+  const year = Number.isNaN(date.getTime()) ? "0000" : `${date.getFullYear()}`.slice(-2);
+  const month = Number.isNaN(date.getTime()) ? "00" : `${date.getMonth() + 1}`.padStart(2, "0");
+  return `MB-${year}${month}-${article.id.slice(-3).toUpperCase()}`;
+}
+
+function estimateWords(article: ArticleRow) {
+  if (!isArticleFull(article)) return null;
+
+  const source = article.mode === "markdown"
+    ? article.markdown
+    : article.html.replace(/<[^>]+>/g, " ");
+  const text = source.replace(/\s+/g, "");
+  return text.length || 0;
+}
+
+function articleStatus(article: ArticleRow) {
+  const created = new Date(article.created_at).getTime();
+  const updated = new Date(article.updated_at).getTime();
+
+  if (Number.isNaN(created) || Number.isNaN(updated)) return { label: "草稿", tone: "gold" as StatusTone };
+  if (updated - created > 60_000) return { label: "已保存", tone: "forest" as StatusTone };
+  return { label: "新稿", tone: "gold" as StatusTone };
+}
+
+function extractErrorMessage(error: unknown) {
+  if (typeof error === "object" && error && "response" in error) {
+    const response = (error as { response?: { data?: { message?: string } } }).response;
+    if (response?.data?.message) return response.data.message;
+  }
+  if (error instanceof Error) return error.message;
+  return "请求失败";
+}
+
+function CoverTile({ variant }: { variant: CoverVariant }) {
+  const v = COVER_VARIANTS[variant];
   return (
     <div
       style={{
@@ -98,40 +144,95 @@ function CoverTile({ variant }: { variant: string }) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Grid template shared across header + rows                         */
-/* ------------------------------------------------------------------ */
-
-const GRID_COLS = "48px 72px 1fr 160px 120px 80px 40px";
-
-/* ------------------------------------------------------------------ */
-/*  ArticleList                                                       */
-/* ------------------------------------------------------------------ */
-
 interface ArticleListProps {
   go: (route: Route, params?: Record<string, string>) => void;
 }
 
 export default function ArticleList({ go }: ArticleListProps) {
   const [q, setQ] = useState("");
-  const [tab, setTab] = useState("全部");
+  const [tab, setTab] = useState<FilterTab>("全部");
   const [sort, setSort] = useState("updated");
+  const [creating, setCreating] = useState(false);
 
-  const tabs = ["全部", "草稿", "审稿中", "已投递", "回收站"];
+  const articles = useArticlesStore((state) => state.articles);
+  const loading = useArticlesStore((state) => state.loading);
+  const fetchArticles = useArticlesStore((state) => state.fetchArticles);
+  const createArticle = useArticlesStore((state) => state.createArticle);
+  const setCurrentArticle = useArticlesStore((state) => state.setCurrentArticle);
+  const defaultMode = useUIStore((state) => state.editorDefaultMode);
+  const density = useUIStore((state) => state.density);
+  const rowPadding = density === "compact" ? "14px 8px" : density === "spacious" ? "24px 8px" : "18px 8px";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void fetchArticles().catch((error) => {
+      if (!cancelled) toast.error(extractErrorMessage(error));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchArticles]);
 
   const filtered = useMemo(() => {
-    return MOCK_ARTICLES.filter((a) => {
-      if (tab !== "全部" && a.status !== tab) return false;
-      if (q && !a.title.toLowerCase().includes(q.toLowerCase())) return false;
-      return true;
-    });
-  }, [q, tab]);
+    const normalizedQuery = q.trim().toLowerCase();
+    const result = articles
+      .filter((article) => {
+        if (tab === "HTML" && article.mode !== "html") return false;
+        if (tab === "Markdown" && article.mode !== "markdown") return false;
+        if (!normalizedQuery) return true;
+        return article.title.toLowerCase().includes(normalizedQuery);
+      })
+      .slice();
 
-  const openEditor = (id: string) => go("editor", { articleId: id });
+    result.sort((left, right) => {
+      if (sort === "created") {
+        return new Date(right.created_at).getTime() - new Date(left.created_at).getTime();
+      }
+      if (sort === "title") {
+        return left.title.localeCompare(right.title, "zh-CN");
+      }
+      return new Date(right.updated_at).getTime() - new Date(left.updated_at).getTime();
+    });
+
+    return result;
+  }, [articles, q, sort, tab]);
+
+  const counts = useMemo(
+    () => ({
+      全部: articles.length,
+      HTML: articles.filter((article) => article.mode === "html").length,
+      Markdown: articles.filter((article) => article.mode === "markdown").length,
+    }),
+    [articles],
+  );
+
+  const openEditor = (id: string) => {
+    setCurrentArticle(id);
+    go("editor", { articleId: id });
+  };
+
+  const handleCreate = async () => {
+    setCreating(true);
+    try {
+      const article = await createArticle("未命名文章", defaultMode);
+      toast.success("已创建新稿");
+      openEditor(article.id);
+    } catch (error) {
+      toast.error(extractErrorMessage(error));
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const emptyStateTitle = articles.length === 0 ? "还没有文章" : "没有匹配的稿件";
+  const emptyStateBody = articles.length === 0
+    ? "先创建一篇真实文章，列表会直接从后端稿库读取。"
+    : "换个筛选条件或搜索词试试。";
 
   return (
     <div style={{ height: "100%", overflow: "auto", background: "var(--bg)" }}>
-      {/* ── Editorial masthead ─────────────────────────────────── */}
       <div style={{ maxWidth: 1280, margin: "0 auto", padding: "48px 48px 20px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 32 }}>
           <div style={{ flex: 1 }}>
@@ -139,7 +240,7 @@ export default function ArticleList({ go }: ArticleListProps) {
               <span className="caps">EDITION № 2604 · 稿件总库</span>
               <div className="hair-rule" style={{ flex: 1 }} />
               <span className="caps tnum">
-                {MOCK_ARTICLES.length.toString().padStart(3, "0")} / ENTRIES
+                {articles.length.toString().padStart(3, "0")} / ENTRIES
               </span>
             </div>
             <h1
@@ -175,7 +276,7 @@ export default function ArticleList({ go }: ArticleListProps) {
             <div>
               AGENT · <span style={{ color: "var(--gold)" }}>CLAUDE · CODEX · OPENCLAW</span>
             </div>
-            <div>ENDPOINT · :7072/api/v1</div>
+            <div>ENDPOINT · :7072/api/v1/articles</div>
             <div
               style={{
                 marginTop: 8,
@@ -189,7 +290,6 @@ export default function ArticleList({ go }: ArticleListProps) {
           </div>
         </div>
 
-        {/* ── Filter pills + search + sort + new ───────────────── */}
         <div
           style={{
             display: "flex",
@@ -201,14 +301,14 @@ export default function ArticleList({ go }: ArticleListProps) {
           }}
         >
           <div style={{ display: "flex", gap: 2 }}>
-            {tabs.map((t) => (
+            {FILTER_TABS.map((item) => (
               <button
-                key={t}
-                onClick={() => setTab(t)}
+                key={item}
+                onClick={() => setTab(item)}
                 className="btn btn-ghost btn-sm"
                 style={{
-                  color: tab === t ? "var(--fg)" : "var(--fg-4)",
-                  background: tab === t ? "var(--surface-2)" : "transparent",
+                  color: tab === item ? "var(--fg)" : "var(--fg-4)",
+                  background: tab === item ? "var(--surface-2)" : "transparent",
                   fontFamily: "var(--f-mono)",
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
@@ -216,11 +316,9 @@ export default function ArticleList({ go }: ArticleListProps) {
                   padding: "6px 10px",
                 }}
               >
-                {t}{" "}
+                {item}
                 <span className="tnum" style={{ marginLeft: 4, opacity: 0.5 }}>
-                  {t === "全部"
-                    ? MOCK_ARTICLES.length
-                    : MOCK_ARTICLES.filter((a) => a.status === t).length}
+                  {counts[item]}
                 </span>
               </button>
             ))}
@@ -228,11 +326,10 @@ export default function ArticleList({ go }: ArticleListProps) {
 
           <div style={{ flex: 1 }} />
 
-          {/* Search input with icon overlay */}
           <div style={{ position: "relative" }}>
             <input
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(event) => setQ(event.target.value)}
               placeholder="搜索标题 · grep"
               style={{
                 all: "unset",
@@ -258,10 +355,9 @@ export default function ArticleList({ go }: ArticleListProps) {
             </span>
           </div>
 
-          {/* Sort dropdown */}
           <select
             value={sort}
-            onChange={(e) => setSort(e.target.value)}
+            onChange={(event) => setSort(event.target.value)}
             style={{
               all: "unset",
               fontFamily: "var(--f-mono)",
@@ -277,19 +373,16 @@ export default function ArticleList({ go }: ArticleListProps) {
           >
             <option value="updated">↓ 最近修改</option>
             <option value="created">↓ 创建时间</option>
-            <option value="words">↓ 字数</option>
+            <option value="title">↓ 标题</option>
           </select>
 
-          {/* New article button */}
-          <button className="btn btn-primary btn-sm" onClick={() => openEditor("new")}>
-            <IconPlus size={12} /> 新建
+          <button className="btn btn-primary btn-sm" onClick={handleCreate} disabled={creating}>
+            <IconPlus size={12} /> {creating ? "创建中" : "新建"}
           </button>
         </div>
       </div>
 
-      {/* ── Ledger-style grid ──────────────────────────────────── */}
       <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 48px 80px" }}>
-        {/* Column headers */}
         <div
           style={{
             display: "grid",
@@ -308,84 +401,129 @@ export default function ArticleList({ go }: ArticleListProps) {
           <span />
         </div>
 
-        {/* Article rows */}
-        {filtered.map((a, i) => (
+        {loading && articles.length === 0 && (
           <div
-            key={a.id}
-            onClick={() => openEditor(a.id)}
-            className="article-row slide-up"
             style={{
-              display: "grid",
-              gridTemplateColumns: GRID_COLS,
-              alignItems: "center",
-              gap: "8px",
-              padding: "18px 8px",
+              padding: "36px 8px",
               borderBottom: "1px solid var(--border)",
-              cursor: "pointer",
-              transition: "background 0.15s",
-              animationDelay: `${i * 30}ms`,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--surface)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
+              fontFamily: "var(--f-mono)",
+              color: "var(--fg-4)",
             }}
           >
-            {/* № */}
-            <div className="mono tnum" style={{ color: "var(--fg-4)", fontSize: 11 }}>
-              {String(i + 1).padStart(3, "0")}
-            </div>
-
-            {/* Cover */}
-            <CoverTile variant={a.cover} />
-
-            {/* Title cell */}
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
-                <span className="mono" style={{ color: "var(--fg-5)", fontSize: 10 }}>
-                  {a.stamp}
-                </span>
-                <Chip tone={a.mode === "markdown" ? "info" : "accent"}>{a.mode}</Chip>
-              </div>
-              <div
-                className="title-serif"
-                style={{
-                  fontSize: 22,
-                  color: "var(--fg)",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {a.title}
-              </div>
-            </div>
-
-            {/* Author + time */}
-            <div style={{ fontFamily: "var(--f-mono)", fontSize: 11, color: "var(--fg-3)" }}>
-              <div>by · {a.author}</div>
-              <div style={{ color: "var(--fg-4)", marginTop: 2 }}>{a.updated}</div>
-            </div>
-
-            {/* Status chip */}
-            <Chip tone={statusTone(a.status)}>{a.status}</Chip>
-
-            {/* Word count */}
-            <div className="mono tnum" style={{ color: "var(--fg-3)", fontSize: 12 }}>
-              {a.words.toLocaleString()}
-            </div>
-
-            {/* Arrow */}
-            <div style={{ display: "flex", justifyContent: "flex-end", color: "var(--fg-4)" }}>
-              <IconArrowRight size={14} />
-            </div>
+            正在读取后端稿库…
           </div>
-        ))}
+        )}
 
-        {/* ── "新建一篇" prompt row ────────────────────────────── */}
+        {!loading && filtered.length === 0 && (
+          <div
+            style={{
+              padding: "48px 8px 52px",
+              borderBottom: "1px solid var(--border)",
+              display: "grid",
+              gap: 12,
+            }}
+          >
+            <div className="caps" style={{ color: "var(--fg-5)" }}>
+              EMPTY LEDGER
+            </div>
+            <div className="title-serif" style={{ fontSize: 32, color: "var(--fg)" }}>
+              {emptyStateTitle}
+            </div>
+            <p
+              style={{
+                margin: 0,
+                maxWidth: 420,
+                color: "var(--fg-3)",
+                lineHeight: 1.8,
+                fontSize: 14,
+              }}
+            >
+              {emptyStateBody}
+            </p>
+            {articles.length === 0 && (
+              <div>
+                <button className="btn btn-primary btn-sm" onClick={handleCreate} disabled={creating}>
+                  <IconPlus size={12} /> {creating ? "创建中" : "创建第一篇"}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {filtered.map((article, index) => {
+          const status = articleStatus(article);
+          const wordCount = estimateWords(article);
+
+          return (
+            <div
+              key={article.id}
+              onClick={() => openEditor(article.id)}
+              className="article-row slide-up"
+              style={{
+                display: "grid",
+                gridTemplateColumns: GRID_COLS,
+                alignItems: "center",
+                gap: "8px",
+                padding: rowPadding,
+                borderBottom: "1px solid var(--border)",
+                cursor: "pointer",
+                transition: "background 0.15s",
+                animationDelay: `${index * 30}ms`,
+              }}
+              onMouseEnter={(event) => {
+                event.currentTarget.style.background = "var(--surface)";
+              }}
+              onMouseLeave={(event) => {
+                event.currentTarget.style.background = "transparent";
+              }}
+            >
+              <div className="mono tnum" style={{ color: "var(--fg-4)", fontSize: 11 }}>
+                {String(index + 1).padStart(3, "0")}
+              </div>
+
+              <CoverTile variant={coverVariantForArticle(article)} />
+
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
+                  <span className="mono" style={{ color: "var(--fg-5)", fontSize: 10 }}>
+                    {formatStamp(article)}
+                  </span>
+                  <Chip tone={article.mode === "markdown" ? "info" : "accent"}>{article.mode}</Chip>
+                </div>
+                <div
+                  className="title-serif"
+                  style={{
+                    fontSize: 22,
+                    color: "var(--fg)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {article.title || "未命名文章"}
+                </div>
+              </div>
+
+              <div style={{ fontFamily: "var(--f-mono)", fontSize: 11, color: "var(--fg-3)" }}>
+                <div>by · {isArticleFull(article) && article.author ? article.author : "MBEditor"}</div>
+                <div style={{ color: "var(--fg-4)", marginTop: 2 }}>{formatLedgerTime(article.updated_at)}</div>
+              </div>
+
+              <Chip tone={status.tone}>{status.label}</Chip>
+
+              <div className="mono tnum" style={{ color: "var(--fg-3)", fontSize: 12 }}>
+                {wordCount === null ? "—" : wordCount.toLocaleString()}
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", color: "var(--fg-4)" }}>
+                <IconArrowRight size={14} />
+              </div>
+            </div>
+          );
+        })}
+
         <div
-          onClick={() => openEditor("new")}
+          onClick={handleCreate}
           style={{
             display: "grid",
             gridTemplateColumns: "48px 1fr 40px",
@@ -396,24 +534,24 @@ export default function ArticleList({ go }: ArticleListProps) {
             cursor: "pointer",
             color: "var(--fg-4)",
             transition: "color 0.15s",
+            opacity: creating ? 0.6 : 1,
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = "var(--accent)";
+          onMouseEnter={(event) => {
+            event.currentTarget.style.color = "var(--accent)";
           }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = "var(--fg-4)";
+          onMouseLeave={(event) => {
+            event.currentTarget.style.color = "var(--fg-4)";
           }}
         >
           <span className="mono">+ + +</span>
           <span className="title-serif" style={{ fontSize: 20, fontStyle: "italic" }}>
-            新建一篇 · 或让 Agent 起草
+            {creating ? "正在建立真实草稿…" : "新建一篇 · 或让 Agent 起草"}
           </span>
           <span>
             <IconPlus size={14} />
           </span>
         </div>
 
-        {/* ── Footer slug ──────────────────────────────────────── */}
         <div
           style={{
             display: "flex",

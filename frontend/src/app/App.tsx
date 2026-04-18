@@ -10,12 +10,12 @@ export default function App() {
   return (
     <>
       <Shell>
-        {(route: Route, navigate) => {
+        {(route: Route, params, navigate) => {
           switch (route) {
             case "list":
               return <ArticleList go={navigate} />;
             case "editor":
-              return <EditorSurface go={navigate} />;
+              return <EditorSurface articleId={params.articleId} go={navigate} />;
             case "agent":
               return <AgentConsole go={navigate} />;
             case "settings":

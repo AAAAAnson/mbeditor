@@ -1,10 +1,17 @@
 export type Route = "list" | "editor" | "agent" | "settings";
+export type ArticleMode = "html" | "markdown";
+
+export interface ApiResponse<T> {
+  code: number;
+  message: string;
+  data: T;
+}
 
 /** Lightweight article summary returned by GET /api/v1/articles */
 export interface ArticleSummary {
   id: string;
   title: string;
-  mode: "html" | "markdown";
+  mode: ArticleMode;
   cover: string;
   created_at: string;
   updated_at: string;
@@ -20,6 +27,13 @@ export interface ArticleFull extends ArticleSummary {
   digest: string;
 }
 
+export type EditorDraft = Pick<
+  ArticleFull,
+  "title" | "mode" | "html" | "css" | "js" | "markdown" | "author" | "digest"
+>;
+
+export type EditorField = keyof EditorDraft;
+
 /**
  * UI-facing article type used by components.
  * Includes both API fields (optional, populated after fetch) and
@@ -28,7 +42,7 @@ export interface ArticleFull extends ArticleSummary {
 export interface Article {
   id: string;
   title: string;
-  mode: "html" | "markdown";
+  mode: ArticleMode;
   cover: string;
   author: string;
   /** API timestamp fields */

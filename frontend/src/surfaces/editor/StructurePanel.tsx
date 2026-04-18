@@ -1,53 +1,168 @@
-import { useState } from "react";
-import { IconDoc, IconList, IconImage, IconCpu, IconTerminal, IconPlus } from "@/components/icons";
+import { useEffect, useMemo, type ReactNode } from "react";
+import { IconDoc, IconList, IconImage, IconCpu, IconTerminal } from "@/components/icons";
 import Seg from "@/components/ui/Seg";
+import type { ArticleMode, EditorDraft } from "@/types";
 
-interface Block {
+interface OutlineBlock {
   id: string;
   type: string;
   label: string;
   preview: string;
-  active?: boolean;
   depth: number;
 }
 
-const MOCK_BLOCKS: Block[] = [
-  { id: "b1", type: "hero", label: "Hero · 标题组", preview: "让公众号排版回归内容本身", active: true, depth: 0 },
-  { id: "b2", type: "section", label: "Section · 什么是", preview: "三种模式，一个目标", depth: 0 },
-  { id: "b3", type: "card", label: "Card · HTML 模式", preview: "完全掌控每一个像素…", depth: 1 },
-  { id: "b4", type: "card", label: "Card · Markdown 模式", preview: "用最简洁的语法写作…", depth: 1 },
-  { id: "b5", type: "card", label: "Card · 可视化编辑", preview: "所见即所得…", depth: 1 },
-  { id: "b6", type: "divider", label: "Divider", preview: "——", depth: 0 },
-  { id: "b7", type: "section", label: "Section · HTML Showcase", preview: "纯 HTML 排版效果展示", depth: 0 },
-  { id: "b8", type: "tags", label: "Tags · 标签徽章", preview: "Hot · New · AI Agent…", depth: 1 },
-  { id: "b9", type: "gradient", label: "Gradient Card", preview: "Write Once, Publish Everywhere", depth: 1 },
-  { id: "b10", type: "stats", label: "Stats · 数据看板", preview: "3 · 100% · API", depth: 1 },
-  { id: "b11", type: "timeline", label: "Timeline · 时间线", preview: "创建 → 编辑 → 发布", depth: 1 },
-  { id: "b12", type: "code", label: "Code · curl 示例", preview: "POST /api/v1/articles", depth: 1 },
-];
-
-const BLOCK_ICON: Record<string, (size: number) => React.ReactNode> = {
-  hero: (s) => <IconDoc size={s} />,
-  section: (s) => <IconDoc size={s} />,
-  card: (s) => <IconDoc size={s} />,
-  divider: (s) => <IconList size={s} />,
-  tags: (s) => <IconList size={s} />,
-  gradient: (s) => <IconImage size={s} />,
-  stats: (s) => <IconCpu size={s} />,
-  timeline: (s) => <IconList size={s} />,
-  code: (s) => <IconTerminal size={s} />,
+const BLOCK_ICON: Record<string, (size: number) => ReactNode> = {
+  hero: (size) => <IconDoc size={size} />,
+  section: (size) => <IconDoc size={size} />,
+  body: (size) => <IconList size={size} />,
+  image: (size) => <IconImage size={size} />,
+  stats: (size) => <IconCpu size={size} />,
+  code: (size) => <IconTerminal size={size} />,
 };
 
-const ASSET_COLORS = ["#C14A3A", "#C4A76C", "#6B9872", "#7588B8", "#8A6D5B", "#302629"];
-
-interface StructurePanelProps {
-  selected: string;
-  setSelected: (id: string) => void;
-  mode: string;
-  setMode: (mode: string) => void;
+function stripHtml(html: string) {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-export default function StructurePanel({ selected, setSelected, mode, setMode }: StructurePanelProps) {
+function extractAssets(draft: EditorDraft) {
+  const htmlMatches = Array.from(draft.html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi), (match) => match[1]);
+  const markdownMatches = Array.from(draft.markdown.matchAll(/!\[[^\]]*]\(([^)]+)\)/g), (match) => match[1]);
+  return Array.from(new Set([...htmlMatches, ...markdownMatches])).slice(0, 6);
+}
+
+function buildMarkdownOutline(markdown: string): OutlineBlock[] {
+  const blocks: OutlineBlock[] = [];
+  const lines = markdown.split("\n");
+
+  lines.forEach((line, index) => {
+    const heading = line.match(/^(#{1,6})\s+(.*)$/);
+    if (!heading) return;
+
+    const preview = lines.slice(index + 1).find((item) => item.trim())?.trim() || "空段落";
+    blocks.push({
+      id: `md-${index}`,
+      type: heading[1].length === 1 ? "hero" : "section",
+      label: heading[2].trim(),
+      preview,
+      depth: Math.max(0, heading[1].length - 1),
+    });
+  });
+
+  if (blocks.length > 0) return blocks;
+
+  const fallback = markdown
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 4);
+
+  if (fallback.length === 0) {
+    return [{ id: "md-body", type: "body", label: "正文", preview: "Markdown 内容待补充", depth: 0 }];
+  }
+
+  return fallback.map((line, index) => ({
+    id: `md-body-${index}`,
+    type: "body",
+    label: index === 0 ? "正文" : `段落 ${index + 1}`,
+    preview: line,
+    depth: 0,
+  }));
+}
+
+function buildHtmlOutline(html: string): OutlineBlock[] {
+  const blocks: OutlineBlock[] = [];
+  const headingMatches = Array.from(html.matchAll(/<h([1-6])[^>]*>([\s\S]*?)<\/h\1>/gi));
+
+  headingMatches.forEach((match, index) => {
+    const level = Number(match[1]);
+    const label = stripHtml(match[2]) || `标题 ${index + 1}`;
+    blocks.push({
+      id: `html-heading-${index}`,
+      type: level === 1 ? "hero" : "section",
+      label,
+      preview: label,
+      depth: Math.max(0, level - 1),
+    });
+  });
+
+  const imageMatches = Array.from(html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi));
+  imageMatches.slice(0, 2).forEach((_, index) => {
+    blocks.push({
+      id: `html-image-${index}`,
+      type: "image",
+      label: `Image ${index + 1}`,
+      preview: "嵌入图片素材",
+      depth: 1,
+    });
+  });
+
+  if (blocks.length > 0) return blocks;
+
+  const text = stripHtml(html);
+  if (!text) {
+    return [{ id: "html-body", type: "body", label: "正文", preview: "HTML 内容待补充", depth: 0 }];
+  }
+
+  return text
+    .split(/(?<=[。！？.!?])/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 4)
+    .map((item, index) => ({
+      id: `html-body-${index}`,
+      type: index === 0 ? "hero" : "body",
+      label: index === 0 ? "导语" : `段落 ${index + 1}`,
+      preview: item,
+      depth: 0,
+    }));
+}
+
+function countWords(draft: EditorDraft) {
+  const source = draft.mode === "markdown" ? draft.markdown : stripHtml(draft.html);
+  return source.replace(/\s+/g, "").length;
+}
+
+interface StructurePanelProps {
+  articleId?: string;
+  draft: EditorDraft;
+  selected: string;
+  setSelected: (id: string) => void;
+  onTitleChange: (title: string) => void;
+  onModeChange: (mode: ArticleMode) => void;
+}
+
+export default function StructurePanel({
+  articleId,
+  draft,
+  selected,
+  setSelected,
+  onTitleChange,
+  onModeChange,
+}: StructurePanelProps) {
+  const outline = useMemo(
+    () => (draft.mode === "markdown" ? buildMarkdownOutline(draft.markdown) : buildHtmlOutline(draft.html)),
+    [draft.html, draft.markdown, draft.mode],
+  );
+
+  const assets = useMemo(() => extractAssets(draft), [draft.html, draft.markdown]);
+  const wordCount = useMemo(() => countWords(draft), [draft]);
+
+  useEffect(() => {
+    if (outline.length === 0) {
+      if (selected !== "body") setSelected("body");
+      return;
+    }
+
+    const exists = outline.some((block) => block.id === selected);
+    if (!exists) setSelected(outline[0].id);
+  }, [outline, selected, setSelected]);
+
   return (
     <div
       style={{
@@ -59,13 +174,14 @@ export default function StructurePanel({ selected, setSelected, mode, setMode }:
         overflow: "hidden",
       }}
     >
-      {/* Header */}
       <div style={{ padding: "16px 20px 14px", borderBottom: "1px solid var(--border)" }}>
         <div className="caps" style={{ marginBottom: 8 }}>
           文件 · FILE
         </div>
         <input
-          defaultValue="让公众号排版回归内容本身"
+          value={draft.title}
+          onChange={(event) => onTitleChange(event.target.value)}
+          placeholder="未命名文章"
           style={{
             all: "unset",
             width: "100%",
@@ -81,37 +197,37 @@ export default function StructurePanel({ selected, setSelected, mode, setMode }:
               { value: "html", label: "HTML" },
               { value: "markdown", label: "MD" },
             ]}
-            value={mode}
-            onChange={setMode}
+            value={draft.mode}
+            onChange={(value) => onModeChange(value as ArticleMode)}
           />
           <span
             className="mono"
             style={{ fontSize: 10, color: "var(--fg-5)", letterSpacing: "0.1em" }}
           >
-            MB-2604-018
+            {articleId ? articleId.toUpperCase() : "NO ARTICLE"}
           </span>
         </div>
       </div>
 
-      {/* Block tree */}
       <div style={{ padding: "14px 12px 8px", borderBottom: "1px solid var(--border)", overflow: "auto", flex: "0 1 auto" }}>
         <div className="caps" style={{ padding: "0 8px 10px" }}>
           结构 · OUTLINE
         </div>
         <div>
-          {MOCK_BLOCKS.map((b, i) => {
-            const icoFn = BLOCK_ICON[b.type] || ((s: number) => <IconDoc size={s} />);
-            const active = selected === b.id;
+          {outline.map((block, index) => {
+            const icon = BLOCK_ICON[block.type] || ((size: number) => <IconDoc size={size} />);
+            const active = selected === block.id;
+
             return (
               <div
-                key={b.id}
-                onClick={() => setSelected(b.id)}
+                key={block.id}
+                onClick={() => setSelected(block.id)}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: 8,
                   padding: "6px 8px",
-                  paddingLeft: 8 + b.depth * 14,
+                  paddingLeft: 8 + block.depth * 14,
                   borderRadius: 4,
                   background: active ? "var(--accent-soft)" : "transparent",
                   color: active ? "var(--fg)" : "var(--fg-3)",
@@ -119,11 +235,11 @@ export default function StructurePanel({ selected, setSelected, mode, setMode }:
                   transition: "background 0.12s",
                   position: "relative",
                 }}
-                onMouseEnter={(e) => {
-                  if (!active) (e.currentTarget as HTMLElement).style.background = "var(--surface)";
+                onMouseEnter={(event) => {
+                  if (!active) event.currentTarget.style.background = "var(--surface)";
                 }}
-                onMouseLeave={(e) => {
-                  if (!active) (e.currentTarget as HTMLElement).style.background = "transparent";
+                onMouseLeave={(event) => {
+                  if (!active) event.currentTarget.style.background = "transparent";
                 }}
               >
                 {active && (
@@ -143,9 +259,9 @@ export default function StructurePanel({ selected, setSelected, mode, setMode }:
                   className="mono tnum"
                   style={{ fontSize: 9, color: "var(--fg-5)", width: 16 }}
                 >
-                  {String(i + 1).padStart(2, "0")}
+                  {String(index + 1).padStart(2, "0")}
                 </span>
-                {icoFn(12)}
+                {icon(12)}
                 <div style={{ flex: 1, minWidth: 0, lineHeight: 1.2 }}>
                   <div
                     style={{
@@ -156,7 +272,7 @@ export default function StructurePanel({ selected, setSelected, mode, setMode }:
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {b.label}
+                    {block.label}
                   </div>
                   <div
                     className="mono"
@@ -169,7 +285,7 @@ export default function StructurePanel({ selected, setSelected, mode, setMode }:
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {b.preview}
+                    {block.preview}
                   </div>
                 </div>
               </div>
@@ -178,92 +294,62 @@ export default function StructurePanel({ selected, setSelected, mode, setMode }:
         </div>
       </div>
 
-      {/* Assets */}
       <div style={{ padding: "14px 20px 14px" }}>
         <div className="caps" style={{ marginBottom: 10 }}>
           素材 · ASSETS
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
-          {ASSET_COLORS.map((c, i) => (
-            <div
-              key={i}
-              onClick={() => alert(`素材 ${String(i + 1).padStart(2, "0")} — 点击查看/替换`)}
-              style={{
-                aspectRatio: "1",
-                borderRadius: 4,
-                position: "relative",
-                overflow: "hidden",
-                background: `linear-gradient(135deg, ${c}, ${c}88)`,
-                border: "1px solid var(--border-2)",
-                cursor: "pointer",
-                transition: "transform 0.15s, border-color 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.transform = "scale(1.05)";
-                (e.currentTarget as HTMLElement).style.borderColor = "var(--border-3)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.transform = "scale(1)";
-                (e.currentTarget as HTMLElement).style.borderColor = "var(--border-2)";
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  backgroundImage:
-                    "repeating-linear-gradient(45deg, transparent 0 4px, rgba(255,255,255,0.04) 4px 5px)",
-                }}
-              />
-              <span
-                style={{
-                  position: "absolute",
-                  left: 4,
-                  bottom: 2,
-                  fontFamily: "var(--f-mono)",
-                  fontSize: 8,
-                  color: "#fff8",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                {String(i + 1).padStart(2, "0")}
-              </span>
-            </div>
-          ))}
+
+        {assets.length === 0 ? (
           <div
-            onClick={() => {
-              const input = document.createElement("input");
-              input.type = "file";
-              input.accept = "image/*";
-              input.click();
-            }}
             style={{
-              aspectRatio: "1",
-              borderRadius: 4,
               border: "1px dashed var(--border-2)",
-              display: "grid",
-              placeItems: "center",
+              borderRadius: 6,
+              padding: "18px 14px",
               color: "var(--fg-4)",
-              cursor: "pointer",
-              transition: "color 0.15s, border-color 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.color = "var(--accent)";
-              (e.currentTarget as HTMLElement).style.borderColor = "var(--accent-glow)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.color = "var(--fg-4)";
-              (e.currentTarget as HTMLElement).style.borderColor = "var(--border-2)";
+              fontSize: 12,
+              lineHeight: 1.7,
             }}
           >
-            <IconPlus size={14} />
+            当前稿件里还没有图片素材。
           </div>
-        </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+            {assets.map((asset, index) => (
+              <div
+                key={`${asset}-${index}`}
+                title={asset}
+                style={{
+                  aspectRatio: "1",
+                  borderRadius: 4,
+                  position: "relative",
+                  overflow: "hidden",
+                  backgroundImage: `linear-gradient(180deg, rgba(20,16,19,0.12), rgba(20,16,19,0.48)), url("${asset}")`,
+                  backgroundPosition: "center",
+                  backgroundSize: "cover",
+                  border: "1px solid var(--border-2)",
+                }}
+              >
+                <span
+                  style={{
+                    position: "absolute",
+                    left: 4,
+                    bottom: 2,
+                    fontFamily: "var(--f-mono)",
+                    fontSize: 8,
+                    color: "#fff8",
+                    letterSpacing: "0.1em",
+                  }}
+                >
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{ flex: 1 }} />
 
-      {/* Footer */}
       <div
         style={{
           padding: "12px 20px",
@@ -275,9 +361,9 @@ export default function StructurePanel({ selected, setSelected, mode, setMode }:
           justifyContent: "space-between",
         }}
       >
-        <span>12 BLOCKS</span>
+        <span>{outline.length} BLOCKS</span>
         <span>&middot; &middot; &middot;</span>
-        <span>2,340 字</span>
+        <span>{wordCount.toLocaleString()} 字</span>
       </div>
     </div>
   );
