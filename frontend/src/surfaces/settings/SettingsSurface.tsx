@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { IconWechat, IconCheck, IconClose } from "@/components/icons";
 import Chip from "@/components/shared/Chip";
-import { useUIStore, type Theme, type Layout } from "@/stores/uiStore";
+import { useUIStore, type Theme, type Layout, type Density } from "@/stores/uiStore";
 import { toast } from "@/stores/toastStore";
 import api from "@/lib/api";
 import type { Route } from "@/types";
@@ -25,6 +25,12 @@ const LAYOUTS: { key: Layout; label: string; desc: string }[] = [
   { key: "focus", label: "单栏", desc: "只看编辑区" },
   { key: "split", label: "双栏", desc: "编辑区 + 预览区" },
   { key: "triptych", label: "三栏", desc: "大纲 + 编辑区 + 预览区" },
+];
+
+const DENSITIES: { key: Density; label: string; desc: string }[] = [
+  { key: "compact", label: "紧凑", desc: "信息更密，列表行高更小" },
+  { key: "comfy", label: "舒适", desc: "默认节奏，便于日常编辑" },
+  { key: "spacious", label: "宽松", desc: "更大留白，便于浏览" },
 ];
 
 interface Props {
@@ -236,8 +242,8 @@ function WeChatSection() {
       });
       const data = normalizeConfig(unwrapApiData<ConfigPayload>(res.data));
 
-      setConfigured(data.configured || true);
-      setHasStoredSecret(data.hasStoredSecret || true);
+      setConfigured(data.configured);
+      setHasStoredSecret(data.hasStoredSecret);
       setAppSecret("");
       if (data.accountName) {
         setAccountName(data.accountName);
@@ -318,6 +324,8 @@ function WeChatSection() {
 function AppearanceSection() {
   const theme = useUIStore((s) => s.theme);
   const setTheme = useUIStore((s) => s.setTheme);
+  const density = useUIStore((s) => s.density);
+  const setDensity = useUIStore((s) => s.setDensity);
   const layout = useUIStore((s) => s.layout);
   const setLayout = useUIStore((s) => s.setLayout);
 
@@ -351,6 +359,36 @@ function AppearanceSection() {
               {t.label}
             </div>
             {theme === t.key && (
+              <div style={{ marginTop: 6 }}>
+                <Chip tone="accent" style={{ fontSize: 9 }}>当前</Chip>
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+
+      <SubLabel>密度</SubLabel>
+      <div className="flex" style={{ gap: 12, marginBottom: 28 }}>
+        {DENSITIES.map((item) => (
+          <button
+            key={item.key}
+            onClick={() => setDensity(item.key)}
+            style={{
+              all: "unset",
+              flex: 1,
+              border: density === item.key ? "2px solid var(--accent)" : "1px solid var(--border)",
+              borderRadius: "var(--r-md)",
+              padding: 12,
+              cursor: "pointer",
+              transition: "border 0.15s",
+              background: "var(--surface)",
+            }}
+          >
+            <div style={{ fontFamily: "var(--f-mono)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: density === item.key ? "var(--fg)" : "var(--fg-3)" }}>
+              {item.label}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--fg-4)", marginTop: 4 }}>{item.desc}</div>
+            {density === item.key && (
               <div style={{ marginTop: 6 }}>
                 <Chip tone="accent" style={{ fontSize: 9 }}>当前</Chip>
               </div>

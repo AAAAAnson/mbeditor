@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Seg from "@/components/ui/Seg";
-import { IconArrowLeft, IconEye, IconSend } from "@/components/icons";
+import { IconArrowLeft, IconCopy, IconEye, IconSend } from "@/components/icons";
 import { useUIStore } from "@/stores/uiStore";
 import type { EditorDraft, EditorField } from "@/types";
 
@@ -20,9 +20,11 @@ interface CenterStageProps {
   previewLoading: boolean;
   previewError: string | null;
   publishing: boolean;
+  copying: boolean;
   onBack: () => void;
   onFieldChange: (field: EditorField, value: string) => void;
   onRefreshPreview: () => void;
+  onCopyRichText: () => void;
   onPublish: () => void;
 }
 
@@ -50,9 +52,11 @@ export default function CenterStage({
   previewLoading,
   previewError,
   publishing,
+  copying,
   onBack,
   onFieldChange,
   onRefreshPreview,
+  onCopyRichText,
   onPublish,
 }: CenterStageProps) {
   const editorFontSize = useUIStore((state) => state.editorFontSize);
@@ -234,6 +238,13 @@ export default function CenterStage({
           disabled={!articleId || previewLoading}
         >
           <IconEye size={12} /> {previewLoading ? "更新中" : "更新预览"}
+        </button>
+        <button
+          className="btn btn-outline btn-sm"
+          onClick={onCopyRichText}
+          disabled={!articleId || copying}
+        >
+          <IconCopy size={12} /> {copying ? "复制中" : "复制富文本"}
         </button>
         <button
           className="btn btn-primary btn-sm"

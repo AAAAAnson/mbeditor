@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useUIStore } from "@/stores/uiStore";
 import { IconClose } from "@/components/icons";
 import Seg from "@/components/ui/Seg";
@@ -5,11 +6,39 @@ import type { Theme, Density, Layout } from "@/stores/uiStore";
 
 export default function TweaksPanel() {
   const { theme, setTheme, density, setDensity, layout, setLayout, tweaksOpen, setTweaksOpen } = useUIStore();
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!tweaksOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (panelRef.current?.contains(target)) return;
+      setTweaksOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setTweaksOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [setTweaksOpen, tweaksOpen]);
 
   if (!tweaksOpen) return null;
 
   return (
     <div
+      ref={panelRef}
+      role="dialog"
+      aria-label="界面设置"
       className="slide-up"
       style={{
         position: "fixed",
@@ -24,8 +53,8 @@ export default function TweaksPanel() {
         zIndex: 100,
         fontSize: 12,
       }}
-      >
-        <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
+    >
+      <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
         <span className="caps caps-gold">界面设置</span>
         <button className="btn btn-ghost btn-sm" style={{ padding: 4 }} onClick={() => setTweaksOpen(false)}>
           <IconClose size={12} />

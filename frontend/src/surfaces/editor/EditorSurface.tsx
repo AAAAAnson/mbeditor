@@ -1,6 +1,7 @@
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { marked } from "marked";
 import api from "@/lib/api";
+import { writeHtmlToClipboard } from "@/utils/clipboard";
 import { useArticlesStore } from "@/stores/articlesStore";
 import { toast } from "@/stores/toastStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -65,15 +66,41 @@ function unwrapResponse<T>(response: ApiResponse<T>) {
   return response.data;
 }
 
-function compileMarkdown(markdown: string) {
+export function compileMarkdown(markdown: string) {
   const rendered = marked.parse(markdown, { async: false });
   return typeof rendered === "string" ? rendered : "";
 }
 
-function buildSavePayload(draft: EditorDraft) {
+export function buildSavePayload(draft: EditorDraft) {
+  const compiledMarkdown = compileMarkdown(draft.markdown);
   return {
     ...draft,
-    html: draft.mode === "markdown" ? compileMarkdown(draft.markdown) : draft.html,
+    html: draft.mode === "markdown" ? compiledMarkdown || draft.html : draft.html,
+  };
+}
+
+export function applyDraftFieldChange(current: EditorDraft, field: EditorField, value: string): EditorDraft {
+  if (field === "mode") {
+    const nextMode = value as ArticleMode;
+    return {
+      ...current,
+      mode: nextMode,
+      // Preserve authored HTML when the user is only peeking at Markdown mode.
+      html: nextMode === "markdown" ? current.html : current.html || compileMarkdown(current.markdown),
+    };
+  }
+
+  if (field === "markdown") {
+    return {
+      ...current,
+      markdown: value,
+      html: compileMarkdown(value),
+    };
+  }
+
+  return {
+    ...current,
+    [field]: value,
   };
 }
 
@@ -106,6 +133,13 @@ function viewForLayout(layout: "focus" | "split" | "triptych") {
   return layout === "focus" ? "code" : "split";
 }
 
+export function chromeForLayout(layout: "focus" | "split" | "triptych") {
+  return {
+    showStructurePanel: layout === "triptych",
+    defaultView: viewForLayout(layout),
+  };
+}
+
 interface EditorSurfaceProps {
   articleId?: string;
   go: (route: Route, params?: Record<string, string>) => void;
@@ -119,6 +153,7 @@ export default function EditorSurface({ articleId, go, canGoBack, onBack }: Edit
   const setCurrentArticle = useArticlesStore((state) => state.setCurrentArticle);
   const layout = useUIStore((state) => state.layout);
   const autoSaveEnabled = useUIStore((state) => state.editorAutoSave);
+  const { showStructurePanel } = chromeForLayout(layout);
 
   const [selected, setSelected] = useState("body");
   const [view, setView] = useState(viewForLayout(layout));
@@ -274,29 +309,32 @@ export default function EditorSurface({ articleId, go, canGoBack, onBack }: Edit
   }, [articleId, article, draft, refreshPreviewNow, view]);
 
   const handleFieldChange = (field: EditorField, value: string) => {
-    setDraft((current) => {
-      if (field === "mode") {
-        const nextMode = value as ArticleMode;
-        return {
-          ...current,
-          mode: nextMode,
-          html: nextMode === "markdown" ? compileMarkdown(current.markdown) : current.html || compileMarkdown(current.markdown),
-        };
-      }
+    setDraft((current) => applyDraftFieldChange(current, field, value));
+  };
 
-      if (field === "markdown") {
-        return {
-          ...current,
-          markdown: value,
-          html: compileMarkdown(value),
-        };
-      }
+  const [copying, setCopying] = useState(false);
 
-      return {
-        ...current,
-        [field]: value,
-      };
-    });
+  const handleCopyRichText = async () => {
+    if (!articleId || !article) return;
+
+    setCopying(true);
+    try {
+      await saveDraftNow(draft, false);
+
+      const payload = buildSavePayload(draft);
+      const res = await api.post<ApiResponse<{ html: string }>>("/publish/process-for-copy", {
+        html: payload.html,
+        css: draft.css,
+      });
+      const data = unwrapResponse(res.data);
+
+      await writeHtmlToClipboard(data.html);
+      toast.success("已复制富文本，可直接粘贴到公众号编辑器");
+    } catch (error) {
+      toast.error(extractErrorMessage(error));
+    } finally {
+      setCopying(false);
+    }
   };
 
   const handlePublish = async () => {
@@ -401,19 +439,21 @@ export default function EditorSurface({ articleId, go, canGoBack, onBack }: Edit
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "280px 1fr",
+        gridTemplateColumns: showStructurePanel ? "280px 1fr" : "1fr",
         height: "100%",
         minHeight: 0,
       }}
     >
-      <StructurePanel
-        articleId={articleId}
-        draft={draft}
-        selected={selected}
-        setSelected={setSelected}
-        onTitleChange={(title) => handleFieldChange("title", title)}
-        onModeChange={(mode) => handleFieldChange("mode", mode)}
-      />
+      {showStructurePanel && (
+        <StructurePanel
+          articleId={articleId}
+          draft={draft}
+          selected={selected}
+          setSelected={setSelected}
+          onTitleChange={(title) => handleFieldChange("title", title)}
+          onModeChange={(mode) => handleFieldChange("mode", mode)}
+        />
+      )}
 
       <CenterStage
         articleId={articleId}
@@ -429,8 +469,10 @@ export default function EditorSurface({ articleId, go, canGoBack, onBack }: Edit
         previewLoading={previewLoading}
         previewError={previewError}
         publishing={publishing}
+        copying={copying}
         onBack={onBack}
         onFieldChange={handleFieldChange}
+        onCopyRichText={handleCopyRichText}
         onRefreshPreview={() => {
           void refreshPreviewNow(draft, false).catch(() => undefined);
         }}

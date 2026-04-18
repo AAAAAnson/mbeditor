@@ -41,9 +41,11 @@ describe("CenterStage", () => {
         previewLoading={false}
         previewError={null}
         publishing={false}
+        copying={false}
         onBack={vi.fn()}
         onFieldChange={vi.fn()}
         onRefreshPreview={vi.fn()}
+        onCopyRichText={vi.fn()}
         onPublish={vi.fn()}
       />
     );
@@ -78,9 +80,11 @@ describe("CenterStage", () => {
         previewLoading={false}
         previewError={null}
         publishing={false}
+        copying={false}
         onBack={onBack}
         onFieldChange={vi.fn()}
         onRefreshPreview={vi.fn()}
+        onCopyRichText={vi.fn()}
         onPublish={vi.fn()}
       />
     );
