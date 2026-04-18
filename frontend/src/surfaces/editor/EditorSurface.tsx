@@ -19,6 +19,32 @@ const EMPTY_DRAFT: EditorDraft = {
   digest: "",
 };
 
+function draftStorageKey(articleId: string) {
+  return `mbeditor.editorDraft.${articleId}`;
+}
+
+function readStoredDraft(articleId: string): EditorDraft | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(draftStorageKey(articleId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<EditorDraft>;
+    return { ...EMPTY_DRAFT, ...parsed };
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredDraft(articleId: string, draft: EditorDraft) {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(draftStorageKey(articleId), JSON.stringify(draft));
+}
+
+function clearStoredDraft(articleId: string) {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.removeItem(draftStorageKey(articleId));
+}
+
 function normalizeArticle(article: ArticleFull): EditorDraft {
   return {
     title: article.title,
@@ -147,10 +173,11 @@ export default function EditorSurface({ articleId, go }: EditorSurfaceProps) {
       .then((nextArticle) => {
         if (cancelled) return;
         setArticle(nextArticle);
-        setDraft(normalizeArticle(nextArticle));
+        const restoredDraft = readStoredDraft(articleId);
+        setDraft(restoredDraft ?? normalizeArticle(nextArticle));
         setSelected("body");
-        setTab(nextArticle.mode === "markdown" ? "markdown" : "html");
-        setSaveState("saved");
+        setTab((restoredDraft?.mode ?? nextArticle.mode) === "markdown" ? "markdown" : "html");
+        setSaveState(restoredDraft && isDirty(nextArticle, restoredDraft) ? "dirty" : "saved");
       })
       .catch((error) => {
         if (cancelled) return;
@@ -168,6 +195,11 @@ export default function EditorSurface({ articleId, go }: EditorSurfaceProps) {
     };
   }, [articleId, fetchArticle, setCurrentArticle]);
 
+  useEffect(() => {
+    if (!articleId || !article) return;
+    writeStoredDraft(articleId, draft);
+  }, [article, articleId, draft]);
+
   const saveDraftNow = useCallback(async (source: EditorDraft, quiet = true) => {
     if (!articleId || !article) return null;
 
@@ -179,6 +211,7 @@ export default function EditorSurface({ articleId, go }: EditorSurfaceProps) {
       if (requestId === saveNonceRef.current) {
         setArticle(updated);
         setSaveState("saved");
+        clearStoredDraft(articleId);
       }
       return updated;
     } catch (error) {
