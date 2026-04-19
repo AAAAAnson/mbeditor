@@ -10,6 +10,7 @@ export type AgentPosition = "right" | "bottom";
 
 const DEFAULT_PREVIEW_FRAME_WIDTH = 420;
 const DEFAULT_PREVIEW_FRAME_HEIGHT = 760;
+const DEFAULT_PREVIEW_SCALE = 1;
 
 function clampPreviewWidth(width: number) {
   return Math.min(960, Math.max(320, Math.round(width)));
@@ -17,6 +18,10 @@ function clampPreviewWidth(width: number) {
 
 function clampPreviewHeight(height: number) {
   return Math.min(1400, Math.max(360, Math.round(height)));
+}
+
+function clampPreviewScale(scale: number) {
+  return Math.min(2, Math.max(0.4, Math.round(scale * 100) / 100));
 }
 
 interface UIState {
@@ -30,6 +35,7 @@ interface UIState {
   editorFontSize: number;
   editorPreviewWidth: number;
   editorPreviewHeight: number;
+  editorPreviewScale: number;
   tweaksOpen: boolean;
   setTheme: (t: Theme) => void;
   setAccent: (a: Accent) => void;
@@ -40,7 +46,9 @@ interface UIState {
   setEditorAutoSave: (enabled: boolean) => void;
   setEditorFontSize: (size: number) => void;
   setEditorPreviewSize: (size: { width?: number; height?: number }) => void;
+  setEditorPreviewScale: (scale: number) => void;
   resetEditorPreviewSize: () => void;
+  resetEditorPreviewScale: () => void;
   setTweaksOpen: (open: boolean) => void;
 }
 
@@ -57,6 +65,7 @@ export const useUIStore = create<UIState>()(
       editorFontSize: 14,
       editorPreviewWidth: DEFAULT_PREVIEW_FRAME_WIDTH,
       editorPreviewHeight: DEFAULT_PREVIEW_FRAME_HEIGHT,
+      editorPreviewScale: DEFAULT_PREVIEW_SCALE,
       tweaksOpen: false,
       setTheme: (theme) => set({ theme }),
       setAccent: (accent) => set({ accent }),
@@ -71,11 +80,14 @@ export const useUIStore = create<UIState>()(
           editorPreviewWidth: clampPreviewWidth(width ?? state.editorPreviewWidth),
           editorPreviewHeight: clampPreviewHeight(height ?? state.editorPreviewHeight),
         })),
+      setEditorPreviewScale: (editorPreviewScale) =>
+        set({ editorPreviewScale: clampPreviewScale(editorPreviewScale) }),
       resetEditorPreviewSize: () =>
         set({
           editorPreviewWidth: DEFAULT_PREVIEW_FRAME_WIDTH,
           editorPreviewHeight: DEFAULT_PREVIEW_FRAME_HEIGHT,
         }),
+      resetEditorPreviewScale: () => set({ editorPreviewScale: DEFAULT_PREVIEW_SCALE }),
       setTweaksOpen: (tweaksOpen) => set({ tweaksOpen }),
     }),
     {
@@ -91,6 +103,7 @@ export const useUIStore = create<UIState>()(
         editorFontSize: state.editorFontSize,
         editorPreviewWidth: state.editorPreviewWidth,
         editorPreviewHeight: state.editorPreviewHeight,
+        editorPreviewScale: state.editorPreviewScale,
       }),
     }
   )

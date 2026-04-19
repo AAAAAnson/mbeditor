@@ -3,6 +3,7 @@ import Seg from "@/components/ui/Seg";
 import { IconArrowLeft, IconCopy, IconEye, IconSend } from "@/components/icons";
 import { useUIStore } from "@/stores/uiStore";
 import type { EditorDraft, EditorField } from "@/types";
+import type { OutlineBlock } from "./StructurePanel";
 
 type SaveState = "idle" | "dirty" | "saving" | "saved" | "error";
 
@@ -16,6 +17,10 @@ interface CenterStageProps {
   setTab: (value: string) => void;
   saveState: SaveState;
   selected: string;
+  navigationRequest?: {
+    block: OutlineBlock;
+    seq: number;
+  } | null;
   previewHtml: string;
   previewLoading: boolean;
   previewError: string | null;
@@ -38,6 +43,55 @@ const SAVE_META: Record<SaveState, { label: string; color: string }> = {
 
 type PreviewResizeDirection = "width" | "height" | "both";
 
+function normalizeText(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function scrollCodeToBlock(
+  textarea: HTMLTextAreaElement,
+  block: OutlineBlock,
+  editorFontSize: number,
+  codeLineHeight: number,
+) {
+  const targetOffset = Math.max(0, block.sourceOffset ?? 0);
+  textarea.focus();
+  textarea.setSelectionRange(targetOffset, targetOffset);
+
+  const computedLineHeight = Number.parseFloat(window.getComputedStyle(textarea).lineHeight);
+  const lineHeight = Number.isFinite(computedLineHeight) ? computedLineHeight : editorFontSize * codeLineHeight;
+  const targetLine = Math.max(1, block.sourceLine ?? 1);
+  textarea.scrollTop = Math.max(0, (targetLine - 1) * lineHeight - lineHeight * 2);
+}
+
+function findPreviewTarget(container: HTMLElement, block: OutlineBlock) {
+  if (block.type === "image" && typeof block.previewImageIndex === "number") {
+    const images = container.querySelectorAll("img");
+    const image = images.item(block.previewImageIndex);
+    return image instanceof HTMLElement ? image : null;
+  }
+
+  const needles = [block.label, block.preview]
+    .map((item) => normalizeText(item))
+    .filter(Boolean);
+
+  if (needles.length === 0) return null;
+
+  const candidates = Array.from(
+    container.querySelectorAll<HTMLElement>("h1, h2, h3, h4, h5, h6, p, section, blockquote, li"),
+  ).filter((node) => {
+    const text = normalizeText(node.innerText || node.textContent || "");
+    return text.length > 0 && text.length < 280 && needles.some((needle) => text.includes(needle));
+  });
+
+  if (candidates.length === 0) return null;
+
+  return candidates.sort((left, right) => {
+    const leftLength = normalizeText(left.innerText || left.textContent || "").length;
+    const rightLength = normalizeText(right.innerText || right.textContent || "").length;
+    return leftLength - rightLength;
+  })[0];
+}
+
 export default function CenterStage({
   articleId,
   canGoBack,
@@ -48,6 +102,7 @@ export default function CenterStage({
   setTab,
   saveState,
   selected,
+  navigationRequest,
   previewHtml,
   previewLoading,
   previewError,
@@ -62,8 +117,13 @@ export default function CenterStage({
   const editorFontSize = useUIStore((state) => state.editorFontSize);
   const editorPreviewWidth = useUIStore((state) => state.editorPreviewWidth);
   const editorPreviewHeight = useUIStore((state) => state.editorPreviewHeight);
+  const editorPreviewScale = useUIStore((state) => state.editorPreviewScale);
   const setEditorPreviewSize = useUIStore((state) => state.setEditorPreviewSize);
+  const setEditorPreviewScale = useUIStore((state) => state.setEditorPreviewScale);
   const resetEditorPreviewSize = useUIStore((state) => state.resetEditorPreviewSize);
+  const resetEditorPreviewScale = useUIStore((state) => state.resetEditorPreviewScale);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const previewContentRef = useRef<HTMLDivElement | null>(null);
   const previewResizeRef = useRef<{
     direction: PreviewResizeDirection;
     startX: number;
@@ -81,6 +141,7 @@ export default function CenterStage({
   const showCode = view === "code" || view === "split";
   const showPreview = view === "preview" || view === "split";
   const codeLineHeight = editorFontSize <= 12 ? 1.65 : editorFontSize >= 16 ? 1.8 : 1.75;
+  const contentTab = draft.mode === "markdown" ? "markdown" : "html";
 
   const currentCode = activeTab === "html"
     ? draft.html
@@ -105,6 +166,9 @@ export default function CenterStage({
     return "预览内容已经按公众号兼容规则处理。";
   }, [draft.js, draft.mode]);
   const previewFrameLabel = `${editorPreviewWidth} × ${editorPreviewHeight}`;
+  const previewScaleLabel = `${Math.round(editorPreviewScale * 100)}%`;
+  const scaledPreviewWidth = Math.round(editorPreviewWidth * editorPreviewScale);
+  const scaledPreviewHeight = Math.round(editorPreviewHeight * editorPreviewScale);
 
   useEffect(() => {
     if (!previewResizeDirection) return;
@@ -166,6 +230,27 @@ export default function CenterStage({
       window.removeEventListener("touchcancel", stopResizing);
     };
   }, [previewResizeDirection, setEditorPreviewSize]);
+
+  useEffect(() => {
+    if (!navigationRequest || activeTab !== contentTab) return;
+
+    if (showCode && textareaRef.current) {
+      scrollCodeToBlock(textareaRef.current, navigationRequest.block, editorFontSize, codeLineHeight);
+    }
+
+    if (showPreview && previewContentRef.current) {
+      const target = findPreviewTarget(previewContentRef.current, navigationRequest.block);
+      target?.scrollIntoView({ block: "center" });
+    }
+  }, [
+    activeTab,
+    codeLineHeight,
+    contentTab,
+    editorFontSize,
+    navigationRequest,
+    showCode,
+    showPreview,
+  ]);
 
   const startPreviewResize = (direction: PreviewResizeDirection, clientX: number, clientY: number) => {
     previewResizeRef.current = {
@@ -339,6 +424,7 @@ export default function CenterStage({
                 ))}
               </div>
               <textarea
+                ref={textareaRef}
                 value={currentCode}
                 onChange={(event) => onFieldChange(activeTab as EditorField, event.target.value)}
                 spellCheck={false}
@@ -399,13 +485,50 @@ export default function CenterStage({
                   当前尺寸 {previewFrameLabel}
                 </div>
                 <div className="mono" style={{ fontSize: 10, color: "var(--fg-5)" }}>
+                  缩放 {previewScaleLabel}
+                </div>
+                <div className="mono" style={{ fontSize: 10, color: "var(--fg-5)" }}>
                   拖右边或下边调整大小
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    minWidth: 220,
+                  }}
+                >
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setEditorPreviewScale(editorPreviewScale - 0.1)}
+                  >
+                    缩小
+                  </button>
+                  <input
+                    type="range"
+                    min={40}
+                    max={200}
+                    step={5}
+                    value={Math.round(editorPreviewScale * 100)}
+                    onChange={(event) => setEditorPreviewScale(Number(event.target.value) / 100)}
+                    aria-label="调整预览缩放"
+                    style={{ width: 120, accentColor: "var(--accent)" }}
+                  />
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setEditorPreviewScale(editorPreviewScale + 0.1)}
+                  >
+                    放大
+                  </button>
                 </div>
                 <button
                   className="btn btn-ghost btn-sm"
-                  onClick={resetEditorPreviewSize}
+                  onClick={() => {
+                    resetEditorPreviewSize();
+                    resetEditorPreviewScale();
+                  }}
                 >
-                  还原尺寸
+                  全部还原
                 </button>
               </div>
             </div>
@@ -431,8 +554,8 @@ export default function CenterStage({
             <div
               data-testid="preview-frame-shell"
               style={{
-                width: editorPreviewWidth,
-                height: editorPreviewHeight,
+                width: scaledPreviewWidth,
+                height: scaledPreviewHeight,
                 margin: "0 auto",
                 position: "relative",
                 maxWidth: "100%",
@@ -441,13 +564,17 @@ export default function CenterStage({
               <div
                 data-testid="preview-frame"
                 style={{
-                  width: "100%",
-                  height: "100%",
+                  width: editorPreviewWidth,
+                  height: editorPreviewHeight,
                   borderRadius: "var(--r-md)",
                   overflow: "hidden",
                   boxShadow: "0 24px 48px -24px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.1)",
                   background: "#FAF6EB",
-                  position: "relative",
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  transform: `scale(${editorPreviewScale})`,
+                  transformOrigin: "top left",
                 }}
               >
                 {previewLoading && (
@@ -470,6 +597,7 @@ export default function CenterStage({
                   </div>
                 )}
                 <div
+                  ref={previewContentRef}
                   style={{
                     height: "100%",
                     padding: "28px 22px 32px",
