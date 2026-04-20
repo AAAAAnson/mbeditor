@@ -6,6 +6,7 @@ Run with: python scripts/verify_nas_wysiwyg.py
 from __future__ import annotations
 
 import json
+import os
 import time
 import urllib.request
 from pathlib import Path
@@ -13,8 +14,8 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 
-API = "http://localhost:7072/api/v1"
-FRONTEND = "http://localhost:7073"
+API = os.getenv("MBEDITOR_API", "http://localhost:7072/api/v1")
+FRONTEND = os.getenv("MBEDITOR_FRONTEND", "http://localhost:7073")
 OUT_DIR = Path("docs/screenshots")
 
 

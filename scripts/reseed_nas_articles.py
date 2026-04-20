@@ -2,17 +2,18 @@
 templates via the public REST API.
 
 Run with: python scripts/reseed_nas_articles.py [--yes]
-Requires: MBEditor reachable at http://localhost:7072/api/v1
+Point MBEDITOR_API at the target instance (default http://localhost:7072/api/v1).
 """
 from __future__ import annotations
 
 import json
+import os
 import sys
 import urllib.request
 from pathlib import Path
 
 
-API = "http://localhost:7072/api/v1"
+API = os.getenv("MBEDITOR_API", "http://localhost:7072/api/v1")
 TEMPLATES = [
     "docs/cli/examples/templates/tpl_biz_minimal.json",
     "docs/cli/examples/templates/tpl_tech_neon.json",

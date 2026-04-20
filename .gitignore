@@ -38,9 +38,7 @@ frontend/.logs/
 Thumbs.db
 
 # Development tools
-# NOTE: docs/superpowers/ is tracked so any future session / collaborator
-# can resume the WYSIWYG refactor from any stage (plans, handoff,
-# orchestration framework, research reports).
+docs/superpowers/
 CLAUDE.md
 .playwright-mcp/
 
