@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ArticleFull, ArticleSummary, Route } from "@/types";
-import { IconSearch, IconPlus, IconArrowRight } from "@/components/icons";
+import { IconSearch, IconPlus, IconArrowRight, IconTrash } from "@/components/icons";
 import Chip from "@/components/shared/Chip";
 import { useArticlesStore } from "@/stores/articlesStore";
 import { toast } from "@/stores/toastStore";
@@ -20,7 +20,7 @@ const COVER_VARIANTS: Record<CoverVariant, { from: string; to: string; stripe: s
   swiss: { from: "#141013", to: "#302629", stripe: "#F0E8D8" },
 };
 
-const GRID_COLS = "48px 72px 1fr 160px 120px 80px 40px";
+const GRID_COLS = "48px 72px 1fr 160px 120px 80px 72px";
 const FILTER_TABS: FilterTab[] = ["全部", "HTML", "Markdown"];
 const COVER_KEYS = Object.keys(COVER_VARIANTS) as CoverVariant[];
 
@@ -153,11 +153,13 @@ export default function ArticleList({ go }: ArticleListProps) {
   const [tab, setTab] = useState<FilterTab>("全部");
   const [sort, setSort] = useState("updated");
   const [creating, setCreating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const articles = useArticlesStore((state) => state.articles);
   const loading = useArticlesStore((state) => state.loading);
   const fetchArticles = useArticlesStore((state) => state.fetchArticles);
   const createArticle = useArticlesStore((state) => state.createArticle);
+  const deleteArticle = useArticlesStore((state) => state.deleteArticle);
   const setCurrentArticle = useArticlesStore((state) => state.setCurrentArticle);
   const defaultMode = useUIStore((state) => state.editorDefaultMode);
   const density = useUIStore((state) => state.density);
@@ -223,6 +225,22 @@ export default function ArticleList({ go }: ArticleListProps) {
       toast.error(extractErrorMessage(error));
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleDelete = async (article: ArticleRow) => {
+    if (deletingId) return;
+    const displayTitle = article.title || "未命名文章";
+    const confirmed = window.confirm(`确认删除「${displayTitle}」？此操作无法撤销。`);
+    if (!confirmed) return;
+    setDeletingId(article.id);
+    try {
+      await deleteArticle(article.id);
+      toast.success(`已删除「${displayTitle}」`);
+    } catch (error) {
+      toast.error(extractErrorMessage(error));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -515,7 +533,45 @@ export default function ArticleList({ go }: ArticleListProps) {
                 {wordCount === null ? "—" : wordCount.toLocaleString()}
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", color: "var(--fg-4)" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  alignItems: "center",
+                  gap: 10,
+                  color: "var(--fg-4)",
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm article-row-delete"
+                  aria-label={`删除文章 ${article.title || "未命名文章"}`}
+                  data-testid={`delete-article-${article.id}`}
+                  disabled={deletingId === article.id}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void handleDelete(article);
+                  }}
+                  style={{
+                    padding: 6,
+                    minWidth: 0,
+                    color: "var(--fg-4)",
+                    opacity: deletingId === article.id ? 0.4 : 0.65,
+                    transition: "color 0.15s, opacity 0.15s",
+                  }}
+                  onMouseEnter={(event) => {
+                    if (deletingId === article.id) return;
+                    event.currentTarget.style.color = "var(--accent)";
+                    event.currentTarget.style.opacity = "1";
+                  }}
+                  onMouseLeave={(event) => {
+                    event.currentTarget.style.color = "var(--fg-4)";
+                    event.currentTarget.style.opacity = deletingId === article.id ? "0.4" : "0.65";
+                  }}
+                  title={deletingId === article.id ? "删除中…" : "删除文章"}
+                >
+                  <IconTrash size={13} />
+                </button>
                 <IconArrowRight size={14} />
               </div>
             </div>
