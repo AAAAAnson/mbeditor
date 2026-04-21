@@ -96,3 +96,14 @@ def test_draft_accepts_credentials_and_article(client, monkeypatch):
     body = resp.json()
     assert body["code"] == 0
     assert body["data"]["media_id"] == "draft-id-42"
+
+
+def test_compose_has_no_data_volume():
+    from pathlib import Path
+    content = Path(__file__).resolve().parents[2].joinpath("docker-compose.yml").read_text(encoding="utf-8")
+    assert "./data:/app/data" not in content
+    assert "IMAGES_DIR" not in content
+    assert "ARTICLES_DIR" not in content
+    assert "MBDOCS_DIR" not in content
+    assert "CONFIG_FILE" not in content
+    assert "MAX_UPLOAD_SIZE" in content
