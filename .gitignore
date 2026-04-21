@@ -64,3 +64,12 @@ memory/
 /editor-*.jpeg
 /preview-*.png
 /preview-*.jpeg
+/gh-*.png
+/gh-*.jpeg
+/prod-*.png
+/prod-*.jpeg
+/plan-*-playwright-*.png
+/plan-*-playwright-*.jpeg
+
+# Local git worktrees (per-branch physical checkouts, not portable)
+.worktrees/

@@ -1,4 +1,4 @@
-# Production compose for mbeditor.top.
+# Production compose for the published MBEditor service.
 # Pulls prebuilt images from GHCR — does NOT build.
 # Ports bind to 127.0.0.1 only; system Nginx terminates TLS.
 services:
@@ -9,9 +9,6 @@ services:
     ports:
       - "127.0.0.1:7072:8000"
     environment:
-      - IMAGES_DIR=/app/data/images
-      - ARTICLES_DIR=/app/data/articles
-      - CONFIG_FILE=/app/data/config.json
       - MAX_UPLOAD_SIZE=52428800
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/version')"]
