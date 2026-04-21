@@ -150,21 +150,24 @@ def test_render_for_wechat_image_block_is_real_not_stub():
     assert "stub" not in html.lower()
 
 
-def test_render_for_wechat_image_block_upload_changes_only_src(tmp_path, monkeypatch):
-    from app.core import config as config_mod
+def test_render_for_wechat_image_block_upload_changes_only_src(monkeypatch):
+    from app.services.renderers import image_renderer as img_mod
 
-    images_dir = tmp_path / "images"
-    images_dir.mkdir()
-    (images_dir / "sample.png").write_bytes(b"fake-image")
-    monkeypatch.setattr(config_mod.settings, "IMAGES_DIR", str(images_dir))
+    # Stub _read_image_bytes so the test doesn't hit the network or disk.
+    monkeypatch.setattr(
+        img_mod,
+        "_read_image_bytes",
+        lambda src: (b"fake-image", "sample.png"),
+    )
 
+    http_src = "https://example.com/sample.png"
     doc = MBDoc(
         id="d-image-upload",
         meta=MBDocMeta(title="T"),
         blocks=[
             ImageBlock(
                 id="img1",
-                src="/images/sample.png",
+                src=http_src,
                 alt="Sample",
                 width=640,
                 height=480,
@@ -179,7 +182,7 @@ def test_render_for_wechat_image_block_upload_changes_only_src(tmp_path, monkeyp
             image_uploader=lambda data, name: f"https://cdn.example/{name}",
         ),
     )
-    assert preview_html.replace("/images/sample.png", "https://cdn.example/sample.png") == publish_html
+    assert preview_html.replace(http_src, "https://cdn.example/sample.png") == publish_html
 
 
 def test_render_for_wechat_raster_block_is_real_not_stub():

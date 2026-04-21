@@ -145,28 +145,16 @@ def test_cache_key_is_stable_and_content_sensitive():
     assert key_a != raster_cache_key(different_width)
 
 
-def test_inline_images_local_path(monkeypatch, tmp_path):
-    from app.core import config as config_mod
-
-    images_dir = tmp_path / "images"
-    images_dir.mkdir()
-    png_bytes = b"\x89PNG\r\n\x1a\nFAKEBODY"
-    (images_dir / "card.png").write_bytes(png_bytes)
-    monkeypatch.setattr(config_mod.settings, "IMAGES_DIR", str(images_dir))
-
+def test_inline_images_local_path_unchanged_in_stateless_build():
+    # /images/ local paths are no longer resolved in the stateless build;
+    # they are passed through unchanged so headless Chromium renders a
+    # placeholder (which is acceptable for raster blocks that don't use
+    # file-backed image blocks).
     html = '<img src="/images/card.png" alt="c" />'
-    out = _inline_images(html)
-    expected = base64.b64encode(png_bytes).decode("ascii")
-    assert f"data:image/png;base64,{expected}" in out
+    assert _inline_images(html) == html
 
 
-def test_inline_images_leaves_missing_local_path_unchanged(monkeypatch, tmp_path):
-    from app.core import config as config_mod
-
-    images_dir = tmp_path / "images"
-    images_dir.mkdir()
-    monkeypatch.setattr(config_mod.settings, "IMAGES_DIR", str(images_dir))
-
+def test_inline_images_leaves_missing_local_path_unchanged():
     html = '<img src="/images/missing.png" />'
     assert _inline_images(html) == html
 
@@ -181,16 +169,16 @@ def test_inline_images_leaves_unknown_scheme_unchanged():
     assert _inline_images(html) == html
 
 
-def test_inline_images_handles_multiple_imgs(monkeypatch, tmp_path):
-    from app.core import config as config_mod
-
-    images_dir = tmp_path / "images"
-    images_dir.mkdir()
-    (images_dir / "a.png").write_bytes(b"A")
-    (images_dir / "b.jpg").write_bytes(b"B")
-    monkeypatch.setattr(config_mod.settings, "IMAGES_DIR", str(images_dir))
-
-    html = '<div><img src="/images/a.png"/><img src="/images/b.jpg"/></div>'
+def test_inline_images_handles_multiple_imgs_data_urls():
+    # With data: URLs, _inline_images must leave them unchanged (already inlined).
+    png_b64 = base64.b64encode(b"APNG").decode("ascii")
+    jpg_b64 = base64.b64encode(b"AJPG").decode("ascii")
+    html = (
+        f'<div>'
+        f'<img src="data:image/png;base64,{png_b64}"/>'
+        f'<img src="data:image/jpeg;base64,{jpg_b64}"/>'
+        f'</div>'
+    )
     out = _inline_images(html)
-    assert "data:image/png;base64," in out
-    assert "data:image/jpeg;base64," in out
+    assert f"data:image/png;base64,{png_b64}" in out
+    assert f"data:image/jpeg;base64,{jpg_b64}" in out

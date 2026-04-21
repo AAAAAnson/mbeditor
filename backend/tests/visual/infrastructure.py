@@ -208,6 +208,7 @@ def push_mbdoc_to_wechat_draft(doc: MBDoc) -> str:
         The ``media_id`` string returned by the WeChat draft API.
     """
     from app.services import wechat_service
+    from app.core.config import settings as _settings
 
     # Stage 1 has no image blocks; upload_images=True still walks the real
     # push code-path even if no images are actually uploaded.
@@ -215,7 +216,20 @@ def push_mbdoc_to_wechat_draft(doc: MBDoc) -> str:
     html = render_for_wechat(doc, ctx)
 
     title = doc.meta.title or doc.id
-    result = wechat_service.create_draft(title=title, html=html)
+    # Credentials must be provided by the caller via env vars or config.json;
+    # push_mbdoc_to_wechat_draft is only invoked in real-WeChat tests which
+    # require MBEDITOR_RUN_REAL_WECHAT_TESTS=1.
+    import os, json
+    appid = os.environ.get("WECHAT_APPID", "")
+    appsecret = os.environ.get("WECHAT_APPSECRET", "")
+    if not appid or not appsecret:
+        # Try loading from data/config.json (gitignored, NAS-local credentials)
+        config_path = Path(__file__).parents[2] / "data" / "config.json"
+        if config_path.exists():
+            cfg = json.loads(config_path.read_text())
+            appid = cfg.get("appid", "") or cfg.get("WECHAT_APPID", "")
+            appsecret = cfg.get("appsecret", "") or cfg.get("WECHAT_APPSECRET", "")
+    result = wechat_service.create_draft(appid=appid, appsecret=appsecret, title=title, html=html)
     return result["media_id"]
 
 

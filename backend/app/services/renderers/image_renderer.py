@@ -2,12 +2,10 @@
 from __future__ import annotations
 
 import base64
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import httpx
 
-from app.core.config import settings
 from app.models.mbdoc import Block, BlockType, ImageBlock
 from app.services.renderers.base import BlockRenderer
 
@@ -16,10 +14,9 @@ if TYPE_CHECKING:
 
 
 def _read_image_bytes(src: str) -> tuple[bytes, str] | None:
+    # Local /images/ paths are not supported in the stateless build;
+    # the caller's image_uploader is expected to provide a URL directly.
     if src.startswith("/images/"):
-        local_path = Path(settings.IMAGES_DIR) / src.removeprefix("/images/")
-        if local_path.exists():
-            return local_path.read_bytes(), local_path.name
         return None
 
     if src.startswith("http://") or src.startswith("https://"):
