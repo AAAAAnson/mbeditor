@@ -2,7 +2,7 @@
 
 # MBEditor
 
-### AI 助手原生的微信公众号编辑器
+### AI CLI原生的微信公众号编辑器
 
 **动动嘴，排版就好了。**
 
@@ -31,7 +31,7 @@
 <tr>
 <td width="25%">
 
-**助手原生**
+**CLI原生**
 
 不是"兼容 AI"，是"为 AI 设计"。完整 RESTful API + Typer CLI，Skill 文件即装即用。Claude Code / Codex / OpenClaw 任意一个 Agent 都能直接操控编辑器。
 
@@ -107,9 +107,9 @@ docker compose up --build -d
 
 > 升级不会丢失数据，文章和图片存储在 `data/` 目录中，不受容器重建影响。
 
-### 第二步：安装 AI 助手技能
+### 第二步：安装技能
 
-MBEditor 提供了 `skill/mbeditor.skill.md`，安装后助手就能直接操控编辑器。
+MBEditor 提供了 `skill/mbeditor.skill.md`，安装后AI Agent就能直接操控编辑器。
 
 <details open>
 <summary><strong>Claude Code</strong></summary>
@@ -180,9 +180,9 @@ curl -X PUT http://localhost:7072/api/v1/config \
 
 `data/config.json` 默认走示例值，且被 `.gitignore` 覆盖——凭证永远不会进 git。
 
-## 助手工作流
+## Agent工作流
 
-MBEditor 的设计哲学是 **助手优先**。助手通过 REST API 完成全部操作：
+MBEditor 的设计哲学是 **Agent优先**。Agent 通过 REST API 完成全部操作：
 
 ```bash
 # 1. 套用"极简商务"模板创建文章
@@ -221,7 +221,7 @@ claude "套用极简商务模板写一篇 Q2 行业观察，推到草稿箱"
 | **Markdown 模式** | 写作者 | 用最简洁的语法写作，`mode=markdown` 时服务端会自动编译成 HTML 同步给预览 |
 | **所见即所得** | 所有人 | 直接在预览里改文字，500ms 后自动回写 Markdown/HTML 源码 |
 
-### 编辑器特性（V5 新增）
+### 编辑器特性
 
 - **可拖拽预览框**：右边 / 下边 / 右下角三种 resize 把手，独立缩放滑杆 40%–200%，尺寸和缩放分别持久化。
 - **结构面板**：左侧自动列出 H1/H2/H3 大纲和图片大纲，点击即跳，预览和编辑器同步高亮。
@@ -230,7 +230,7 @@ claude "套用极简商务模板写一篇 Q2 行业观察，推到草稿箱"
 
 ### 发布能力
 
-- 一键复制富文本到剪贴板（V5 回归），预览效果 = 粘贴效果。
+- 一键复制富文本到剪贴板，预览效果 = 粘贴效果。
 - 一键推送到微信公众号草稿箱，自动上传图片到微信 CDN。
 - CSS 自动内联化 + 基础排版样式注入，`<section>` / SVG / 内联 `style` 全保留。
 - Publish pipeline 已覆盖 600+ 行复杂 HTML，草稿高度还原度 ≈ 0.37%，陷阱见 `CHANGELOG.md`。
@@ -353,4 +353,4 @@ cd frontend && npm install && npm run dev
 
 [MIT](LICENSE) &copy; 2025 Anson
 
-_动动嘴，排版就好了。专注内容，其他交给 MBEditor。_
+_专注内容，其他交给 MBEditor。_
