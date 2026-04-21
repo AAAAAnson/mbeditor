@@ -62,8 +62,8 @@ export function AgentCopilot() {
 const MOCK_AGENT_STREAM: AgentMessage[] = [
   { t: "17:02:14", kind: "user", text: "把第三段卡片改成带图的样式，图用刚上传的 warm 01" },
   { t: "17:02:15", kind: "think", text: "已识别第三段卡片，准备改成带图样式" },
-  { t: "17:02:16", kind: "tool", method: "GET", path: "/api/v1/articles/MB-2604-018" },
-  { t: "17:02:17", kind: "tool", method: "PUT", path: "/api/v1/articles/MB-2604-018" },
+  { t: "17:02:16", kind: "tool", method: "GET", path: "store://MB-2604-018" },
+  { t: "17:02:17", kind: "tool", method: "PUT", path: "store://MB-2604-018" },
   { t: "17:02:18", kind: "diff", add: 6, remove: 2, hint: "Card b4 + img" },
   { t: "17:02:19", kind: "assistant", text: "第三段已经改成带图样式了。要不要顺手同步到其他卡片？" },
   { t: "17:04:03", kind: "user", text: "预览一下微信兼容样式" },
@@ -242,7 +242,7 @@ function AgentCopilotPanel({ open, setOpen }: AgentCopilotProps) {
     const newItems: AgentMessage[] = [
       { t, kind: "user", text: input },
       { t, kind: "think", text: "正在整理需求，准备开始处理" },
-      { t, kind: "tool", method: "POST", path: "/api/v1/publish/process" },
+      { t, kind: "tool", method: "POST", path: "/publish/preview" },
       { t, kind: "assistant", text: "已经处理好了，可以直接在预览里查看效果。" },
     ];
     setStream((prev) => [...prev, ...newItems]);

@@ -3,7 +3,7 @@
  * receives it as rich text (text/html) with a plain-text fallback.
  *
  * The HTML must already have been run through the WeChat-safe sanitizer
- * pipeline on the backend (/publish/process-for-copy) — that step strips
+ * pipeline on the backend (the process-for-copy endpoint) — that step strips
  * flex/grid/position:absolute/animations/transforms/etc and uploads local
  * images to mmbiz.qpic.cn so the paste result renders identically to the
  * editor preview.

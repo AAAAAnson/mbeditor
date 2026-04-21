@@ -7,7 +7,7 @@ export interface ApiResponse<T> {
   data: T;
 }
 
-/** Lightweight article summary returned by GET /api/v1/articles */
+/** Lightweight article summary returned by the articles store */
 export interface ArticleSummary {
   id: string;
   title: string;
@@ -17,7 +17,7 @@ export interface ArticleSummary {
   updated_at: string;
 }
 
-/** Full article returned by GET /api/v1/articles/{id} */
+/** Full article returned by the articles store */
 export interface ArticleFull extends ArticleSummary {
   html: string;
   css: string;

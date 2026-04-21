@@ -280,7 +280,7 @@ export function ArticleList({ go = () => {} }: ArticleListProps) {
             <div>
               支持 · <span style={{ color: "var(--gold)" }}>CLAUDE · CODEX · OPENCLAW</span>
             </div>
-            <div>接口 · :7072/api/v1/articles</div>
+            <div>接口 · :7072</div>
             <div
               style={{
                 marginTop: 8,
