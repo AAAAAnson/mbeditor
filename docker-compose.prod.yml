@@ -1,0 +1,31 @@
+# Production compose for mbeditor.top.
+# Pulls prebuilt images from GHCR — does NOT build.
+# Ports bind to 127.0.0.1 only; system Nginx terminates TLS.
+services:
+  backend:
+    image: ghcr.io/aaaaanson/mbeditor-backend:${MBEDITOR_TAG:-latest}
+    container_name: mbeditor-backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7072:8000"
+    environment:
+      - IMAGES_DIR=/app/data/images
+      - ARTICLES_DIR=/app/data/articles
+      - CONFIG_FILE=/app/data/config.json
+      - MAX_UPLOAD_SIZE=52428800
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/version')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  frontend:
+    image: ghcr.io/aaaaanson/mbeditor-frontend:${MBEDITOR_TAG:-latest}
+    container_name: mbeditor-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:7073:80"
