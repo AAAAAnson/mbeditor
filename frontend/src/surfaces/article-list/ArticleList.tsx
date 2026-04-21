@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ArticleFull, ArticleSummary, Route } from "@/types";
 import { IconSearch, IconPlus, IconArrowRight, IconTrash } from "@/components/icons";
 import Chip from "@/components/shared/Chip";
@@ -145,10 +145,10 @@ function CoverTile({ variant }: { variant: CoverVariant }) {
 }
 
 interface ArticleListProps {
-  go: (route: Route, params?: Record<string, string>) => void;
+  go?: (route: Route, params?: Record<string, string>) => void;
 }
 
-export default function ArticleList({ go }: ArticleListProps) {
+export function ArticleList({ go = () => {} }: ArticleListProps) {
   const [q, setQ] = useState("");
   const [tab, setTab] = useState<FilterTab>("全部");
   const [sort, setSort] = useState("updated");
@@ -156,26 +156,12 @@ export default function ArticleList({ go }: ArticleListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const articles = useArticlesStore((state) => state.articles);
-  const loading = useArticlesStore((state) => state.loading);
-  const fetchArticles = useArticlesStore((state) => state.fetchArticles);
   const createArticle = useArticlesStore((state) => state.createArticle);
   const deleteArticle = useArticlesStore((state) => state.deleteArticle);
   const setCurrentArticle = useArticlesStore((state) => state.setCurrentArticle);
   const defaultMode = useUIStore((state) => state.editorDefaultMode);
   const density = useUIStore((state) => state.density);
   const rowPadding = density === "compact" ? "14px 8px" : density === "spacious" ? "24px 8px" : "18px 8px";
-
-  useEffect(() => {
-    let cancelled = false;
-
-    void fetchArticles().catch((error) => {
-      if (!cancelled) toast.error(extractErrorMessage(error));
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [fetchArticles]);
 
   const filtered = useMemo(() => {
     const normalizedQuery = q.trim().toLowerCase();
@@ -419,20 +405,7 @@ export default function ArticleList({ go }: ArticleListProps) {
           <span />
         </div>
 
-        {loading && articles.length === 0 && (
-          <div
-            style={{
-              padding: "36px 8px",
-              borderBottom: "1px solid var(--border)",
-              fontFamily: "var(--f-mono)",
-              color: "var(--fg-4)",
-            }}
-          >
-            正在加载文章列表…
-          </div>
-        )}
-
-        {!loading && filtered.length === 0 && (
+        {filtered.length === 0 && (
           <div
             style={{
               padding: "48px 8px 52px",
@@ -629,3 +602,5 @@ export default function ArticleList({ go }: ArticleListProps) {
     </div>
   );
 }
+
+export default ArticleList;
