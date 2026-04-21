@@ -2,7 +2,62 @@ import { useState, useEffect, useRef } from "react";
 import { IconAgent, IconClose, IconSend } from "@/components/icons";
 import Chip from "@/components/shared/Chip";
 import Pulse from "@/components/shared/Pulse";
-import type { AgentMessage } from "@/types";
+import api from "@/lib/api";
+import { useWeChatStore } from "@/stores/wechatStore";
+import { useArticlesStore } from "@/stores/articlesStore";
+import { toast } from "@/stores/toastStore";
+import type { AgentMessage, ArticleFull } from "@/types";
+
+// ── Named export: standalone publish-capable component used by tests ──
+export function AgentCopilot() {
+  const [publishing, setPublishing] = useState(false);
+
+  const handlePublish = async () => {
+    const active = useWeChatStore.getState().getActiveAccount();
+    if (!active) {
+      toast.error("请先在设置中添加并选择公众号");
+      return;
+    }
+    const currentId = useArticlesStore.getState().currentArticleId;
+    const article = useArticlesStore.getState().articles.find((a) => a.id === currentId) as ArticleFull | undefined;
+    if (!article) {
+      toast.error("没有选中的文章");
+      return;
+    }
+    setPublishing(true);
+    try {
+      await api.post("/wechat/draft", {
+        appid: active.appid,
+        appsecret: active.appsecret,
+        article: {
+          title: article.title,
+          html: article.html ?? "",
+          css: article.css ?? "",
+          author: article.author ?? "",
+          digest: article.digest ?? "",
+          cover: article.cover ?? "",
+          mode: article.mode,
+          markdown: article.markdown ?? "",
+        },
+      });
+      toast.success("已发送到微信草稿箱");
+    } catch {
+      toast.error("发布失败");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  return (
+    <button
+      className="btn btn-primary btn-sm"
+      onClick={handlePublish}
+      disabled={publishing}
+    >
+      推送到草稿
+    </button>
+  );
+}
 
 const MOCK_AGENT_STREAM: AgentMessage[] = [
   { t: "17:02:14", kind: "user", text: "把第三段卡片改成带图的样式，图用刚上传的 warm 01" },
@@ -169,7 +224,7 @@ interface AgentCopilotProps {
   setOpen: (open: boolean) => void;
 }
 
-export default function AgentCopilot({ open, setOpen }: AgentCopilotProps) {
+function AgentCopilotPanel({ open, setOpen }: AgentCopilotProps) {
   const [input, setInput] = useState("");
   const [stream, setStream] = useState<AgentMessage[]>(MOCK_AGENT_STREAM);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -392,3 +447,5 @@ export default function AgentCopilot({ open, setOpen }: AgentCopilotProps) {
     </div>
   );
 }
+
+export default AgentCopilotPanel;
