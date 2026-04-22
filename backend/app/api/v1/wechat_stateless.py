@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from app.core.response import success
 from app.services import wechat_service
 from app.services.publish_adapter import publish_draft_sync
+from app.services.svg_validator import validate_html
 
 router = APIRouter(prefix="/wechat", tags=["wechat"])
 
@@ -52,6 +53,11 @@ async def upload_image(
 
 @router.post("/draft")
 async def create_draft(req: DraftReq):
+    # Run the static compatibility check on the user-authored HTML before any
+    # sanitize/inline mutations. The report is attached to the success response
+    # so agents that skip /wechat/validate still get a learning signal.
+    validation_report = validate_html(req.article.html)
+
     loop = asyncio.get_running_loop()
     result = await loop.run_in_executor(
         None,
@@ -60,4 +66,4 @@ async def create_draft(req: DraftReq):
         req.appid,
         req.appsecret,
     )
-    return success(result)
+    return success({**result, "validation_report": validation_report})

@@ -41,6 +41,7 @@ Thumbs.db
 docs/superpowers/
 CLAUDE.md
 .playwright-mcp/
+.playwright-cli/
 
 # Playwright visual test artifacts and auth state
 backend/tests/visual/.auth/

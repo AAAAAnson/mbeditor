@@ -129,4 +129,30 @@ describe("ValidationDialog", () => {
     );
     expect(screen.getByTestId("validation-ignore-push").textContent).toContain("忽略并推送");
   });
+
+  it("read-only mode (no onIgnoreAndPush) hides push button and renames cancel to 关闭", () => {
+    render(
+      <ValidationDialog
+        open
+        pushing={false}
+        onCancel={() => undefined}
+        report={buildReport({ issues: [{ line: 1, rule: "r", message: "m", suggestion: "s" }] })}
+      />,
+    );
+    expect(screen.queryByTestId("validation-ignore-push")).toBeNull();
+    expect(screen.getByTestId("validation-cancel").textContent).toContain("关闭");
+  });
+
+  it("renders custom title when provided", () => {
+    render(
+      <ValidationDialog
+        open
+        pushing={false}
+        onCancel={() => undefined}
+        title="实时报告"
+        report={buildReport({ warnings: [{ line: 1, rule: "r", message: "m", suggestion: "s" }] })}
+      />,
+    );
+    expect(screen.getByText("实时报告")).toBeTruthy();
+  });
 });

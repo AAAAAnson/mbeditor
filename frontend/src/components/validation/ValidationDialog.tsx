@@ -5,7 +5,10 @@ interface ValidationDialogProps {
   report: ValidationReport | null;
   pushing: boolean;
   onCancel: () => void;
-  onIgnoreAndPush: () => void;
+  // Optional: when omitted the dialog runs in read-only mode (no ignore-and-push
+  // escape), used by the edit-time compatibility badge.
+  onIgnoreAndPush?: () => void;
+  title?: string;
 }
 
 function FindingRow({ finding, tone }: { finding: ValidationFinding; tone: "issue" | "warning" }) {
@@ -40,11 +43,13 @@ export default function ValidationDialog({
   pushing,
   onCancel,
   onIgnoreAndPush,
+  title = "发布前公众号兼容性检查",
 }: ValidationDialogProps) {
   if (!open || !report) return null;
 
   const { issues, warnings } = report;
   const hasIssues = issues.length > 0;
+  const readOnly = !onIgnoreAndPush;
 
   return (
     <div
@@ -79,7 +84,7 @@ export default function ValidationDialog({
       >
         <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--fg-6, rgba(0,0,0,0.08))" }}>
           <div id="validation-dialog-title" style={{ fontSize: 16, fontWeight: 600 }}>
-            发布前公众号兼容性检查
+            {title}
           </div>
           <div style={{ fontSize: 13, color: "var(--fg-3)", marginTop: 4 }}>
             {hasIssues
@@ -150,17 +155,19 @@ export default function ValidationDialog({
             disabled={pushing}
             data-testid="validation-cancel"
           >
-            去修改
+            {readOnly ? "关闭" : "去修改"}
           </button>
-          <button
-            className="btn btn-primary btn-sm"
-            type="button"
-            onClick={onIgnoreAndPush}
-            disabled={pushing}
-            data-testid="validation-ignore-push"
-          >
-            {pushing ? "推送中…" : hasIssues ? "忽略并推送" : "仍然推送"}
-          </button>
+          {!readOnly && (
+            <button
+              className="btn btn-primary btn-sm"
+              type="button"
+              onClick={onIgnoreAndPush}
+              disabled={pushing}
+              data-testid="validation-ignore-push"
+            >
+              {pushing ? "推送中…" : hasIssues ? "忽略并推送" : "仍然推送"}
+            </button>
+          )}
         </div>
       </div>
     </div>

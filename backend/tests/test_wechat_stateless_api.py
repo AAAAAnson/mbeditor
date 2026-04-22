@@ -96,6 +96,39 @@ def test_draft_accepts_credentials_and_article(client, monkeypatch):
     body = resp.json()
     assert body["code"] == 0
     assert body["data"]["media_id"] == "draft-id-42"
+    # validation_report attached even when content is clean (agent learning signal)
+    assert "validation_report" in body["data"]
+    assert body["data"]["validation_report"]["issues"] == []
+    assert body["data"]["validation_report"]["warnings"] == []
+
+
+def test_draft_response_attaches_findings_for_violating_html(client, monkeypatch):
+    _install_wechat_mock(monkeypatch, {
+        "stable_token": {"access_token": "tok", "expires_in": 7200},
+        "add_material": {"media_id": "thumb-id"},
+        "draft/add": {"media_id": "draft-id-99"},
+    })
+    resp = client.post(
+        "/api/v1/wechat/draft",
+        json={
+            "appid": "wxA",
+            "appsecret": "secretA",
+            "article": {
+                "title": "bad",
+                "html": '<script>x</script><animate attributeName="color"/>',
+                "author": "",
+                "digest": "",
+                "cover": "",
+            },
+        },
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["code"] == 0
+    assert body["data"]["media_id"] == "draft-id-99"
+    report = body["data"]["validation_report"]
+    rules = {i["rule"] for i in report["issues"]}
+    assert {"forbidden-tag", "attribute-whitelist"}.issubset(rules)
 
 
 def test_compose_has_no_data_volume():

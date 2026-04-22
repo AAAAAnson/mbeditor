@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Seg from "@/components/ui/Seg";
 import { IconArrowLeft, IconCopy, IconEye, IconSend } from "@/components/icons";
+import CompatibilityBadge from "@/components/validation/CompatibilityBadge";
 import { useUIStore } from "@/stores/uiStore";
 import { uploadWithActive } from "@/lib/image-hosts/dispatch";
 import type { EditorDraft, EditorField } from "@/types";
@@ -769,6 +770,7 @@ export default function CenterStage({
         >
           <IconCopy size={12} /> {copying ? "复制中" : "复制富文本"}
         </button>
+        <CompatibilityBadge html={draft.html} />
         <button
           className="btn btn-primary btn-sm"
           onClick={onPublish}
