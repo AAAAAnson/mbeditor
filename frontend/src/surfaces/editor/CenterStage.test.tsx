@@ -405,7 +405,7 @@ describe("CenterStage", () => {
     expect(onFieldChange).toHaveBeenCalledWith("markdown", "第一行  \n第二行已改");
   });
 
-  it("keeps structural edits clean when preview adds a new paragraph", () => {
+  it("keeps inline styles when a structural edit adds a new paragraph", () => {
     vi.useFakeTimers();
     const onFieldChange = vi.fn();
 
@@ -456,7 +456,13 @@ describe("CenterStage", () => {
       vi.advanceTimersByTime(500);
     });
 
-    expect(onFieldChange).toHaveBeenCalledWith("html", "<h2>H</h2><p>P</p><p>NEXT</p>");
+    // Cosmetic publish-pipeline wrapper peeled, but sibling inline styles
+    // ride along so the new paragraph lands in the same visual family as
+    // the ones that shipped with the source.
+    expect(onFieldChange).toHaveBeenCalledWith(
+      "html",
+      '<h2>H</h2><p style="margin:0; color:#333;">P</p><p style="margin:0; color:#333;">NEXT</p>',
+    );
   });
 
   it("keeps structural edits clean when markdown preview adds a new paragraph", () => {
@@ -732,5 +738,145 @@ describe("CenterStage", () => {
     // The safe text around the malicious payload makes it through.
     expect(merged).toContain("safe paragraph");
     expect(merged).toContain("tail");
+  });
+
+  it("preserves inline styles when source uses head/style rules and preview is inlined", () => {
+    vi.useFakeTimers();
+    const onFieldChange = vi.fn();
+
+    // Source: user pasted a full HTML document whose layout depends on
+    // a <head><style> sheet with class selectors. After the publish
+    // pipeline runs premailer, every element carries the resolved inline
+    // style — but draft.html still holds the raw head/style form, so the
+    // source↔preview shape check on a text edit cannot match.
+    const rawSource = [
+      "<!DOCTYPE html><html><head>",
+      "<style>.eyebrow{color:#F65545;background:#FFEBE8;padding:4px 12px;border-radius:12px;}",
+      ".rule-item{background:#FAFAFA;border-left:3px solid #F65545;padding:14px 16px;}</style>",
+      "</head><body>",
+      '<span class="eyebrow">AI 选型</span>',
+      '<div class="rule-item">任务类型决定模型</div>',
+      "</body></html>",
+    ].join("");
+
+    const inlinedPreview = [
+      '<section style="font-size:16px; line-height:1.8; color:#333;">',
+      '<span class="eyebrow" style="color:#F65545;background:#FFEBE8;padding:4px 12px;border-radius:12px;">AI 选型</span>',
+      '<section class="rule-item" style="background:#FAFAFA;border-left:3px solid #F65545;padding:14px 16px;">任务类型决定模型</section>',
+      "</section>",
+    ].join("");
+
+    render(
+      <CenterStage
+        articleId="draft-1"
+        canGoBack
+        draft={{ ...DRAFT, html: rawSource }}
+        view="preview"
+        setView={vi.fn()}
+        tab="html"
+        setTab={vi.fn()}
+        saveState="saved"
+        selected="body"
+        navigationRequest={null}
+        previewHtml={inlinedPreview}
+        previewLoading={false}
+        previewError={null}
+        publishing={false}
+        copying={false}
+        onBack={vi.fn()}
+        onFieldChange={onFieldChange}
+        onRefreshPreview={vi.fn()}
+        onCopyRichText={vi.fn()}
+        onPublish={vi.fn()}
+      />
+    );
+
+    const editable = screen.getByTestId("preview-editable-content");
+    const walker = document.createTreeWalker(editable, NodeFilter.SHOW_TEXT);
+    let target: Text | null = null;
+    while (walker.nextNode()) {
+      if ((walker.currentNode as Text).textContent?.includes("任务类型")) {
+        target = walker.currentNode as Text;
+        break;
+      }
+    }
+    expect(target).not.toBeNull();
+    target!.textContent = "任务类型决定模型选型";
+    fireEvent.input(editable);
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+
+    expect(onFieldChange).toHaveBeenCalled();
+    const [[field, nextHtml]] = onFieldChange.mock.calls;
+    expect(field).toBe("html");
+    // Every inline style from the inlined preview must survive the
+    // fallback — that's the whole fix.
+    expect(nextHtml).toContain("color:#F65545");
+    expect(nextHtml).toContain("background:#FFEBE8");
+    expect(nextHtml).toContain("border-left:3px solid #F65545");
+    expect(nextHtml).toContain("padding:14px 16px");
+    // Class attributes also survive (publish pipeline relies on them for
+    // a second inline pass if styles ever regenerate).
+    expect(nextHtml).toContain('class="eyebrow"');
+    expect(nextHtml).toContain('class="rule-item"');
+    // The edited text lands in the output.
+    expect(nextHtml).toContain("任务类型决定模型选型");
+    // The cosmetic publish-pipeline envelope doesn't leak back into source.
+    expect(nextHtml).not.toContain("font-size:16px; line-height:1.8; color:#333");
+  });
+
+  it("strips lone surrogates and C0 control chars from committed preview edits", () => {
+    vi.useFakeTimers();
+    const onFieldChange = vi.fn();
+
+    render(
+      <CenterStage
+        articleId="draft-1"
+        canGoBack
+        draft={DRAFT}
+        view="preview"
+        setView={vi.fn()}
+        tab="html"
+        setTab={vi.fn()}
+        saveState="saved"
+        selected="body"
+        navigationRequest={null}
+        previewHtml={PROCESSED_PREVIEW_HTML}
+        previewLoading={false}
+        previewError={null}
+        publishing={false}
+        copying={false}
+        onBack={vi.fn()}
+        onFieldChange={onFieldChange}
+        onRefreshPreview={vi.fn()}
+        onCopyRichText={vi.fn()}
+        onPublish={vi.fn()}
+      />
+    );
+
+    // Simulate a Word rich-text paste that leaves a lone high surrogate
+    // (U+D83D without its low pair) and a U+0008 control char in the DOM.
+    // Without the sanitizer these bytes reach /publish/preview and
+    // Pydantic v2 returns 422 Unprocessable Entity.
+    const editable = screen.getByTestId("preview-editable-content");
+    (editable as HTMLDivElement).innerHTML = [
+      '<section style="font-size:16px; line-height:1.8; color:#333;">',
+      "<p>clean text \uD83D bad surrogate \u0008 and ctrl</p>",
+      "</section>",
+    ].join("");
+    fireEvent.input(editable);
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+
+    expect(onFieldChange).toHaveBeenCalled();
+    const [[, committed]] = onFieldChange.mock.calls;
+    expect(committed).not.toMatch(/[\uD800-\uDFFF]/);
+    expect(committed).not.toContain("\u0008");
+    expect(committed).toContain("clean text");
+    expect(committed).toContain("and ctrl");
   });
 });

@@ -185,12 +185,47 @@ const DANGEROUS_TAGS = new Set([
   "FRAMESET",
 ]);
 
-function cleanPreviewFallback(doc: Document) {
-  // Structural edits fall through here, so treat anything the user could have
-  // pasted from a rich-text source (Notion, Word, the open web) as untrusted.
-  // Drop executable/navigation tags outright, strip ``on*`` inline handlers, and
-  // neutralize ``javascript:`` / ``data:text/html`` URLs. Style/class/contenteditable
-  // still go because the publish pipeline owns cosmetic styling.
+// Pydantic v2 rejects strings with lone surrogates (common in Word/Office
+// rich-text clipboard payloads) with a 422 on ``/publish/preview``. Strip
+// those and C0/C1 control chars (except TAB/LF/CR) before any content
+// leaves the editor.
+function stripUnsafeUnicode(value: string) {
+  let out = "";
+  for (let i = 0; i < value.length; i++) {
+    const code = value.charCodeAt(i);
+    if (code === 9 || code === 10 || code === 13) {
+      out += value[i];
+      continue;
+    }
+    if (code < 0x20 || code === 0x7f) continue;
+    if (code >= 0xd800 && code <= 0xdbff) {
+      const next = value.charCodeAt(i + 1);
+      if (next >= 0xdc00 && next <= 0xdfff) {
+        out += value[i] + value[i + 1];
+        i++;
+        continue;
+      }
+      continue; // lone high surrogate
+    }
+    if (code >= 0xdc00 && code <= 0xdfff) continue; // lone low surrogate
+    out += value[i];
+  }
+  return out;
+}
+
+function sanitizePastedHtml(raw: string) {
+  const cleaned = stripUnsafeUnicode(raw)
+    // Word / Outlook conditional comments: <!--[if gte mso 9]>...<![endif]-->
+    .replace(/<!--\[if[\s\S]*?<!\[endif\]-->/gi, "")
+    .replace(/<\?xml[\s\S]*?\?>/gi, "")
+    // Office smart-tag / namespace tags that browsers leave intact
+    .replace(/<\/?o:[^>]*>/gi, "")
+    .replace(/<\/?v:[^>]+>/gi, "")
+    .replace(/<\/?w:[^>]+>/gi, "");
+
+  if (typeof DOMParser === "undefined") return cleaned;
+
+  const doc = new DOMParser().parseFromString(`<body>${cleaned}</body>`, "text/html");
   doc.body.querySelectorAll("*").forEach((node) => {
     if (!(node instanceof Element)) return;
     if (DANGEROUS_TAGS.has(node.tagName)) {
@@ -202,7 +237,42 @@ function cleanPreviewFallback(doc: Document) {
         node.removeAttribute(name);
         continue;
       }
-      if (name === "style" || name === "class" || name === "contenteditable") {
+      if (name === "contenteditable") {
+        node.removeAttribute(name);
+        continue;
+      }
+      if (name === "href" || name === "src" || name === "xlink:href") {
+        const value = (node.getAttribute(name) ?? "").trim().toLowerCase();
+        if (value.startsWith("javascript:") || value.startsWith("vbscript:") || value.startsWith("data:text/html")) {
+          node.removeAttribute(name);
+        }
+      }
+    }
+  });
+  return doc.body.innerHTML;
+}
+
+function cleanPreviewFallback(doc: Document) {
+  // Reached when shape matching fails — a structural edit, or a source whose
+  // layout comes from ``<head><style>`` rules that the publish pipeline has
+  // already inlined. Strip anything executable/navigational (scripts, events,
+  // javascript: URLs, dangerous tags), but KEEP ``style`` and ``class``: those
+  // carry the user's authored formatting (directly, or via premailer's
+  // transcription of the head stylesheet). Dropping them would nuke the
+  // entire layout on the first text edit — which is the bug we came here to
+  // fix.
+  doc.body.querySelectorAll("*").forEach((node) => {
+    if (!(node instanceof Element)) return;
+    if (DANGEROUS_TAGS.has(node.tagName)) {
+      node.remove();
+      return;
+    }
+    for (const name of Array.from(node.getAttributeNames())) {
+      if (name.startsWith("on")) {
+        node.removeAttribute(name);
+        continue;
+      }
+      if (name === "contenteditable") {
         node.removeAttribute(name);
         continue;
       }
@@ -595,7 +665,10 @@ export default function CenterStage({
   const commitPreviewChanges = (node: HTMLDivElement | null) => {
     if (!node || !previewEditingEnabled) return;
 
-    const nextHtml = normalizeEditablePreviewHtml(node.innerHTML);
+    // Strip lone surrogates / C0 control chars that Word/Office rich-text
+    // pastes leave in the DOM. Without this, POST /publish/preview gets
+    // invalid Unicode in the JSON body and Pydantic v2 responds 422.
+    const nextHtml = stripUnsafeUnicode(normalizeEditablePreviewHtml(node.innerHTML));
     if (nextHtml === lastCommittedPreviewHtmlRef.current) return;
 
     stalePreviewBodyRef.current = normalizeEditablePreviewHtml(previewBody);
@@ -1054,6 +1127,24 @@ export default function CenterStage({
                       commitPreviewChanges(node);
                       setIsPreviewEditing(false);
                     }, PREVIEW_EDIT_DEBOUNCE_MS);
+                  }}
+                  onPaste={(event) => {
+                    if (!previewEditingEnabled) return;
+                    const clipboard = event.clipboardData;
+                    if (!clipboard) return;
+                    const htmlData = clipboard.getData("text/html");
+                    const textData = clipboard.getData("text/plain");
+                    if (!htmlData && !textData) return;
+                    event.preventDefault();
+                    const insert = htmlData
+                      ? sanitizePastedHtml(htmlData)
+                      : escapeHtml(stripUnsafeUnicode(textData)).replace(/\r?\n/g, "<br>");
+                    // execCommand is deprecated but remains the only
+                    // cross-browser way to insert HTML at the current caret
+                    // while preserving undo history and triggering the
+                    // standard ``input`` event that drives our debounced
+                    // commit.
+                    document.execCommand("insertHTML", false, insert);
                   }}
                   onDragOver={(event) => {
                     if (event.dataTransfer?.types.includes("Files")) {
