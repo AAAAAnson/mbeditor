@@ -1,10 +1,12 @@
 import BrandLogo from "@/components/shared/BrandLogo";
 import Chip from "@/components/shared/Chip";
 import Pulse from "@/components/shared/Pulse";
-import { IconTweak } from "@/components/icons";
+import { IconTweak, IconGithub } from "@/components/icons";
 import { useClock } from "@/hooks/useClock";
 import { useUIStore } from "@/stores/uiStore";
 import type { Route } from "@/types";
+
+const GITHUB_REPO_URL = "https://github.com/AAAAAnson/mbeditor";
 
 interface TopBarProps {
   route: Route;
@@ -84,6 +86,16 @@ export default function TopBar({ route, onNavigate }: TopBarProps) {
           <Pulse size={6} />后端在线
         </Chip>
         <Chip className="mono tnum" style={{ color: "var(--fg-3)" }}>{time}</Chip>
+        <a
+          className="btn btn-ghost btn-sm"
+          href={GITHUB_REPO_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="GitHub 仓库"
+          aria-label="在 GitHub 查看源代码"
+        >
+          <IconGithub size={13} />
+        </a>
         <button
           className="btn btn-ghost btn-sm"
           onClick={() => setTweaksOpen(!tweaksOpen)}
