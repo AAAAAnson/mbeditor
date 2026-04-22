@@ -9,6 +9,8 @@ import { useUIStore } from "@/stores/uiStore";
 import type { ApiResponse, ArticleFull, ArticleMode, EditorDraft, EditorField, Route } from "@/types";
 import StructurePanel, { type OutlineBlock } from "./StructurePanel";
 import CenterStage from "./CenterStage";
+import ValidationDialog from "@/components/validation/ValidationDialog";
+import type { ValidationReport } from "@/components/validation/types";
 
 // Endpoint constants — avoids forbidden-string scanner hits on legacy path substrings
 const COPY_ENDPOINT = "/publish/" + "process-for-copy";
@@ -172,6 +174,8 @@ export default function EditorSurface({ articleId, go, canGoBack, onBack }: Edit
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [navigationRequest, setNavigationRequest] = useState<{ block: OutlineBlock; seq: number } | null>(null);
+  const [validationReport, setValidationReport] = useState<ValidationReport | null>(null);
+  const [pendingPublish, setPendingPublish] = useState<null | (() => Promise<void>)>(null);
 
   const saveNonceRef = useRef(0);
   const navigationSeqRef = useRef(0);
@@ -369,28 +373,75 @@ export default function EditorSurface({ articleId, go, canGoBack, onBack }: Edit
       await saveDraftNow(draft, false);
 
       const payload = buildSavePayload(draft);
-      const res = await api.post<ApiResponse<{ media_id: string }>>("/wechat/draft", {
-        appid: active.appid,
-        appsecret: active.appsecret,
-        article: {
-          title: draft.title,
+
+      const pushDraft = async () => {
+        const res = await api.post<ApiResponse<{ media_id: string }>>("/wechat/draft", {
+          appid: active.appid,
+          appsecret: active.appsecret,
+          article: {
+            title: draft.title,
+            html: payload.html,
+            css: draft.css,
+            author: draft.author,
+            digest: draft.digest,
+            cover: article.cover ?? "",
+            mode: draft.mode,
+            markdown: draft.markdown,
+          },
+        });
+        const data = unwrapResponse(res.data);
+        toast.success(`已发送到微信草稿箱 · ${data.media_id}`);
+      };
+
+      // Pre-flight: static compatibility check. Never mutates user content.
+      // Agent callers can hit the same endpoint directly before publishing.
+      let report: ValidationReport | null = null;
+      try {
+        const vres = await api.post<ApiResponse<ValidationReport>>("/wechat/validate", {
           html: payload.html,
-          css: draft.css,
-          author: draft.author,
-          digest: draft.digest,
-          cover: article.cover ?? "",
-          mode: draft.mode,
-          markdown: draft.markdown,
-        },
-      });
-      const data = unwrapResponse(res.data);
-      toast.success(`已发送到微信草稿箱 · ${data.media_id}`);
+        });
+        report = unwrapResponse(vres.data);
+      } catch {
+        report = null;
+      }
+
+      if (report && (report.issues.length > 0 || report.warnings.length > 0)) {
+        setValidationReport(report);
+        setPendingPublish(() => pushDraft);
+        setPublishing(false);
+        return;
+      }
+
+      await pushDraft();
     } catch (error) {
       toast.error(extractErrorMessage(error));
     } finally {
       setPublishing(false);
     }
   };
+
+  const handleValidationCancel = useCallback(() => {
+    setValidationReport(null);
+    setPendingPublish(null);
+  }, []);
+
+  const handleValidationIgnore = useCallback(async () => {
+    const pending = pendingPublish;
+    if (!pending) {
+      setValidationReport(null);
+      return;
+    }
+    setPublishing(true);
+    try {
+      await pending();
+    } catch (error) {
+      toast.error(extractErrorMessage(error));
+    } finally {
+      setPublishing(false);
+      setValidationReport(null);
+      setPendingPublish(null);
+    }
+  }, [pendingPublish]);
 
   if (!articleId || articleId === "new") {
     return (
@@ -513,6 +564,14 @@ export default function EditorSurface({ articleId, go, canGoBack, onBack }: Edit
           void refreshPreviewNow(draft, false).catch(() => undefined);
         }}
         onPublish={handlePublish}
+      />
+
+      <ValidationDialog
+        open={validationReport !== null}
+        report={validationReport}
+        pushing={publishing}
+        onCancel={handleValidationCancel}
+        onIgnoreAndPush={handleValidationIgnore}
       />
     </div>
   );

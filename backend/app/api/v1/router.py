@@ -5,12 +5,14 @@ from fastapi import APIRouter
 
 from app.api.v1.wechat_stateless import router as wechat_stateless_router
 from app.api.v1.publish import router as publish_router
+from app.api.v1.validate import router as validate_router
 from app.core.config import APP_VERSION, GITHUB_REPO
 from app.core.response import success
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(wechat_stateless_router)
 api_router.include_router(publish_router)
+api_router.include_router(validate_router)
 
 _version_cache: dict = {"latest": "", "checked_at": 0}
 
