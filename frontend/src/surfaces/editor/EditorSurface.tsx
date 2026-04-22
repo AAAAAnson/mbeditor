@@ -30,13 +30,30 @@ function draftStorageKey(articleId: string) {
   return `mbeditor.editorDraft.${articleId}`;
 }
 
+// Older article records (and sessionStorage drafts written by previous
+// schema versions) sometimes carry null in string fields. Those nulls
+// used to reach the preview and copy endpoints where Pydantic v2 rejected
+// them with 422. Every boundary that builds an EditorDraft routes through
+// this helper so draft.* is always a concrete string.
+function coerceDraftStrings<T extends Partial<EditorDraft>>(input: T): T {
+  const out = { ...input } as Record<keyof EditorDraft, unknown>;
+  (Object.keys(EMPTY_DRAFT) as (keyof EditorDraft)[]).forEach((key) => {
+    if (key === "mode") return;
+    const value = out[key];
+    if (value === null || value === undefined) {
+      out[key] = EMPTY_DRAFT[key];
+    }
+  });
+  return out as T;
+}
+
 function readStoredDraft(articleId: string): EditorDraft | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.sessionStorage.getItem(draftStorageKey(articleId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<EditorDraft>;
-    return { ...EMPTY_DRAFT, ...parsed };
+    return coerceDraftStrings({ ...EMPTY_DRAFT, ...parsed });
   } catch {
     return null;
   }
@@ -53,7 +70,7 @@ function clearStoredDraft(articleId: string) {
 }
 
 function normalizeArticle(article: ArticleFull): EditorDraft {
-  return {
+  return coerceDraftStrings({
     title: article.title,
     mode: article.mode,
     html: article.html,
@@ -62,7 +79,7 @@ function normalizeArticle(article: ArticleFull): EditorDraft {
     markdown: article.markdown,
     author: article.author,
     digest: article.digest,
-  };
+  });
 }
 
 function unwrapResponse<T>(response: ApiResponse<T>) {
@@ -282,8 +299,8 @@ export default function EditorSurface({ articleId, go, canGoBack, onBack }: Edit
 
     try {
       const res = await api.post<ApiResponse<{ html: string }>>("/publish/preview", {
-        html: buildSavePayload(source).html,
-        css: source.css,
+        html: buildSavePayload(source).html ?? "",
+        css: source.css ?? "",
       });
       const data = unwrapResponse(res.data);
       startTransition(() => setPreviewHtml(data.html));
@@ -339,14 +356,26 @@ export default function EditorSurface({ articleId, go, canGoBack, onBack }: Edit
   const handleCopyRichText = async () => {
     if (!articleId || !article) return;
 
+    // The copy endpoint uploads inline/CDN images to the active account's
+    // WeChat material library before returning the HTML, so the backend's
+    // ProcessForCopyReq requires both appid and appsecret. The old code
+    // omitted them — every click on "复制富文本" came back 422.
+    const active = useWeChatStore.getState().getActiveAccount();
+    if (!active) {
+      toast.error("请先在设置中添加并选择公众号");
+      return;
+    }
+
     setCopying(true);
     try {
       await saveDraftNow(draft, false);
 
       const payload = buildSavePayload(draft);
       const res = await api.post<ApiResponse<{ html: string }>>(COPY_ENDPOINT, {
-        html: payload.html,
-        css: draft.css,
+        html: payload.html ?? "",
+        css: draft.css ?? "",
+        appid: active.appid,
+        appsecret: active.appsecret,
       });
       const data = unwrapResponse(res.data);
 
