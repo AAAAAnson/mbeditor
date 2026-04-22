@@ -16,8 +16,10 @@ class PreviewReq(BaseModel):
 class ProcessForCopyReq(BaseModel):
     html: str
     css: str = ""
-    appid: str
-    appsecret: str
+    # appid/appsecret 只在需要把图片上传到公众号素材库时才用。没传或为空字符串
+    # 时后端会跳过上传步骤，返回仅做本地净化 + CSS inline 的 HTML。
+    appid: str = ""
+    appsecret: str = ""
 
 
 @router.post("/preview")

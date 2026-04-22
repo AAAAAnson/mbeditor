@@ -6,12 +6,17 @@ from app.services.legacy_render_pipeline import process_for_wechat, preview_html
 from app.services.wechat_sanitize import sanitize_for_wechat
 
 
-def process_html_for_copy(html: str, css: str, *, appid: str, appsecret: str) -> str:
-    if not appid or not appsecret:
-        from app.core.exceptions import AppError
-        raise AppError(code=400, message="未配置公众号 AppID/AppSecret")
+def process_html_for_copy(html: str, css: str, *, appid: str = "", appsecret: str = "") -> str:
+    # 复制富文本的两段式流水线：
+    #   1. process_for_wechat —— 本地净化 + CSS inline（不需要账号）
+    #   2. process_html_images —— 把外链/Base64 图片上传到公众号素材库（需要账号）
+    # 没配账号时只跑第一段：用户能把干净的 HTML 粘进公众号编辑器，图片按原 URL
+    # 呈现；如果里面有 Base64，公众号会提示用户手动补图。强制要求账号会让"仅想
+    # 复制一下成品 HTML"的使用场景寸步难行。
     processed = process_for_wechat(html, css)
-    return wechat_service.process_html_images(processed, appid=appid, appsecret=appsecret)
+    if appid and appsecret:
+        processed = wechat_service.process_html_images(processed, appid=appid, appsecret=appsecret)
+    return processed
 
 
 def publish_draft_sync(article: dict, appid: str, appsecret: str) -> dict:

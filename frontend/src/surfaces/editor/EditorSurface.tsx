@@ -356,15 +356,9 @@ export default function EditorSurface({ articleId, go, canGoBack, onBack }: Edit
   const handleCopyRichText = async () => {
     if (!articleId || !article) return;
 
-    // The copy endpoint uploads inline/CDN images to the active account's
-    // WeChat material library before returning the HTML, so the backend's
-    // ProcessForCopyReq requires both appid and appsecret. The old code
-    // omitted them — every click on "复制富文本" came back 422.
+    // 有账号就顺手把图片上传到素材库（HTML 里图片直接能用），没账号就只做
+    // 本地净化。后端 ProcessForCopyReq 的 appid/appsecret 都是可选的。
     const active = useWeChatStore.getState().getActiveAccount();
-    if (!active) {
-      toast.error("请先在设置中添加并选择公众号");
-      return;
-    }
 
     setCopying(true);
     try {
@@ -374,13 +368,17 @@ export default function EditorSurface({ articleId, go, canGoBack, onBack }: Edit
       const res = await api.post<ApiResponse<{ html: string }>>(COPY_ENDPOINT, {
         html: payload.html ?? "",
         css: draft.css ?? "",
-        appid: active.appid,
-        appsecret: active.appsecret,
+        appid: active?.appid ?? "",
+        appsecret: active?.appsecret ?? "",
       });
       const data = unwrapResponse(res.data);
 
       await writeHtmlToClipboard(data.html);
-      toast.success("已复制富文本，可直接粘贴到公众号编辑器");
+      toast.success(
+        active
+          ? "已复制富文本，可直接粘贴到公众号编辑器"
+          : "已复制富文本（未绑定公众号，图片未上传到素材库）",
+      );
     } catch (error) {
       toast.error(extractErrorMessage(error));
     } finally {
