@@ -650,6 +650,24 @@ export default function CenterStage({
       return;
     }
 
+    // The publish pipeline wraps every response in a cosmetic <section
+    // class="wechat-root"> envelope. The contentEditable DOM holds the
+    // unwrapped form. If the server round-trip only added that envelope —
+    // or a nested cosmetic wrapper — back onto content the user already
+    // sees, reassigning innerHTML would cause a visible flicker, drop the
+    // caret, and wipe the browser's native undo stack (breaking Ctrl+Z).
+    // Peel the same envelope stripPreviewWrapper uses and only rewrite
+    // when the payloads genuinely differ.
+    if (typeof DOMParser !== "undefined") {
+      const nextDoc = new DOMParser().parseFromString(`<body>${previewBody}</body>`, "text/html");
+      stripPreviewWrapper(nextDoc);
+      const unwrappedNext = normalizeEditablePreviewHtml(nextDoc.body.innerHTML);
+      if (unwrappedNext === normalizedCurrent) {
+        lastCommittedPreviewHtmlRef.current = normalizedNext;
+        return;
+      }
+    }
+
     node.innerHTML = previewBody;
     lastCommittedPreviewHtmlRef.current = normalizedNext;
   }, [isPreviewEditing, previewBody]);

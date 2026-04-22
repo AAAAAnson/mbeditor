@@ -740,6 +740,133 @@ describe("CenterStage", () => {
     expect(merged).toContain("tail");
   });
 
+  it("skips innerHTML rewrite when server echoes back only a cosmetic wrapper", () => {
+    // Guards against preview flicker + caret jump + Ctrl+Z history wipe that
+    // happens when we blindly reassign innerHTML after every /publish/preview
+    // round-trip, even when the round-trip only re-wrapped the DOM that's
+    // already on screen in the cosmetic <section> envelope.
+    vi.useFakeTimers();
+    const onFieldChange = vi.fn();
+
+    const initialPreview = [
+      '<section style="font-size:16px; line-height:1.8; color:#333;">',
+      '<p style="margin:0; color:#333;">Edited preview</p>',
+      "</section>",
+    ].join("");
+
+    const { rerender } = render(
+      <CenterStage
+        articleId="draft-1"
+        canGoBack
+        draft={DRAFT}
+        view="preview"
+        setView={vi.fn()}
+        tab="html"
+        setTab={vi.fn()}
+        saveState="saved"
+        selected="body"
+        navigationRequest={null}
+        previewHtml={initialPreview}
+        previewLoading={false}
+        previewError={null}
+        publishing={false}
+        copying={false}
+        onBack={vi.fn()}
+        onFieldChange={onFieldChange}
+        onRefreshPreview={vi.fn()}
+        onCopyRichText={vi.fn()}
+        onPublish={vi.fn()}
+      />
+    );
+
+    const editable = screen.getByTestId("preview-editable-content") as HTMLDivElement;
+    // Tag the element and a child text node so we can detect an innerHTML
+    // rewrite: the DOM identity would change if innerHTML were reassigned.
+    (editable as unknown as { __probe: string }).__probe = "initial";
+    const probeChild = editable.querySelector("p");
+    expect(probeChild).not.toBeNull();
+    (probeChild as unknown as { __probe: string }).__probe = "alive";
+
+    // The server round-trip returns the exact same preview body we already
+    // see on screen — typical when the backend re-inlines the user's edit
+    // and lands on identical output.
+    rerender(
+      <CenterStage
+        articleId="draft-1"
+        canGoBack
+        draft={DRAFT}
+        view="preview"
+        setView={vi.fn()}
+        tab="html"
+        setTab={vi.fn()}
+        saveState="saved"
+        selected="body"
+        navigationRequest={null}
+        previewHtml={initialPreview}
+        previewLoading={false}
+        previewError={null}
+        publishing={false}
+        copying={false}
+        onBack={vi.fn()}
+        onFieldChange={onFieldChange}
+        onRefreshPreview={vi.fn()}
+        onCopyRichText={vi.fn()}
+        onPublish={vi.fn()}
+      />
+    );
+
+    const probedAfterEcho = screen.getByTestId("preview-editable-content") as HTMLDivElement;
+    expect((probedAfterEcho as unknown as { __probe: string }).__probe).toBe("initial");
+    const probedChildAfterEcho = probedAfterEcho.querySelector("p");
+    expect((probedChildAfterEcho as unknown as { __probe: string }).__probe).toBe("alive");
+
+    // Now simulate the real-world case: user edited the text in the DOM,
+    // server wrapped the edited content in the cosmetic <section class="wechat-root">,
+    // and React pushes that wrapped form down as previewBody. The DOM already
+    // has the edited text without the cosmetic wrapper — rewriting would
+    // flicker + wipe undo stack. We must leave the DOM alone.
+    probedAfterEcho.innerHTML = '<p style="margin:0; color:#333;">Edited preview after typing</p>';
+    const afterTypingChild = probedAfterEcho.querySelector("p");
+    (afterTypingChild as unknown as { __probe: string }).__probe = "typed";
+
+    const wrappedEchoOfEdit = [
+      '<section class="wechat-root" style="font-size:16px; line-height:1.8; color:#333;">',
+      '<p style="margin:0; color:#333;">Edited preview after typing</p>',
+      "</section>",
+    ].join("");
+
+    rerender(
+      <CenterStage
+        articleId="draft-1"
+        canGoBack
+        draft={DRAFT}
+        view="preview"
+        setView={vi.fn()}
+        tab="html"
+        setTab={vi.fn()}
+        saveState="saved"
+        selected="body"
+        navigationRequest={null}
+        previewHtml={wrappedEchoOfEdit}
+        previewLoading={false}
+        previewError={null}
+        publishing={false}
+        copying={false}
+        onBack={vi.fn()}
+        onFieldChange={onFieldChange}
+        onRefreshPreview={vi.fn()}
+        onCopyRichText={vi.fn()}
+        onPublish={vi.fn()}
+      />
+    );
+
+    const typedChildAfterEcho = (screen.getByTestId("preview-editable-content") as HTMLDivElement).querySelector("p");
+    // If innerHTML had been rewritten, the probe on the old element would
+    // be gone. Surviving probe proves the DOM node is untouched.
+    expect((typedChildAfterEcho as unknown as { __probe: string }).__probe).toBe("typed");
+    expect(typedChildAfterEcho?.textContent).toBe("Edited preview after typing");
+  });
+
   it("preserves inline styles when source uses head/style rules and preview is inlined", () => {
     vi.useFakeTimers();
     const onFieldChange = vi.fn();
