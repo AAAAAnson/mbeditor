@@ -1,0 +1,187 @@
+import { useRef } from "react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
+import type { ValidationFinding, ValidationReport } from "./types";
+
+interface ValidationDialogProps {
+  open: boolean;
+  report: ValidationReport | null;
+  pushing: boolean;
+  onCancel: () => void;
+  // Optional: when omitted the dialog runs in read-only mode (no ignore-and-push
+  // escape), used by the edit-time compatibility badge.
+  onIgnoreAndPush?: () => void;
+  title?: string;
+}
+
+function FindingRow({ finding, tone }: { finding: ValidationFinding; tone: "issue" | "warning" }) {
+  const color = tone === "issue" ? "var(--danger)" : "var(--warn)";
+  return (
+    <li
+      data-testid={tone === "issue" ? "validation-issue" : "validation-warning"}
+      style={{
+        padding: "10px 12px",
+        borderLeft: `3px solid ${color}`,
+        background: "var(--surface-2)",
+        marginBottom: 8,
+        borderRadius: 4,
+      }}
+    >
+      <div style={{ fontSize: 13, color: "var(--fg)", lineHeight: 1.5 }}>
+        <span style={{ fontFamily: "var(--f-mono)", color: "var(--fg-4)", marginRight: 8 }}>
+          line {finding.line}
+        </span>
+        {finding.message}
+      </div>
+      <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 4, lineHeight: 1.5 }}>
+        → {finding.suggestion}
+      </div>
+    </li>
+  );
+}
+
+export default function ValidationDialog({
+  open,
+  report,
+  pushing,
+  onCancel,
+  onIgnoreAndPush,
+  title = "发布前公众号兼容性检查",
+}: ValidationDialogProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, open && Boolean(report), onCancel);
+
+  if (!open || !report) return null;
+
+  const { issues, warnings } = report;
+  const hasIssues = issues.length > 0;
+  const readOnly = !onIgnoreAndPush;
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="validation-dialog-title"
+      data-testid="validation-dialog"
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        display: "grid",
+        placeItems: "center",
+        zIndex: 1000,
+        padding: 20,
+      }}
+      onClick={onCancel}
+    >
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        style={{
+          background: "var(--surface)",
+          color: "var(--ink)",
+          width: "min(560px, 100%)",
+          maxHeight: "80vh",
+          border: "1px solid var(--line)",
+          borderLeft: `4px solid ${hasIssues ? "var(--danger)" : "var(--warn)"}`,
+          borderRadius: "var(--r-md)",
+          boxShadow: "var(--shadow-lg)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          outline: "none",
+        }}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--line)" }}>
+          <div id="validation-dialog-title" style={{ fontSize: 16, fontWeight: 600 }}>
+            {title}
+          </div>
+          <div style={{ fontSize: 13, color: "var(--fg-3)", marginTop: 4 }}>
+            {hasIssues
+              ? `发现 ${issues.length} 处违规${warnings.length ? `，${warnings.length} 处警告` : ""}，违规项会被微信静默剥离`
+              : `发现 ${warnings.length} 处警告，请人工确认`}
+          </div>
+        </div>
+
+        <div style={{ padding: "14px 22px", overflowY: "auto", flex: 1 }}>
+          {hasIssues && (
+            <section style={{ marginBottom: warnings.length ? 16 : 0 }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "var(--danger)",
+                  fontWeight: 600,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                  marginBottom: 8,
+                }}
+              >
+                违规 · 必须修复
+              </div>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                {issues.map((finding, i) => (
+                  <FindingRow key={`issue-${i}`} finding={finding} tone="issue" />
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {warnings.length > 0 && (
+            <section>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "var(--warn)",
+                  fontWeight: 600,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                  marginBottom: 8,
+                }}
+              >
+                警告 · 请人工确认
+              </div>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                {warnings.map((finding, i) => (
+                  <FindingRow key={`warn-${i}`} finding={finding} tone="warning" />
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+
+        <div
+          style={{
+            padding: "14px 22px",
+            borderTop: "1px solid var(--line)",
+            display: "flex",
+            gap: 10,
+            justifyContent: "flex-end",
+          }}
+        >
+          <button
+            className="btn btn-ghost btn-sm"
+            type="button"
+            onClick={onCancel}
+            disabled={pushing}
+            data-testid="validation-cancel"
+            style={{ minHeight: 44 }}
+          >
+            {readOnly ? "关闭" : "去修改"}
+          </button>
+          {!readOnly && (
+            <button
+              className="btn btn-primary btn-sm"
+              type="button"
+              onClick={onIgnoreAndPush}
+              disabled={pushing}
+              data-testid="validation-ignore-push"
+              style={{ minHeight: 44 }}
+            >
+              {pushing ? "推送中…" : hasIssues ? "忽略并推送" : "仍然推送"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,46 @@
+# Production compose for the published MBEditor service.
+# Pulls prebuilt images from GHCR; does not build.
+# Ports bind to 127.0.0.1 only; put TLS termination in front privately.
+services:
+  backend:
+    image: ghcr.io/aaaaanson/mbeditor-backend:${MBEDITOR_TAG:-latest}
+    container_name: mbeditor-backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7072:8000"
+    environment:
+      - MAX_UPLOAD_SIZE=52428800
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:7073,http://127.0.0.1:7073}
+      # 图片上传端点为部署本地配置,不在此硬编码私有主机。
+      - LOCAL_IMGBED_UPLOAD_URL=${LOCAL_IMGBED_UPLOAD_URL:-}
+      - LOCAL_IMGBED_UPLOAD_TOKEN=${LOCAL_IMGBED_UPLOAD_TOKEN:-}
+      # 微信 API 网关(满足公众号 IP 白名单)。留空则直连官方域名。证书经下方 volume 挂载。
+      - WECHAT_API_BASE=${WECHAT_API_BASE:-}
+      - WECHAT_PROXY_TOKEN=${WECHAT_PROXY_TOKEN:-}
+      - WECHAT_PROXY_CA=${WECHAT_PROXY_CA:-}
+    volumes:
+      # 后端基础设施配置持久化(具名卷,由 Docker 管理,不在仓库目录树内)。
+      # 存网关配置 /app/data/gateway.json(地址/令牌/内联证书),扛得住 up -d --build。
+      - mbeditor-data:/app/data
+      # 网关自签证书(只读):宿主机 ./certs/wechat-proxy.crt -> 容器内固定路径,
+      # 供 env-path 模式 WECHAT_PROXY_CA 指向做 TLS pin 验证(新 UI 用内联 PEM,用不到)。
+      - ./certs:/etc/mbeditor-certs:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/version')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  frontend:
+    image: ghcr.io/aaaaanson/mbeditor-frontend:${MBEDITOR_TAG:-latest}
+    container_name: mbeditor-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:7073:8080"
+
+volumes:
+  mbeditor-data:

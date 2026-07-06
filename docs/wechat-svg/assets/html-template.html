@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>公众号文章模板</title>
+<!--
+  这是一个微信公众号 SVG 交互文章的基础骨架模板。
+
+  使用方法:
+  1. 复制这份 HTML 到本地编辑器修改
+  2. 先在浏览器里调通效果
+  3. 复制 <article> 内的内容到微信图文编辑器
+  4. 在微信编辑器里"预览"(不是保存草稿),发到自己微信看真实效果
+
+  已内置的规范:
+  - xmlns 声明
+  - display:block 避免 SVG 行高间隙
+  - 响应式 width:100%
+  - 零高结构容器示例
+  - 白名单内的动画示例
+
+  你可以在这个骨架上自由发挥视觉和叙事。技术边界已经处理好。
+-->
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    background: #f5f5f5;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  article {
+    max-width: 600px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 20px 16px;
+    line-height: 1.75;
+    color: #333;
+    font-size: 16px;
+  }
+  h1 {
+    font-size: 22px;
+    margin: 0 0 8px;
+    line-height: 1.4;
+  }
+  .meta {
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 24px;
+  }
+  h2 {
+    font-size: 18px;
+    margin: 32px 0 12px;
+    border-left: 4px solid #FF6B35;
+    padding-left: 10px;
+  }
+  p {
+    margin: 0 0 16px;
+  }
+  .highlight {
+    background: #FFF5EE;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 16px 0;
+  }
+  .cta-note {
+    font-size: 13px;
+    color: #666;
+    text-align: center;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<article>
+
+  <!-- ============ 开篇:标题和钩子 ============ -->
+  <h1>[标题:具体、有数字、有悬念]</h1>
+  <div class="meta">[作者] · [日期]</div>
+  <p>
+    [开篇前 100 字:回答"这跟我有什么关系"。不要铺垫,直接给信息或钩子。]
+  </p>
+
+  <!-- ============ 核心内容模块 1 ============ -->
+  <h2>01 [小标题]</h2>
+  <p>
+    [段落 1:不超过 4 行。一个观点。]
+  </p>
+  <p>
+    [段落 2:继续展开,或引入下一个论点。]
+  </p>
+
+  <!-- ============ SVG 交互示例 1:基础动画 ============ -->
+  <!-- 用途:装饰、入场动画、品牌元素展示 -->
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200"
+       style="display:block; width:100%; margin: 24px 0;">
+    <rect x="0" y="0" width="600" height="200" fill="#FFF5EE" />
+    <circle cx="300" cy="100" r="0" fill="#FF6B35">
+      <animate attributeName="r"
+               from="0" to="40"
+               dur="1s"
+               begin="0s"
+               fill="freeze" />
+    </circle>
+    <text x="300" y="180" text-anchor="middle" fill="#333" font-size="14" opacity="0">
+      基础淡入示例
+      <animate attributeName="opacity"
+               from="0" to="1"
+               dur="0.8s"
+               begin="1s"
+               fill="freeze" />
+    </text>
+  </svg>
+
+  <!-- ============ 核心内容模块 2 ============ -->
+  <h2>02 [小标题]</h2>
+  <p>
+    [继续内容,注意段落节奏。]
+  </p>
+
+  <div class="highlight">
+    <strong>[要点提炼或金句]</strong>
+  </div>
+
+  <!-- ============ SVG 交互示例 2:伸长动画(点击展开) ============ -->
+  <!-- 用途:产品功能详情展开、FAQ -->
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 60"
+       style="display:block; width:100%; margin-top: 24px;">
+    <rect id="trigger-expand-1" x="0" y="0" width="600" height="60" fill="#4A90E2"
+          style="cursor: pointer;" />
+    <text x="300" y="38" text-anchor="middle" fill="#fff" font-size="16"
+          style="pointer-events: none;">
+      点击展开详情 ▼
+    </text>
+  </svg>
+
+  <!-- 零高容器:展开的面板 -->
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200"
+       preserveAspectRatio="xMidYMin meet"
+       style="display:block; width:100%; height:0; overflow:visible;">
+    <rect x="0" y="0" width="600" height="0" fill="#F0F8FF">
+      <animate attributeName="height"
+               from="0" to="200"
+               dur="0.6s"
+               begin="trigger-expand-1.click"
+               fill="freeze" />
+    </rect>
+    <text x="30" y="50" fill="#333" font-size="15" opacity="0">
+      这里可以放展开后的详细内容
+      <animate attributeName="opacity"
+               from="0" to="1"
+               dur="0.4s"
+               begin="trigger-expand-1.click + 0.3s"
+               fill="freeze" />
+    </text>
+    <text x="30" y="80" fill="#333" font-size="15" opacity="0">
+      多行文字、图标、说明
+      <animate attributeName="opacity"
+               from="0" to="1"
+               dur="0.4s"
+               begin="trigger-expand-1.click + 0.5s"
+               fill="freeze" />
+    </text>
+  </svg>
+
+  <!-- ============ 核心内容模块 3 ============ -->
+  <h2>03 [小标题]</h2>
+  <p>
+    [最后一个核心论点。收束前的关键信息。]
+  </p>
+
+  <!-- ============ CTA 卡片 ============ -->
+  <!-- 用途:下载、关注、跳转等单一明确动作 -->
+  <a href="https://example.com/action" target="_blank" style="text-decoration: none;">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 80"
+         style="display:block; width:100%; margin: 32px 0 8px;">
+      <rect x="0" y="0" width="600" height="80" fill="#FF6B35" rx="8" ry="8" />
+      <text x="300" y="50" text-anchor="middle" fill="#fff" font-size="20" font-weight="bold">
+        [CTA 文案:动作 + 理由]
+      </text>
+    </svg>
+  </a>
+  <div class="cta-note">[补充说明:为什么值得点、有什么顾虑已解除]</div>
+
+  <!-- ============ 落款 ============ -->
+  <p style="text-align:center; color:#999; font-size:13px; margin-top: 48px;">
+    — END —
+  </p>
+
+</article>
+</body>
+</html>

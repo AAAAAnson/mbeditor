@@ -1,0 +1,46 @@
+{
+  "id": "demo_wechat_safe",
+  "version": "1",
+  "meta": {
+    "title": "MBEditor WeChat-safe 示范文: 一份无漂版式",
+    "author": "MBEditor",
+    "digest": "演示 MBEditor 新 sanitizer 下的无漂文章编排: 只用 section + inline-block + vertical-align 布局, 白名单属性, 渐变 / 阴影 / 圆角保留, 复制到公众号后台与 /draft/add 渲染一致。",
+    "cover": ""
+  },
+  "blocks": [
+    {
+      "id": "hero",
+      "type": "html",
+      "source": "<section style=\"background:linear-gradient(135deg,#1e3a8a 0%,#4338ca 55%,#7c3aed 100%);padding:40px 24px;border-radius:0 0 24px 24px;text-align:center;\"><section style=\"margin-bottom:16px;\"><section style=\"display:inline-block;padding:4px 14px;border:1px solid rgba(255,255,255,0.4);border-radius:2px;color:#ffffff;font-size:12px;letter-spacing:4px;font-weight:bold;\">MBEDITOR DEMO</section></section><section style=\"font-size:28px;font-weight:bold;color:#ffffff;line-height:1.3;margin-bottom:8px;\">无漂版式示范</section><section style=\"font-size:14px;color:rgba(255,255,255,0.92);line-height:1.7;padding:0 12px;margin-bottom:22px;\">section + inline-block 布局, 白名单属性, 复制 / 推送完全一致</section><section style=\"margin-bottom:6px;\"><a href=\"https://github.com/\" style=\"display:inline-block;padding:12px 28px;background-color:#ffffff;color:#4338ca;font-size:15px;font-weight:bold;border-radius:24px;text-decoration:none;box-shadow:0 6px 18px rgba(0,0,0,0.25);\">立即上手</a></section></section>",
+      "css": ""
+    },
+    {
+      "id": "intro",
+      "type": "paragraph",
+      "text": "这篇文章演示在 MBEditor 新格式下如何用 block 构造一篇复制 / 推送两条路都渲染一致的推文。所有样式都来自白名单: color / font-* / padding / margin / border / background(linear-gradient 也允许) / box-shadow / letter-spacing / vertical-align / display(block|inline-block|none|table-*) / position(relative|static)。"
+    },
+    {
+      "id": "section_cards",
+      "type": "html",
+      "source": "<section style=\"padding:0 4px;\"><section style=\"margin:24px 0 14px 0;\"><section style=\"display:inline-block;vertical-align:middle;width:40px;height:40px;line-height:40px;text-align:center;background-color:#4338ca;color:#ffffff;font-size:16px;font-weight:bold;border-radius:8px;box-shadow:0 4px 10px rgba(67,56,202,0.25);\">01</section><section style=\"display:inline-block;vertical-align:middle;margin-left:12px;\"><section style=\"font-size:17px;font-weight:bold;color:#1a1a1a;line-height:1.3;\">section 取代 flex</section><section style=\"font-size:11px;color:#94a3b8;letter-spacing:1.5px;font-weight:bold;margin-top:2px;\">INLINE-BLOCK LAYOUT</section></section></section><section style=\"background-color:#f8fafc;border-left:4px solid #4338ca;border-radius:0 8px 8px 0;padding:14px 16px;margin-bottom:18px;\"><section style=\"font-size:14px;line-height:1.7;color:#334155;\">用 display:inline-block + vertical-align 替代 display:flex。两个 section 挨着排, 像左图标右标题的版型, 在公众号 paste 和 draft-API 两条路径下都保留。</section></section></section>",
+      "css": ""
+    },
+    {
+      "id": "section_gradient",
+      "type": "html",
+      "source": "<section style=\"padding:0 4px;\"><section style=\"margin:24px 0 14px 0;\"><section style=\"display:inline-block;vertical-align:middle;width:40px;height:40px;line-height:40px;text-align:center;background-color:#059669;color:#ffffff;font-size:16px;font-weight:bold;border-radius:8px;box-shadow:0 4px 10px rgba(5,150,105,0.25);\">02</section><section style=\"display:inline-block;vertical-align:middle;margin-left:12px;\"><section style=\"font-size:17px;font-weight:bold;color:#1a1a1a;line-height:1.3;\">渐变 / 阴影 / 圆角都保留</section><section style=\"font-size:11px;color:#94a3b8;letter-spacing:1.5px;font-weight:bold;margin-top:2px;\">GRADIENT BOX-SHADOW RADIUS</section></section></section><section style=\"background:linear-gradient(135deg,#ecfdf5 0%,#d1fae5 100%);border-radius:10px;padding:14px 16px;margin-bottom:18px;box-shadow:0 2px 6px rgba(5,150,105,0.08);\"><section style=\"font-size:14px;line-height:1.7;color:#064e3b;\">linear-gradient / box-shadow / border-radius / opacity 都在白名单中, 公众号 paste handler 和 draft API 都会保留。但 animation / transform / backdrop-filter 被主动剔除, 因为两条路径处理不一致。</section></section></section>",
+      "css": ""
+    },
+    {
+      "id": "section_cta",
+      "type": "html",
+      "source": "<section style=\"padding:0 4px;\"><section style=\"margin:24px 0 14px 0;\"><section style=\"display:inline-block;vertical-align:middle;width:40px;height:40px;line-height:40px;text-align:center;background-color:#dc2626;color:#ffffff;font-size:16px;font-weight:bold;border-radius:8px;box-shadow:0 4px 10px rgba(220,38,38,0.25);\">03</section><section style=\"display:inline-block;vertical-align:middle;margin-left:12px;\"><section style=\"font-size:17px;font-weight:bold;color:#1a1a1a;line-height:1.3;\">按钮自动转 table</section><section style=\"font-size:11px;color:#94a3b8;letter-spacing:1.5px;font-weight:bold;margin-top:2px;\">BUTTON AS TABLE</section></section></section><section style=\"text-align:center;margin:20px 0;\"><a href=\"https://mbeditor.example/\" style=\"display:inline-block;padding:12px 32px;background-color:#dc2626;color:#ffffff;font-size:15px;font-weight:bold;border-radius:24px;text-decoration:none;box-shadow:0 6px 16px rgba(220,38,38,0.3);\">立即查看文档</a></section><section style=\"font-size:13px;color:#64748b;line-height:1.7;text-align:center;margin-bottom:4px;\">任何长得像按钮的 &lt;a&gt; 都会被 sanitizer 包进 table/tr/td, 公众号 paste 后的按钮样式稳如旧。</section></section>",
+      "css": ""
+    },
+    {
+      "id": "footer",
+      "type": "paragraph",
+      "text": "如果你在公众号后台看到的渲染与 MBEditor 预览一致, 说明新 sanitizer 的属性白名单在工作。在你自己的文章里出现样式漂移时, 先检查是不是用了 display:flex / display:grid / position:absolute / transform / animation 这些白名单外的属性。"
+    }
+  ]
+}

@@ -1,0 +1,361 @@
+<!--
+  模板: whitelist-hero.html
+  模式: 白名单动画 (opacity / transform / r / stroke-dashoffset / height 伸长) 组合入场
+  选题: 《2026 创业者年度复盘报告》发布 · 5 条洞察摘要
+  交互:
+    - Hero 入场: 装饰光圈呼吸 + 主标题淡入 + 副标题上移淡入 + 核心数字从 0 描边绘制 + 装饰圆点脉动
+    - 全部为时间驱动(begin="0s/0.6s/..."),无需点击
+    - 正文区段 SVG 标卡装饰也使用白名单动画做入场(opacity/transform)
+  说明: 动画均为 dur 1-2s 之内 + fill="freeze",不用 indefinite 避免微信兼容问题
+-->
+<section style="margin:0;padding:0;background:#0B0B10;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;color:#ECEDF0;">
+
+  <!-- 1. Hero 入场动画区 -->
+  <section style="padding:0;margin:0;background:#0B0B10;">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 520" style="display:block;width:100%;">
+      <defs>
+        <linearGradient id="heroBg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#11121A"/>
+          <stop offset="1" stop-color="#0B0B10"/>
+        </linearGradient>
+        <linearGradient id="heroAccent" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0" stop-color="#F5A623"/>
+          <stop offset="1" stop-color="#EC6E2B"/>
+        </linearGradient>
+      </defs>
+      <rect width="600" height="520" fill="url(#heroBg)"/>
+
+      <!-- 背景装饰: 呼吸光圈 (opacity + r 动画 · 均为白名单) -->
+      <circle cx="500" cy="120" r="30" fill="none" stroke="#F5A623" stroke-width="1" opacity="0">
+        <animate attributeName="opacity" from="0" to="0.35" dur="1.2s" begin="0s" fill="freeze"/>
+        <animate attributeName="r" from="20" to="80" dur="2.4s" begin="0.4s" repeatCount="3"/>
+      </circle>
+      <circle cx="500" cy="120" r="12" fill="#F5A623" opacity="0">
+        <animate attributeName="opacity" from="0" to="0.6" dur="1s" begin="0.2s" fill="freeze"/>
+      </circle>
+
+      <!-- 左上角 BADGE · 渐显 -->
+      <g opacity="0">
+        <animate attributeName="opacity" from="0" to="1" dur="0.6s" begin="0s" fill="freeze"/>
+        <rect x="40" y="52" width="168" height="30" fill="none" stroke="#F5A623" stroke-width="1" rx="15"/>
+        <text x="124" y="72" fill="#F5A623" font-size="11" text-anchor="middle" font-weight="700" letter-spacing="3">ANNUAL REPORT</text>
+      </g>
+
+      <!-- 主标题 淡入 -->
+      <g opacity="0">
+        <animate attributeName="opacity" from="0" to="1" dur="0.9s" begin="0.3s" fill="freeze"/>
+        <text x="40" y="140" fill="#F3F4F8" font-size="36" font-weight="800" font-family="-apple-system,PingFang SC,sans-serif" letter-spacing="-1">2026 创业者</text>
+        <text x="40" y="185" fill="#F3F4F8" font-size="36" font-weight="800" font-family="-apple-system,PingFang SC,sans-serif" letter-spacing="-1">年度复盘报告</text>
+      </g>
+
+      <!-- 副标题 从下方平移 + 淡入 -->
+      <g opacity="0">
+        <animate attributeName="opacity" from="0" to="1" dur="0.8s" begin="0.6s" fill="freeze"/>
+        <animateTransform attributeName="transform" type="translate" from="0 20" to="0 0" dur="0.8s" begin="0.6s" fill="freeze"/>
+        <text x="40" y="224" fill="#9BA0B0" font-size="15">访谈 240 位创始人 · 覆盖 16 个赛道 · 横跨 28 个城市</text>
+      </g>
+
+      <!-- 核心数据数字 -->
+      <g opacity="0">
+        <animate attributeName="opacity" from="0" to="1" dur="0.7s" begin="0.95s" fill="freeze"/>
+        <text x="40" y="306" fill="#F5A623" font-size="68" font-weight="800" letter-spacing="-2">63%</text>
+        <text x="40" y="334" fill="#9BA0B0" font-size="13">受访者表示"比去年更难"</text>
+      </g>
+
+      <g opacity="0">
+        <animate attributeName="opacity" from="0" to="1" dur="0.7s" begin="1.15s" fill="freeze"/>
+        <text x="220" y="306" fill="#EC6E2B" font-size="68" font-weight="800" letter-spacing="-2">41%</text>
+        <text x="220" y="334" fill="#9BA0B0" font-size="13">选择"缩小团队、重做产品"</text>
+      </g>
+
+      <g opacity="0">
+        <animate attributeName="opacity" from="0" to="1" dur="0.7s" begin="1.35s" fill="freeze"/>
+        <text x="400" y="306" fill="#10B981" font-size="68" font-weight="800" letter-spacing="-2">27%</text>
+        <text x="400" y="334" fill="#9BA0B0" font-size="13">认为"明年会好转"</text>
+      </g>
+
+      <!-- 描边绘制 装饰横线 -->
+      <line x1="40" y1="360" x2="560" y2="360" stroke="#F5A623" stroke-width="2"
+            stroke-dasharray="520" stroke-dashoffset="520">
+        <animate attributeName="stroke-dashoffset" from="520" to="0" dur="1.5s" begin="1.5s" fill="freeze"/>
+      </line>
+
+      <!-- 下方说明文字 渐显 -->
+      <g opacity="0">
+        <animate attributeName="opacity" from="0" to="1" dur="0.8s" begin="2.2s" fill="freeze"/>
+        <text x="40" y="395" fill="#ECEDF0" font-size="14" font-weight="700">五条洞察 · 一次写尽</text>
+        <text x="40" y="420" fill="#9BA0B0" font-size="13">下文为精华摘要,完整报告共 68 页,文末可领取</text>
+      </g>
+
+      <!-- 脉动小圆点(装饰点缀,避开禁用项) -->
+      <circle cx="560" cy="420" r="3" fill="#F5A623" opacity="0">
+        <animate attributeName="opacity" from="0" to="1" dur="0.4s" begin="2s" fill="freeze"/>
+        <animate attributeName="r" from="3" to="6" dur="1.2s" begin="2.4s" repeatCount="6"/>
+      </circle>
+      <circle cx="540" cy="420" r="3" fill="#EC6E2B" opacity="0">
+        <animate attributeName="opacity" from="0" to="0.7" dur="0.4s" begin="2.1s" fill="freeze"/>
+        <animate attributeName="r" from="3" to="6" dur="1.2s" begin="2.8s" repeatCount="6"/>
+      </circle>
+      <circle cx="520" cy="420" r="3" fill="#10B981" opacity="0">
+        <animate attributeName="opacity" from="0" to="0.5" dur="0.4s" begin="2.2s" fill="freeze"/>
+        <animate attributeName="r" from="3" to="6" dur="1.2s" begin="3.2s" repeatCount="6"/>
+      </circle>
+
+      <!-- 右下角品牌标识 -->
+      <g opacity="0">
+        <animate attributeName="opacity" from="0" to="0.7" dur="0.8s" begin="2.5s" fill="freeze"/>
+        <rect x="40" y="460" width="520" height="40" fill="none" stroke="#2A2A35" stroke-width="1" rx="8"/>
+        <text x="56" y="486" fill="#9BA0B0" font-size="12">Research by · 创业笔记编辑部</text>
+        <text x="544" y="486" fill="#9BA0B0" font-size="12" text-anchor="end">Issue №04 · April 2026</text>
+      </g>
+    </svg>
+  </section>
+
+  <!-- 2. 开篇钩子 -->
+  <section style="padding:44px 24px 16px;">
+    <div style="padding:24px 22px;background:#13141E;border-radius:14px;border-left:3px solid #F5A623;">
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.85;color:#D3D5DE;">
+        去年同一时间,有 29% 的受访者说"今年会好转"。一年过去,他们中只有 11% 真的兑现了。
+      </p>
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.85;color:#D3D5DE;">
+        2026 年的创业者,不再喊口号,也不再讲愿景。他们在桌上摆的是一张现金流表、一份产品留存数据、以及一封写给团队的"如何过冬"的信。
+      </p>
+      <p style="margin:0;font-size:15px;line-height:1.85;color:#D3D5DE;">
+        一个有意思的反差: 受访者对未来 12 个月预期普遍保守,但对自己公司所在细分市场的长期信心反而比去年更高。悲观的是宏观环境,乐观的是手里实打实握住的那门生意。
+      </p>
+    </div>
+  </section>
+
+  <!-- 3. 价值主张 -->
+  <section style="padding:24px 24px 4px;">
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.95;color:#9BA0B0;">
+      编辑部从 240 位创始人的深度访谈里,淬出 5 条洞察。它们不是答案,是 2026 年仍在创业桌上的人,共同确认的现实坐标。按顺序读,会发现它们彼此相关 —— 从"钱"开始,到"人"结束,一条完整的生存链。
+    </p>
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.95;color:#9BA0B0;">
+      样本方法: 240 位创始人分布在人工智能、SaaS、消费零售、文娱内容、出海、生物科技、硬件、金融科技八个主赛道;公司规模从 3 人到 300 人;成立年限从 1 到 14 年不等。访谈平均时长 72 分钟,所有数据匿名化处理。
+    </p>
+    <p style="margin:0;font-size:14px;line-height:1.95;color:#9BA0B0;">
+      和去年最大的不同是: 今年愿意接受访谈的创始人普遍更坦诚,也更具体。他们愿意交出真实的财务数据、团队规模、产品指标 —— 这在 2023-2024 年几乎不可想象。某种程度上,这本身就是行业心态变化的信号。
+    </p>
+  </section>
+
+  <!-- 4. 主体: 5 条洞察 (每条带入场动画的装饰标卡) -->
+  <section style="padding:36px 20px 20px;">
+
+    <!-- 洞察 01 -->
+    <div style="margin-bottom:26px;padding:24px 22px;background:#13141E;border-radius:14px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 40" style="display:block;width:100%;margin-bottom:14px;">
+        <text x="0" y="26" fill="#F5A623" font-size="14" font-weight="700" letter-spacing="3" opacity="0">
+          INSIGHT 01 · 资金
+          <animate attributeName="opacity" from="0" to="1" dur="0.5s" begin="0s" fill="freeze"/>
+        </text>
+        <line x1="0" y1="36" x2="560" y2="36" stroke="#F5A623" stroke-width="1" stroke-dasharray="560" stroke-dashoffset="560">
+          <animate attributeName="stroke-dashoffset" from="560" to="0" dur="0.8s" begin="0.2s" fill="freeze"/>
+        </line>
+      </svg>
+      <h3 style="margin:0 0 12px;font-size:22px;font-weight:800;color:#F3F4F8;line-height:1.45;">现金流的优先级,第一次压过了增长。</h3>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.9;color:#D3D5DE;">
+        78% 的受访者把"现金流健康"排在 2026 最重要指标第一位,而 2024 年这一比例只有 43%。
+      </p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.9;color:#D3D5DE;">
+        "每月烧钱 50 万换 10 万日活"的故事彻底不讲了。取而代之的是"月收入能不能覆盖房租工资 +30% 再投入研发"。
+      </p>
+      <p style="margin:0;font-size:13px;line-height:1.9;color:#9BA0B0;font-style:italic;">
+        "我们做了一件事:把所有补贴拿掉,看留存。活下来的用户才是真的。" —— 某内容 SaaS 创始人
+      </p>
+    </div>
+
+    <!-- 洞察 02 -->
+    <div style="margin-bottom:26px;padding:24px 22px;background:#13141E;border-radius:14px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 40" style="display:block;width:100%;margin-bottom:14px;">
+        <text x="0" y="26" fill="#EC6E2B" font-size="14" font-weight="700" letter-spacing="3" opacity="0">
+          INSIGHT 02 · 产品
+          <animate attributeName="opacity" from="0" to="1" dur="0.5s" begin="0s" fill="freeze"/>
+        </text>
+        <line x1="0" y1="36" x2="560" y2="36" stroke="#EC6E2B" stroke-width="1" stroke-dasharray="560" stroke-dashoffset="560">
+          <animate attributeName="stroke-dashoffset" from="560" to="0" dur="0.8s" begin="0.2s" fill="freeze"/>
+        </line>
+      </svg>
+      <h3 style="margin:0 0 12px;font-size:22px;font-weight:800;color:#F3F4F8;line-height:1.45;">大而全的产品退场,小而深的产品赢得 2026。</h3>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.9;color:#D3D5DE;">
+        报告里被提到最多的一个词是"聚焦" —— 超过 61% 的团队在这一年砍掉了至少一个产品线,或把一个大产品拆成多个独立子产品。
+      </p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.9;color:#D3D5DE;">
+        典型案例: 一家 AI 办公工具,从"全家桶"收敛到只做"会议纪要",年 ARR 反而翻了 2.3 倍。聚焦带来的不仅是研发成本下降,更是用户心智的锐化。
+      </p>
+      <p style="margin:0;font-size:13px;line-height:1.9;color:#9BA0B0;font-style:italic;">
+        "我们花了一年证明一件事: 做好一件小事比做十件中事更难,但利润厚得多。" —— 某垂类 AI 工具 CEO
+      </p>
+    </div>
+
+    <!-- 洞察 03 -->
+    <div style="margin-bottom:26px;padding:24px 22px;background:#13141E;border-radius:14px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 40" style="display:block;width:100%;margin-bottom:14px;">
+        <text x="0" y="26" fill="#10B981" font-size="14" font-weight="700" letter-spacing="3" opacity="0">
+          INSIGHT 03 · 团队
+          <animate attributeName="opacity" from="0" to="1" dur="0.5s" begin="0s" fill="freeze"/>
+        </text>
+        <line x1="0" y1="36" x2="560" y2="36" stroke="#10B981" stroke-width="1" stroke-dasharray="560" stroke-dashoffset="560">
+          <animate attributeName="stroke-dashoffset" from="560" to="0" dur="0.8s" begin="0.2s" fill="freeze"/>
+        </line>
+      </svg>
+      <h3 style="margin:0 0 12px;font-size:22px;font-weight:800;color:#F3F4F8;line-height:1.45;">团队从 50 人缩到 15 人,但产出反而上去了。</h3>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.9;color:#D3D5DE;">
+        AI 工具把中间层压没了。原本需要产品经理 + 3 个工程师 + 1 个设计师协作才能做完的事,现在 2 个"全栈 AI 员工"一周内能跑完第一版。
+      </p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.9;color:#D3D5DE;">
+        受访公司中位数员工数从 2024 年的 42 人降到 2026 年的 17 人。但月均 ARR 中位数从 82 万升到 156 万。人变少,人效翻倍。
+      </p>
+      <p style="margin:0;font-size:13px;line-height:1.9;color:#9BA0B0;font-style:italic;">
+        "不是不招人,是 15 个人就够了。再加就会拖慢决策。" —— 某 ToB 初创 COO
+      </p>
+    </div>
+
+    <!-- 洞察 04 -->
+    <div style="margin-bottom:26px;padding:24px 22px;background:#13141E;border-radius:14px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 40" style="display:block;width:100%;margin-bottom:14px;">
+        <text x="0" y="26" fill="#6366F1" font-size="14" font-weight="700" letter-spacing="3" opacity="0">
+          INSIGHT 04 · 融资
+          <animate attributeName="opacity" from="0" to="1" dur="0.5s" begin="0s" fill="freeze"/>
+        </text>
+        <line x1="0" y1="36" x2="560" y2="36" stroke="#6366F1" stroke-width="1" stroke-dasharray="560" stroke-dashoffset="560">
+          <animate attributeName="stroke-dashoffset" from="560" to="0" dur="0.8s" begin="0.2s" fill="freeze"/>
+        </line>
+      </svg>
+      <h3 style="margin:0 0 12px;font-size:22px;font-weight:800;color:#F3F4F8;line-height:1.45;">"不融资"成了一种战略,而非被迫选择。</h3>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.9;color:#D3D5DE;">
+        37% 的受访创始人说"下一轮不打算融",而且这不是失败者的遁词 —— 他们的年收入中位数比融资派高 62%。
+      </p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.9;color:#D3D5DE;">
+        不融资的原因排序: ① 估值倒挂不划算 ② 不想被 VC 时间表绑架 ③ 已经自给自足 ④ 融来的钱跟能赚的比差不多。
+      </p>
+      <p style="margin:0;font-size:13px;line-height:1.9;color:#9BA0B0;font-style:italic;">
+        "融资曾经是勋章,现在只是一个工具。不需要时,别沾。" —— 某独立 SaaS 创始人
+      </p>
+    </div>
+
+    <!-- 洞察 05 -->
+    <div style="margin-bottom:26px;padding:24px 22px;background:#13141E;border-radius:14px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 40" style="display:block;width:100%;margin-bottom:14px;">
+        <text x="0" y="26" fill="#EC4899" font-size="14" font-weight="700" letter-spacing="3" opacity="0">
+          INSIGHT 05 · 心态
+          <animate attributeName="opacity" from="0" to="1" dur="0.5s" begin="0s" fill="freeze"/>
+        </text>
+        <line x1="0" y1="36" x2="560" y2="36" stroke="#EC4899" stroke-width="1" stroke-dasharray="560" stroke-dashoffset="560">
+          <animate attributeName="stroke-dashoffset" from="560" to="0" dur="0.8s" begin="0.2s" fill="freeze"/>
+        </line>
+      </svg>
+      <h3 style="margin:0 0 12px;font-size:22px;font-weight:800;color:#F3F4F8;line-height:1.45;">"长期"这个词,终于被重新定义了。</h3>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.9;color:#D3D5DE;">
+        过去"长期主义"常被理解为"融资烧钱五年再看"。2026 年,创始人说的长期变成了: 三年内不死,每年都赚钱,现金流稳定。
+      </p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.9;color:#D3D5DE;">
+        这种转变的附带效果是,创始人的焦虑水平反而下降了。63% 的人在问卷里说"现在比两年前更能睡着觉",尽管商业环境更严苛。
+      </p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.9;color:#D3D5DE;">
+        真正压垮创始人的从来不是难,而是"看不到边"的难。当长期被重新定义成「三年为期」之后,难也有了具体的形状,反而能睡着觉。
+      </p>
+      <p style="margin:0;font-size:13px;line-height:1.9;color:#9BA0B0;font-style:italic;">
+        "我现在只问自己一个问题: 这件事三年以后还值不值得做?答 yes 就做,答 no 就砍。" —— 某连续创业者
+      </p>
+    </div>
+
+  </section>
+
+  <!-- 4a. 读者投稿中的金句 -->
+  <section style="padding:12px 20px 4px;">
+    <div style="padding:26px 22px;background:#13141E;border-radius:14px;border-top:3px solid #EC4899;">
+      <p style="margin:0 0 10px;font-size:12px;color:#EC4899;letter-spacing:3px;font-weight:700;">访谈金句选辑</p>
+      <h3 style="margin:0 0 14px;font-size:18px;font-weight:800;color:#F3F4F8;">那些没被写进正式报告,但最打动我们的话</h3>
+      <p style="margin:0 0 12px;font-size:14px;line-height:1.88;color:#D3D5DE;font-style:italic;">"做企业十年,我终于理解了"能慢下来也是一种能力"这句话。以前觉得是鸡汤,现在觉得是真理。" —— 某餐饮连锁创始人</p>
+      <p style="margin:0 0 12px;font-size:14px;line-height:1.88;color:#D3D5DE;font-style:italic;">"我不再追逐任何热点。别人做 AI,我做好我的一卷纸;别人做出海,我做好我的本地门店。有些机会不属于你,不必硬抢。" —— 某日用消费品老板</p>
+      <p style="margin:0 0 12px;font-size:14px;line-height:1.88;color:#D3D5DE;font-style:italic;">"我今年学会的最重要的一件事,是"不投标"。不需要什么客户都接,哪怕对方给的钱看起来很多。选客户,就是选自己。" —— 某设计咨询 CEO</p>
+      <p style="margin:0;font-size:14px;line-height:1.88;color:#D3D5DE;font-style:italic;">"我们这代创业者开始讨论「传承」了。这在五年前不可想象。但这是件好事,意味着我们真的在做一门能传下去的生意,而不是一场击鼓传花的赌博。" —— 某实业创始人</p>
+    </div>
+  </section>
+
+  <!-- 4b. 编辑部评论 -->
+  <section style="padding:8px 24px 12px;">
+    <div style="padding:26px 22px;background:#13141E;border-radius:14px;border:1px solid #1D1F2B;">
+      <p style="margin:0 0 10px;font-size:12px;color:#F5A623;letter-spacing:3px;font-weight:700;">编辑部评论</p>
+      <h3 style="margin:0 0 14px;font-size:20px;font-weight:800;color:#F3F4F8;">2026 年是中国创业的分水岭吗?</h3>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.88;color:#D3D5DE;">这是在整理访谈稿时,最被反复问到的一个问题。我们的回答是 —— 它不是终点,而是分水岭。分水岭的意思是,从这一年起,创业的"叙事语言"被永久性地改写了。</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.88;color:#D3D5DE;">"快速增长"、"赛道卡位"、"下一个独角兽"这些词,正在从路演稿里悄悄消失;取而代之的是"现金流"、"毛利结构"、"客户终身价值"、"团队单位人效"。这不是语言的降级,是行业的成熟。</p>
+      <p style="margin:0;font-size:14px;line-height:1.88;color:#D3D5DE;">下一代创业者看到的"创业"可能是另一副样子: 小而美、慢而韧、不急着融资、也不急着退出。如果我们这份报告能被十年后的人翻出来读,我们希望他们会发现 —— 这就是从「成长叙事」到「价值叙事」切换的那一年。</p>
+    </div>
+  </section>
+
+  <!-- 5. 数据小卡 (用白名单动画做进度条入场) -->
+  <section style="padding:16px 20px 24px;">
+    <div style="padding:26px 22px;background:#13141E;border-radius:14px;">
+      <p style="margin:0 0 16px;font-size:13px;color:#F5A623;font-weight:700;letter-spacing:3px;">KEY NUMBERS · 一张表看完</p>
+
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 220" style="display:block;width:100%;">
+        <!-- 条目 1 -->
+        <text x="0" y="24" fill="#D3D5DE" font-size="13">员工中位数(人)</text>
+        <text x="560" y="24" fill="#F5A623" font-size="13" font-weight="700" text-anchor="end">42 → 17</text>
+        <rect x="0" y="34" width="560" height="5" fill="#2A2A35" rx="3"/>
+        <rect x="0" y="34" width="0" height="5" fill="#F5A623" rx="3">
+          <animate attributeName="width" from="0" to="228" dur="1s" begin="0.2s" fill="freeze"/>
+        </rect>
+
+        <!-- 条目 2 -->
+        <text x="0" y="76" fill="#D3D5DE" font-size="13">月均 ARR(万元)</text>
+        <text x="560" y="76" fill="#10B981" font-size="13" font-weight="700" text-anchor="end">82 → 156</text>
+        <rect x="0" y="86" width="560" height="5" fill="#2A2A35" rx="3"/>
+        <rect x="0" y="86" width="0" height="5" fill="#10B981" rx="3">
+          <animate attributeName="width" from="0" to="413" dur="1s" begin="0.4s" fill="freeze"/>
+        </rect>
+
+        <!-- 条目 3 -->
+        <text x="0" y="128" fill="#D3D5DE" font-size="13">平均融资轮数</text>
+        <text x="560" y="128" fill="#EC6E2B" font-size="13" font-weight="700" text-anchor="end">2.3 → 1.1</text>
+        <rect x="0" y="138" width="560" height="5" fill="#2A2A35" rx="3"/>
+        <rect x="0" y="138" width="0" height="5" fill="#EC6E2B" rx="3">
+          <animate attributeName="width" from="0" to="152" dur="1s" begin="0.6s" fill="freeze"/>
+        </rect>
+
+        <!-- 条目 4 -->
+        <text x="0" y="180" fill="#D3D5DE" font-size="13">"下一年更好"预期</text>
+        <text x="560" y="180" fill="#6366F1" font-size="13" font-weight="700" text-anchor="end">29% → 27%</text>
+        <rect x="0" y="190" width="560" height="5" fill="#2A2A35" rx="3"/>
+        <rect x="0" y="190" width="0" height="5" fill="#6366F1" rx="3">
+          <animate attributeName="width" from="0" to="151" dur="1s" begin="0.8s" fill="freeze"/>
+        </rect>
+      </svg>
+
+      <p style="margin:14px 0 0;font-size:12px;color:#737685;line-height:1.7;">数据来源: 本编辑部 2024/2026 两轮创始人问卷 · 样本 n=240</p>
+    </div>
+  </section>
+
+  <!-- 5b. 三个最意外的发现 -->
+  <section style="padding:4px 24px 8px;">
+    <div style="padding:26px 22px;background:#13141E;border-radius:14px;">
+      <p style="margin:0 0 10px;font-size:12px;color:#EC6E2B;letter-spacing:3px;font-weight:700;">最意外的三个发现</p>
+      <h3 style="margin:0 0 14px;font-size:19px;font-weight:800;color:#F3F4F8;">数据告诉我们的事,未必是我们想听的</h3>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.9;color:#D3D5DE;"><b style="color:#F5A623;">一</b> · 2021 年之前成立的公司,2026 年存活率 57%;2022 年以后成立的公司,存活率反而是 74%。晚进场的人,因为没有历史包袱,活得更灵活。</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.9;color:#D3D5DE;"><b style="color:#EC6E2B;">二</b> · 收入增长最快的不是一线大城市,是长沙、合肥、西安、佛山、郑州。这些"新一线"城市在本地产业链上拿到了过去十年沉淀下来的机会,创始人更务实。</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.9;color:#D3D5DE;"><b style="color:#10B981;">三</b> · 40% 以上的受访者表示"团队里 AI 员工的用量超过了实习生",但超过 60% 的受访者仍然认为"应届生的判断力无法替代"。AI 补中层、人补两端,成为 2026 年团队新范式。</p>
+      <p style="margin:0;font-size:14px;line-height:1.9;color:#D3D5DE;">这些发现,不是用来挑战任何既有观点,而是告诉我们:今天的创业现场,比任何一种单线叙述都更复杂。不要轻易听信"寒冬"或"复苏"这两个关键词 —— 真实世界里,它们是同时发生的。</p>
+    </div>
+  </section>
+
+  <!-- 6. CTA -->
+  <section style="padding:28px 24px 20px;">
+    <div style="padding:28px 22px;background:linear-gradient(135deg,#F5A623 0%,#EC6E2B 100%);border-radius:18px;">
+      <p style="margin:0 0 6px;font-size:12px;color:rgba(11,11,16,0.7);letter-spacing:2px;font-weight:700;">完整报告</p>
+      <h3 style="margin:0 0 10px;font-size:22px;color:#0B0B10;font-weight:800;">68 页 PDF · 限时免费领取</h3>
+      <p style="margin:0 0 18px;font-size:14px;color:rgba(11,11,16,0.82);line-height:1.75;">包含 10 张原始数据图、16 段创始人原声语录、3 份行业对比表。关注公众号后台回复"2026"即可获取。</p>
+      <a href="https://example.com/report-2026" style="display:inline-block;padding:12px 22px;background:#0B0B10;color:#F5A623;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">去领完整报告 →</a>
+    </div>
+  </section>
+
+  <!-- 7. 落款 -->
+  <section style="padding:8px 24px 52px;border-top:1px solid #1A1B25;margin-top:16px;">
+    <p style="margin:20px 0 6px;font-size:12px;color:#737685;line-height:1.9;">主编 · 林知远 | 研究 · 温禾 陈清 | 设计 · 予安</p>
+    <p style="margin:0 0 6px;font-size:12px;color:#737685;line-height:1.9;">发布日期 · 2026 年 4 月 23 日 | 下一期 Issue №05 · 2026 年 7 月</p>
+    <p style="margin:0;font-size:12px;color:#50525E;line-height:1.9;">本报告数据与观点基于受访者独立陈述,仅供行业讨论参考,不构成任何投资或经营建议。</p>
+  </section>
+
+</section>
+<!-- 深色模式提示: 本模板本身为深色调,浅色模式下请切换背景色 #FAFAFA 并反向文字色;若微信深色模式下整段 SVG 不渲染,请在文章头部提示读者切换浅色模式 -->

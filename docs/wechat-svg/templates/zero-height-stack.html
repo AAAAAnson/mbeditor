@@ -1,0 +1,292 @@
+<!--
+  模板: zero-height-stack.html
+  模式: 零高结构 (height:0 + overflow:visible + margin-top 负值) + 伸长动画展开
+  选题: 国产大模型编年史 2019-2026
+  交互:
+    - 主时间轴 SVG 画出 7 个年份节点
+    - 每个年份有独立的展开条, 点击对应触发器,以零高堆叠的方式在下方展开该年关键事件
+    - 展开条本身是零高 SVG,不打乱时间轴视觉
+  说明: "堆叠长图"通过多个零高 SVG 无缝拼接,margin 连续性处理过
+-->
+<section style="margin:0;padding:0;background:#FAFAF8;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;color:#1A1A1A;">
+
+  <!-- 1. Hero -->
+  <section style="padding:52px 24px 36px;background:#1A1A1A;">
+    <div style="display:inline-block;padding:5px 14px;background:rgba(255,255,255,0.08);color:#D4A574;font-size:12px;font-weight:600;letter-spacing:4px;border:1px solid rgba(212,165,116,0.3);">CHRONICLE · 2019 — 2026</div>
+    <h1 style="margin:22px 0 14px;font-size:32px;line-height:1.3;font-weight:700;color:#FAFAF8;letter-spacing:-0.3px;">
+      国产大模型编年史<br/>
+      <span style="color:#D4A574;font-size:22px;letter-spacing:4px;font-weight:400;">2019 — 2026</span>
+    </h1>
+    <p style="margin:0;font-size:15px;line-height:1.85;color:#B8B8B5;">
+      从第一篇预训练论文到自主产出万亿参数模型,<br/>
+      中国 AI 用了整整七年。这是这段路程的每一年。
+    </p>
+  </section>
+
+  <!-- 2. 开篇 -->
+  <section style="padding:40px 24px 16px;">
+    <div style="padding:26px 22px;background:#FFFFFF;border-left:3px solid #8B6C3F;">
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.85;color:#2A2A2A;">
+        2019 年,百度发布 ERNIE 1.0 时,很少人意识到 —— 一个以"中文"为母语的人工智能时代正在开启。
+      </p>
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.85;color:#2A2A2A;">
+        七年之后的 2026 年,DeepSeek、通义、豆包、Kimi、智谱、MiniMax、阶跃、百川、零一万物、月之暗面 …… 这些名字已经构成了一个完整的产业生态。这篇文章,试图把这条路走过的每一步,还原成可以重温的时间坐标。
+      </p>
+      <p style="margin:0;font-size:15px;line-height:1.85;color:#2A2A2A;">
+        历史从来不是线性的。这七年里,国产大模型至少经历过三次集体方向调整: 2020 年从"单点论文"转向"系统工程";2022 年底被 ChatGPT 震撼后,从"小而精"切回"大而强";2024 年以后,又开始往"开源 + 推理 + 性价比"的第三条路上靠拢。每一次调整背后都是产业界共同的痛感和觉醒。
+      </p>
+    </div>
+  </section>
+
+  <!-- 3. 价值主张 -->
+  <section style="padding:24px 24px 12px;">
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.95;color:#4A4A4A;">
+      下面是一条可交互的时间轴。每个年份节点点击后,会在下方展开这一年的三件关键事件 —— 包括模型、资本、政策三条线。按顺序读下去,你会看到整个产业链如何一年一年长出来的。
+    </p>
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.95;color:#4A4A4A;">
+      我们做这份编年史的方法很笨: 把中国工程院院刊、IEEE、ACL、NeurIPS 上所有华人第一作者的论文,加上主流财经媒体对国产 AI 公司的深度报道,再加上国务院、工信部、网信办的公开文件,按时间排进一张巨大的电子表格,再筛出每年对行业走向有决定性意义的事件。
+    </p>
+    <p style="margin:0;font-size:14px;line-height:1.95;color:#4A4A4A;">
+      为什么要做这件笨事? 因为今天说起国产大模型,大多数人的记忆只能追到 2023 年文心一言发布。但实际上,真正打地基的工作从 2019 年就开始了。我们希望这份时间轴,能让后面进场的人,看清自己是站在谁的肩膀上。
+    </p>
+  </section>
+
+  <!-- 4. 主体: 时间轴 + 7 个零高展开条 -->
+  <section style="padding:28px 0 0;">
+
+    <!-- 时间轴主图 -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 180" style="display:block;width:100%;background:#FFFFFF;">
+      <!-- 轴线 -->
+      <line x1="40" y1="100" x2="560" y2="100" stroke="#D4A574" stroke-width="2"/>
+      <!-- 节点文字 -->
+      <text x="300" y="34" fill="#8B6C3F" font-size="12" font-weight="700" text-anchor="middle" letter-spacing="4">TIMELINE · 点击每个年份展开</text>
+
+      <!-- 7 个节点(每个节点配一个触发器 rect) -->
+      <!-- 2019 -->
+      <circle cx="80" cy="100" r="8" fill="#8B6C3F"/>
+      <text x="80" y="80" fill="#1A1A1A" font-size="13" font-weight="700" text-anchor="middle">2019</text>
+      <text x="80" y="130" fill="#6B6B6B" font-size="10" text-anchor="middle">ERNIE 1.0</text>
+      <rect id="y2019" x="50" y="60" width="60" height="80" fill="transparent" style="cursor:pointer;"/>
+
+      <!-- 2020 -->
+      <circle cx="160" cy="100" r="8" fill="#8B6C3F"/>
+      <text x="160" y="80" fill="#1A1A1A" font-size="13" font-weight="700" text-anchor="middle">2020</text>
+      <text x="160" y="130" fill="#6B6B6B" font-size="10" text-anchor="middle">盘古觉醒</text>
+      <rect id="y2020" x="130" y="60" width="60" height="80" fill="transparent" style="cursor:pointer;"/>
+
+      <!-- 2021 -->
+      <circle cx="240" cy="100" r="8" fill="#8B6C3F"/>
+      <text x="240" y="80" fill="#1A1A1A" font-size="13" font-weight="700" text-anchor="middle">2021</text>
+      <text x="240" y="130" fill="#6B6B6B" font-size="10" text-anchor="middle">悟道破万亿</text>
+      <rect id="y2021" x="210" y="60" width="60" height="80" fill="transparent" style="cursor:pointer;"/>
+
+      <!-- 2022 -->
+      <circle cx="320" cy="100" r="8" fill="#8B6C3F"/>
+      <text x="320" y="80" fill="#1A1A1A" font-size="13" font-weight="700" text-anchor="middle">2022</text>
+      <text x="320" y="130" fill="#6B6B6B" font-size="10" text-anchor="middle">ChatGPT 冲击</text>
+      <rect id="y2022" x="290" y="60" width="60" height="80" fill="transparent" style="cursor:pointer;"/>
+
+      <!-- 2023 -->
+      <circle cx="400" cy="100" r="10" fill="#D4A574"/>
+      <text x="400" y="80" fill="#8B6C3F" font-size="13" font-weight="700" text-anchor="middle">2023</text>
+      <text x="400" y="130" fill="#6B6B6B" font-size="10" text-anchor="middle">百模大战</text>
+      <rect id="y2023" x="370" y="60" width="60" height="80" fill="transparent" style="cursor:pointer;"/>
+
+      <!-- 2024 -->
+      <circle cx="480" cy="100" r="8" fill="#8B6C3F"/>
+      <text x="480" y="80" fill="#1A1A1A" font-size="13" font-weight="700" text-anchor="middle">2024</text>
+      <text x="480" y="130" fill="#6B6B6B" font-size="10" text-anchor="middle">通用智能破局</text>
+      <rect id="y2024" x="450" y="60" width="60" height="80" fill="transparent" style="cursor:pointer;"/>
+
+      <!-- 2025-2026 折叠为同一节点(应用落地年) -->
+      <circle cx="560" cy="100" r="10" fill="#D4A574"/>
+      <text x="560" y="80" fill="#8B6C3F" font-size="13" font-weight="700" text-anchor="middle">2025-26</text>
+      <text x="560" y="130" fill="#6B6B6B" font-size="10" text-anchor="middle">Agent 时代</text>
+      <rect id="y2025" x="530" y="60" width="60" height="80" fill="transparent" style="cursor:pointer;"/>
+    </svg>
+
+    <!-- 零高堆叠展开条 · 2019 -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+      <rect x="0" y="0" width="600" height="260" fill="#FFFFFF" stroke="#EDE4D3" stroke-width="1">
+        <animate attributeName="height" from="0" to="260" dur="0.5s" begin="y2019.click" fill="freeze"/>
+      </rect>
+      <rect x="0" y="0" width="600" height="4" fill="#8B6C3F">
+        <animate attributeName="width" from="0" to="600" dur="0.5s" begin="y2019.click" fill="freeze"/>
+      </rect>
+      <text x="30" y="40" fill="#8B6C3F" font-size="28" font-weight="700">2019</text>
+      <text x="100" y="40" fill="#1A1A1A" font-size="16" font-weight="700">起点: 让机器第一次懂中文</text>
+      <text x="30" y="80" fill="#4A4A4A" font-size="13" font-weight="700">模型</text>
+      <text x="90" y="80" fill="#2A2A2A" font-size="13">百度发布 ERNIE 1.0,首次将知识图谱引入预训练,中文理解超越 BERT。</text>
+      <text x="30" y="118" fill="#4A4A4A" font-size="13" font-weight="700">资本</text>
+      <text x="90" y="118" fill="#2A2A2A" font-size="13">商汤 Pre-IPO 估值 75 亿美元,旷视科技递交港股招股书,AI 四小龙格局成形。</text>
+      <text x="30" y="156" fill="#4A4A4A" font-size="13" font-weight="700">政策</text>
+      <text x="90" y="156" fill="#2A2A2A" font-size="13">《人工智能北京共识》发布,提出"以人为本、负责任"的 AI 原则。</text>
+      <text x="30" y="206" fill="#8B6C3F" font-size="12" font-weight="700">年度金句</text>
+      <text x="30" y="230" fill="#6B6B6B" font-size="12" font-style="italic">"让机器理解中文,比理解英文更难,但更重要。" —— 百度首席科学家</text>
+    </svg>
+
+    <!-- 2020 -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+      <rect x="0" y="0" width="600" height="260" fill="#FFFFFF" stroke="#EDE4D3" stroke-width="1">
+        <animate attributeName="height" from="0" to="260" dur="0.5s" begin="y2020.click" fill="freeze"/>
+      </rect>
+      <rect x="0" y="0" width="600" height="4" fill="#8B6C3F">
+        <animate attributeName="width" from="0" to="600" dur="0.5s" begin="y2020.click" fill="freeze"/>
+      </rect>
+      <text x="30" y="40" fill="#8B6C3F" font-size="28" font-weight="700">2020</text>
+      <text x="100" y="40" fill="#1A1A1A" font-size="16" font-weight="700">国家队入场: 盘古与巨量模型</text>
+      <text x="30" y="80" fill="#4A4A4A" font-size="13" font-weight="700">模型</text>
+      <text x="90" y="80" fill="#2A2A2A" font-size="13">华为盘古大模型立项,清华 CPM 1.0 26 亿参数开源,阿里推出 PLUG 270 亿参数。</text>
+      <text x="30" y="118" fill="#4A4A4A" font-size="13" font-weight="700">资本</text>
+      <text x="90" y="118" fill="#2A2A2A" font-size="13">AI 芯片赛道融资总额破 600 亿元,寒武纪上市科创板首日市值破千亿。</text>
+      <text x="30" y="156" fill="#4A4A4A" font-size="13" font-weight="700">政策</text>
+      <text x="90" y="156" fill="#2A2A2A" font-size="13">国家发改委首次将"新基建"明确纳入 AI,算力基础设施建设启动。</text>
+      <text x="30" y="206" fill="#8B6C3F" font-size="12" font-weight="700">年度金句</text>
+      <text x="30" y="230" fill="#6B6B6B" font-size="12" font-style="italic">"GPT-3 发布那天,我们意识到参数规模的竞争才刚开始。" —— 智源研究院</text>
+    </svg>
+
+    <!-- 2021 -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+      <rect x="0" y="0" width="600" height="260" fill="#FFFFFF" stroke="#EDE4D3" stroke-width="1">
+        <animate attributeName="height" from="0" to="260" dur="0.5s" begin="y2021.click" fill="freeze"/>
+      </rect>
+      <rect x="0" y="0" width="600" height="4" fill="#8B6C3F">
+        <animate attributeName="width" from="0" to="600" dur="0.5s" begin="y2021.click" fill="freeze"/>
+      </rect>
+      <text x="30" y="40" fill="#8B6C3F" font-size="28" font-weight="700">2021</text>
+      <text x="100" y="40" fill="#1A1A1A" font-size="16" font-weight="700">参数竞赛: 悟道 2.0 破 1.75 万亿</text>
+      <text x="30" y="80" fill="#4A4A4A" font-size="13" font-weight="700">模型</text>
+      <text x="90" y="80" fill="#2A2A2A" font-size="13">北京智源悟道 2.0 达到 1.75 万亿参数,一度成为全球最大,阿里 M6 同期公布。</text>
+      <text x="30" y="118" fill="#4A4A4A" font-size="13" font-weight="700">资本</text>
+      <text x="90" y="118" fill="#2A2A2A" font-size="13">云从、格灵、第四范式等 AI 公司密集递交招股书,科创板成为 AI 主上市地。</text>
+      <text x="30" y="156" fill="#4A4A4A" font-size="13" font-weight="700">政策</text>
+      <text x="90" y="156" fill="#2A2A2A" font-size="13">《新一代人工智能伦理规范》发布,首次在国家层面提出 AI 伦理治理框架。</text>
+      <text x="30" y="206" fill="#8B6C3F" font-size="12" font-weight="700">年度金句</text>
+      <text x="30" y="230" fill="#6B6B6B" font-size="12" font-style="italic">"大模型是基础设施,不是单个产品。这将决定未来十年的技术走向。" —— 张钹院士</text>
+    </svg>
+
+    <!-- 2022 -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+      <rect x="0" y="0" width="600" height="260" fill="#FFFFFF" stroke="#EDE4D3" stroke-width="1">
+        <animate attributeName="height" from="0" to="260" dur="0.5s" begin="y2022.click" fill="freeze"/>
+      </rect>
+      <rect x="0" y="0" width="600" height="4" fill="#8B6C3F">
+        <animate attributeName="width" from="0" to="600" dur="0.5s" begin="y2022.click" fill="freeze"/>
+      </rect>
+      <text x="30" y="40" fill="#8B6C3F" font-size="28" font-weight="700">2022</text>
+      <text x="100" y="40" fill="#1A1A1A" font-size="16" font-weight="700">外部冲击: ChatGPT 重置赛道</text>
+      <text x="30" y="80" fill="#4A4A4A" font-size="13" font-weight="700">模型</text>
+      <text x="90" y="80" fill="#2A2A2A" font-size="13">11 月 30 日 ChatGPT 发布,国内团队全面调整技术路线,中文 RLHF 紧急立项。</text>
+      <text x="30" y="118" fill="#4A4A4A" font-size="13" font-weight="700">资本</text>
+      <text x="90" y="118" fill="#2A2A2A" font-size="13">年底两个月内,大模型方向天使轮估值中位数跳升 4 倍。</text>
+      <text x="30" y="156" fill="#4A4A4A" font-size="13" font-weight="700">政策</text>
+      <text x="90" y="156" fill="#2A2A2A" font-size="13">《互联网信息服务深度合成管理规定》发布,明确生成内容需标识。</text>
+      <text x="30" y="206" fill="#8B6C3F" font-size="12" font-weight="700">年度金句</text>
+      <text x="30" y="230" fill="#6B6B6B" font-size="12" font-style="italic">"我们之前的路线可能错了,但幸好发现得不算太晚。" —— 某头部大厂 AI 负责人</text>
+    </svg>
+
+    <!-- 2023 -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+      <rect x="0" y="0" width="600" height="260" fill="#FFF8EE" stroke="#D4A574" stroke-width="1">
+        <animate attributeName="height" from="0" to="260" dur="0.5s" begin="y2023.click" fill="freeze"/>
+      </rect>
+      <rect x="0" y="0" width="600" height="4" fill="#D4A574">
+        <animate attributeName="width" from="0" to="600" dur="0.5s" begin="y2023.click" fill="freeze"/>
+      </rect>
+      <text x="30" y="40" fill="#8B6C3F" font-size="28" font-weight="700">2023</text>
+      <text x="100" y="40" fill="#1A1A1A" font-size="16" font-weight="700">百模大战: 一年发布超 200 个</text>
+      <text x="30" y="80" fill="#4A4A4A" font-size="13" font-weight="700">模型</text>
+      <text x="90" y="80" fill="#2A2A2A" font-size="13">文心一言 3 月首发,通义千问、星火、Baichuan、Kimi、GLM、MiniMax 陆续登场。</text>
+      <text x="30" y="118" fill="#4A4A4A" font-size="13" font-weight="700">资本</text>
+      <text x="90" y="118" fill="#2A2A2A" font-size="13">月之暗面、MiniMax、智谱、百川四家半年内完成总计 60 亿美元融资,估值破百亿。</text>
+      <text x="30" y="156" fill="#4A4A4A" font-size="13" font-weight="700">政策</text>
+      <text x="90" y="156" fill="#2A2A2A" font-size="13">《生成式人工智能服务管理暂行办法》8 月发布,备案制落地,合规成为硬门槛。</text>
+      <text x="30" y="206" fill="#8B6C3F" font-size="12" font-weight="700">年度金句</text>
+      <text x="30" y="230" fill="#6B6B6B" font-size="12" font-style="italic">"模型不重要,场景才重要。" —— 朱啸虎,年中投资人会议</text>
+    </svg>
+
+    <!-- 2024 -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+      <rect x="0" y="0" width="600" height="260" fill="#FFFFFF" stroke="#EDE4D3" stroke-width="1">
+        <animate attributeName="height" from="0" to="260" dur="0.5s" begin="y2024.click" fill="freeze"/>
+      </rect>
+      <rect x="0" y="0" width="600" height="4" fill="#8B6C3F">
+        <animate attributeName="width" from="0" to="600" dur="0.5s" begin="y2024.click" fill="freeze"/>
+      </rect>
+      <text x="30" y="40" fill="#8B6C3F" font-size="28" font-weight="700">2024</text>
+      <text x="100" y="40" fill="#1A1A1A" font-size="16" font-weight="700">破局: DeepSeek 和价格战</text>
+      <text x="30" y="80" fill="#4A4A4A" font-size="13" font-weight="700">模型</text>
+      <text x="90" y="80" fill="#2A2A2A" font-size="13">DeepSeek V2 以 1/10 成本对标 GPT-4,5 月触发大厂全面降价,API 单价跌 95%。</text>
+      <text x="30" y="118" fill="#4A4A4A" font-size="13" font-weight="700">资本</text>
+      <text x="90" y="118" fill="#2A2A2A" font-size="13">AI 应用赛道替代基础模型成为新主场,字节豆包、腾讯元宝日活破千万。</text>
+      <text x="30" y="156" fill="#4A4A4A" font-size="13" font-weight="700">政策</text>
+      <text x="90" y="156" fill="#2A2A2A" font-size="13">北上广深杭人工智能产业基金集中落地,上海模速空间聚集超 80 家大模型企业。</text>
+      <text x="30" y="206" fill="#8B6C3F" font-size="12" font-weight="700">年度金句</text>
+      <text x="30" y="230" fill="#6B6B6B" font-size="12" font-style="italic">"开源不是慈善,是最强的商业策略。" —— 梁文锋,内部信</text>
+    </svg>
+
+    <!-- 2025-2026 -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 280" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+      <rect x="0" y="0" width="600" height="280" fill="#FFF8EE" stroke="#D4A574" stroke-width="1">
+        <animate attributeName="height" from="0" to="280" dur="0.5s" begin="y2025.click" fill="freeze"/>
+      </rect>
+      <rect x="0" y="0" width="600" height="4" fill="#D4A574">
+        <animate attributeName="width" from="0" to="600" dur="0.5s" begin="y2025.click" fill="freeze"/>
+      </rect>
+      <text x="30" y="40" fill="#8B6C3F" font-size="28" font-weight="700">2025 — 26</text>
+      <text x="200" y="40" fill="#1A1A1A" font-size="16" font-weight="700">Agent 时代与端侧智能</text>
+      <text x="30" y="80" fill="#4A4A4A" font-size="13" font-weight="700">模型</text>
+      <text x="90" y="80" fill="#2A2A2A" font-size="13">DeepSeek R1、Qwen-Max、豆包 1.5 Pro 推理能力对齐 o1,端侧 MoE 在手机落地。</text>
+      <text x="30" y="118" fill="#4A4A4A" font-size="13" font-weight="700">资本</text>
+      <text x="90" y="118" fill="#2A2A2A" font-size="13">基础模型赛道资本冷却,具身智能、Agent、行业垂直模型成新热点,2026 Q1 单笔最大 A 轮 6.2 亿美元。</text>
+      <text x="30" y="156" fill="#4A4A4A" font-size="13" font-weight="700">政策</text>
+      <text x="90" y="156" fill="#2A2A2A" font-size="13">"AI + 行动计划"正式发布,12 个重点行业全面拥抱,央企招标 AI 成标配。</text>
+      <text x="30" y="202" fill="#8B6C3F" font-size="12" font-weight="700">年度金句</text>
+      <text x="30" y="226" fill="#6B6B6B" font-size="12" font-style="italic">"2026 年,大模型不再是话题,它只是空气。" —— 朱民,中国发展论坛</text>
+      <text x="30" y="256" fill="#6B6B6B" font-size="12" font-style="italic">"下一个问题不是谁的模型更好,而是谁真的把钱赚回来。" —— 某 VC 合伙人</text>
+    </svg>
+
+  </section>
+
+  <!-- 5. 中段总结 -->
+  <section style="padding:44px 24px 12px;">
+    <div style="padding:30px 24px;background:#1A1A1A;color:#FAFAF8;border-radius:2px;">
+      <p style="margin:0 0 10px;font-size:12px;color:#D4A574;letter-spacing:3px;font-weight:700;">回望七年</p>
+      <h3 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#FAFAF8;letter-spacing:-0.3px;">三条贯穿始终的主线</h3>
+      <p style="margin:0 0 14px;font-size:14px;line-height:1.9;color:#D3D3D0;"><b style="color:#D4A574;">一 · 参数不是终点。</b>从 2019 的几亿参数到 2021 的一万亿,再到 2024 开始回落做精细化 —— 产业理性的拐点到得比任何人预期更早。真正改变行业的,不是参数最多的那个模型,而是第一个能以 1/10 成本做到同等效果的模型。</p>
+      <p style="margin:0 0 14px;font-size:14px;line-height:1.9;color:#D3D3D0;"><b style="color:#D4A574;">二 · 开源是中国的独特解法。</b>从智源悟道到通义、GLM、DeepSeek, 开源既是技术路线,也是产业策略,帮国产模型穿过了从追赶到引领的窄门。开源带来的社区反馈速度,比任何闭源团队都更快地修正了模型路线上的每一次错误。</p>
+      <p style="margin:0 0 14px;font-size:14px;line-height:1.9;color:#D3D3D0;"><b style="color:#D4A574;">三 · 真正的商业化刚开始。</b>编年史写到 2026 年仍然停在"应用探索",意味着行业的真正高光章节,还在前面。未来三年,产业会从「基础设施竞争」转向「Agent 和具身智能的场景争夺」,这将是第二条增长曲线的起点。</p>
+      <p style="margin:18px 0 0;font-size:14px;line-height:1.9;color:#B8B8B5;">另外一个容易被忽略的信号: 七年来,国产大模型一直在「技术上从追到并行、在应用上从无到占优」这条轨迹上奔跑。英文世界的创新不会停,但中文世界对本土场景的理解,是永远无法被简单复制的护城河 —— 这也是 2026 年国产模型在国内市占率首次反超海外模型的底层原因。</p>
+    </div>
+  </section>
+
+  <!-- 5b. 补遗 -->
+  <section style="padding:16px 24px 4px;">
+    <div style="padding:24px 22px;background:#FFFFFF;border:1px solid #EDE4D3;border-radius:2px;">
+      <p style="margin:0 0 10px;font-size:12px;color:#8B6C3F;letter-spacing:3px;font-weight:700;">编年史补遗</p>
+      <h3 style="margin:0 0 12px;font-size:17px;font-weight:700;color:#1A1A1A;">没能进时间轴的三个关键瞬间</h3>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.9;color:#4A4A4A;"><b style="color:#8B6C3F;">2020 年 5 月</b> · GPT-3 发布后的那个深夜,国内多家研究机构同步开了紧急会议,从那一刻起,中国 AI 的技术路线被改写。</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.9;color:#4A4A4A;"><b style="color:#8B6C3F;">2023 年 4 月</b> · 网信办征求意见稿流出,行业自律小组一周内完成 28 家头部公司的对齐,形成"中国方案"的治理底稿,这份底稿后来成为了正式规定的主体。</p>
+      <p style="margin:0;font-size:14px;line-height:1.9;color:#4A4A4A;"><b style="color:#8B6C3F;">2024 年 12 月</b> · DeepSeek V3 周末偷跑开源,凌晨三点的 GitHub 冲到 trending 第一,国外 AI 圈第一次出现"Chinese team outperformed us"的集体讨论。</p>
+    </div>
+  </section>
+
+  <!-- 6. CTA -->
+  <section style="padding:32px 24px 24px;">
+    <div style="padding:28px 24px;background:#FFFFFF;border:1px solid #EDE4D3;border-radius:2px;">
+      <p style="margin:0 0 8px;font-size:12px;color:#8B6C3F;letter-spacing:3px;font-weight:700;">延伸阅读</p>
+      <h3 style="margin:0 0 12px;font-size:18px;font-weight:700;color:#1A1A1A;">从编年史到预测: 2027 会发生什么</h3>
+      <p style="margin:0 0 18px;font-size:14px;color:#4A4A4A;line-height:1.8;">续篇将从 2026 年底回望并前瞻,内容包括: 端侧大模型统一战场、企业级 Agent 标准化、AI 立法深水区、中美算力格局变局。</p>
+      <a href="https://example.com/forecast-2027" style="display:inline-block;padding:11px 22px;background:#1A1A1A;color:#FAFAF8;border-radius:2px;font-size:14px;font-weight:600;text-decoration:none;">阅读下一章 →</a>
+    </div>
+  </section>
+
+  <!-- 7. 落款 -->
+  <section style="padding:12px 24px 56px;">
+    <p style="margin:16px 0 4px;font-size:12px;color:#8B6C3F;line-height:1.9;">考据 · 林知远 | 编辑 · 陈清 | 审校 · 温禾</p>
+    <p style="margin:0 0 4px;font-size:12px;color:#8B6C3F;line-height:1.9;">发布日期 · 2026 年 4 月 23 日 | 文内数据截至 2026 年 3 月 31 日</p>
+    <p style="margin:0;font-size:12px;color:#B8A58E;line-height:1.9;">本文内容基于公开信息整理,部分引述为媒体公开报道。如需转载请保留出处,商用需授权。</p>
+  </section>
+
+</section>
+<!-- 深色模式提示: Hero 和总结段已做深色处理,其余区域为浅色,微信深色模式下 SVG 可能不渲染 -->

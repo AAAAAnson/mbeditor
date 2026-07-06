@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "enabled": false,
+  "transport": "direct",
+  "base": "",
+  "token": "",
+  "caPem": ""
+}

@@ -1,0 +1,391 @@
+<!--
+  模板: dual-touch-cta.html
+  模式: 双层触发 (touchstart 隐藏上层遮罩 + click 穿透到下层链接)
+  选题: 2026 年终行业共鸣投票 · 10 条判断
+  交互:
+    - 每条命题初始为"长按查看背景"遮罩
+    - 用户手指按下(touchstart)后,遮罩 set visibility=hidden 瞬时消失,露出下层"投票"按钮
+    - 手指仍在屏幕时约 300ms 内触发 click,落到下层 <a> 或下层投票卡的伸长动画
+    - 投票后 SVG 展示静态支持率条(模拟读者共识画面)
+  说明: 微信无法真实投票,此处用"点击后展示预设支持率"模拟共识可视化
+-->
+<section style="margin:0;padding:0;background:#FFF9F3;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;color:#2A1810;">
+
+  <!-- 1. Hero -->
+  <section style="padding:44px 24px 32px;background:linear-gradient(180deg,#FFE8D1 0%,#FFF9F3 100%);">
+    <div style="display:inline-block;padding:5px 14px;background:#2A1810;color:#FFE8D1;font-size:12px;font-weight:700;letter-spacing:2px;border-radius:999px;">YEAR-END VOTE · 2026</div>
+    <h1 style="margin:16px 0 12px;font-size:30px;line-height:1.32;font-weight:800;color:#2A1810;letter-spacing:-0.3px;">
+      你最认同的 10 条<br/>2026 年度行业判断
+    </h1>
+    <p style="margin:0;font-size:15px;line-height:1.78;color:#5A3F2E;">
+      一年快过完,是时候认真说一句"这件事我信"或"这事我不信"了。<br/>按住每张卡片查看背景,松手即为投票。
+    </p>
+  </section>
+
+  <!-- 2. 开篇钩子 -->
+  <section style="padding:32px 24px 4px;">
+    <div style="padding:22px 20px;background:#FFFFFF;border-radius:14px;box-shadow:0 4px 16px rgba(80,40,10,0.06);border-left:4px solid #D97706;">
+      <p style="margin:0 0 10px;font-size:15px;line-height:1.78;color:#2A1810;">
+        去年这份投票,有一条判断获得 94% 读者赞同: "AI 不会取代设计师,但会取代不会用 AI 的设计师。"
+      </p>
+      <p style="margin:0 0 10px;font-size:15px;line-height:1.78;color:#2A1810;">
+        一年过去,这句话变成了行业共识。所以这份榜单不是娱乐,是我们和读者共同写下的"当下认知坐标"。
+      </p>
+      <p style="margin:0;font-size:15px;line-height:1.78;color:#2A1810;">
+        今年我们继续延续这个结构: 10 条命题,每一条都足够有争议 —— 有人会投赞同,有人会投反对,甚至有人会觉得"这根本不是个判断"。这才是一份好榜单应有的样貌。
+      </p>
+    </div>
+  </section>
+
+  <!-- 3. 价值主张 -->
+  <section style="padding:24px 24px 8px;">
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.85;color:#5A3F2E;">
+      下面 10 条命题,来自编辑部过去一年对 300 位从业者的访谈整理。它们都不是"普遍真理",而是"当下值得争议的判断" —— 正因如此,你的一票才有意义。
+    </p>
+    <p style="margin:0;font-size:14px;line-height:1.85;color:#5A3F2E;">
+      操作提示: <b style="color:#D97706;">按住卡片</b> 可以看到命题背景(为什么这么说),<b style="color:#D97706;">抬起手指</b>即视为投出你的赞同票。投票后,你会看到此刻其他读者的支持率。
+    </p>
+  </section>
+
+  <!-- 4. 主体: 10 条命题,每条是 双层触发 的卡片 -->
+  <section style="padding:24px 20px 12px;">
+
+    <!-- #1 -->
+    <div style="margin-bottom:16px;border-radius:14px;overflow:hidden;background:#FFFFFF;box-shadow:0 4px 16px rgba(80,40,10,0.06);">
+      <!-- 下层: 已投票视图 -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" style="display:block;width:100%;">
+        <rect width="600" height="210" fill="#FFFFFF"/>
+        <text x="24" y="38" fill="#D97706" font-size="13" font-weight="700">命题 01 · AI 研究</text>
+        <text x="24" y="72" fill="#2A1810" font-size="19" font-weight="800">2026 年,Scaling Law 已经到头。</text>
+        <text x="24" y="100" fill="#5A3F2E" font-size="13">堆算力的边际收益显著下降,算法创新成为主角。</text>
+        <!-- 已投票标记 -->
+        <rect x="24" y="122" width="90" height="26" fill="#FEF3C7" rx="6"/>
+        <text x="69" y="139" fill="#B45309" font-size="12" text-anchor="middle" font-weight="700">✓ 你的票</text>
+        <!-- 支持率条(静态背景 + 前景) -->
+        <text x="24" y="170" fill="#5A3F2E" font-size="12">此刻读者支持率 · 63%</text>
+        <rect x="24" y="178" width="552" height="8" fill="#F3E8D8" rx="4"/>
+        <rect x="24" y="178" width="348" height="8" fill="#D97706" rx="4"/>
+      </svg>
+      <!-- 上层: 遮罩+提示,touchstart 即消失,零高覆盖 -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;margin-top:-210px;">
+        <rect id="cover1" x="0" y="0" width="600" height="210" fill="#2A1810" style="cursor:pointer;">
+          <set attributeName="visibility" to="hidden" begin="cover1.touchstart" fill="freeze"/>
+        </rect>
+        <g style="pointer-events:none;">
+          <text x="24" y="38" fill="#FFD9A8" font-size="13" font-weight="700">命题 01 · AI 研究</text>
+          <text x="24" y="72" fill="#FFFFFF" font-size="19" font-weight="800">2026 年,Scaling Law 已经到头。</text>
+          <text x="24" y="110" fill="#E6CDA8" font-size="12">背景: 多家实验室承认预训练收益放缓,RL/搜索成为突破口。</text>
+          <text x="24" y="130" fill="#E6CDA8" font-size="12">GPT-6 训练推迟、Claude 4.7 转向测试时计算,是此判断的直接证据。</text>
+          <text x="24" y="176" fill="#FFD9A8" font-size="14" font-weight="700">按住查看 · 松开即投赞同票 →</text>
+          <set attributeName="visibility" to="hidden" begin="cover1.touchstart" fill="freeze"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- #2 -->
+    <div style="margin-bottom:16px;border-radius:14px;overflow:hidden;background:#FFFFFF;box-shadow:0 4px 16px rgba(80,40,10,0.06);">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" style="display:block;width:100%;">
+        <rect width="600" height="210" fill="#FFFFFF"/>
+        <text x="24" y="38" fill="#D97706" font-size="13" font-weight="700">命题 02 · 消费</text>
+        <text x="24" y="72" fill="#2A1810" font-size="19" font-weight="800">"消费升级"这个词要彻底退场了。</text>
+        <text x="24" y="100" fill="#5A3F2E" font-size="13">"品质平价"才是下一个十年主轴,贵不等于好。</text>
+        <rect x="24" y="122" width="90" height="26" fill="#FEF3C7" rx="6"/>
+        <text x="69" y="139" fill="#B45309" font-size="12" text-anchor="middle" font-weight="700">✓ 你的票</text>
+        <text x="24" y="170" fill="#5A3F2E" font-size="12">此刻读者支持率 · 81%</text>
+        <rect x="24" y="178" width="552" height="8" fill="#F3E8D8" rx="4"/>
+        <rect x="24" y="178" width="447" height="8" fill="#D97706" rx="4"/>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;margin-top:-210px;">
+        <rect id="cover2" x="0" y="0" width="600" height="210" fill="#2A1810" style="cursor:pointer;">
+          <set attributeName="visibility" to="hidden" begin="cover2.touchstart" fill="freeze"/>
+        </rect>
+        <g style="pointer-events:none;">
+          <text x="24" y="38" fill="#FFD9A8" font-size="13" font-weight="700">命题 02 · 消费</text>
+          <text x="24" y="72" fill="#FFFFFF" font-size="19" font-weight="800">"消费升级"这个词要彻底退场了。</text>
+          <text x="24" y="110" fill="#E6CDA8" font-size="12">背景: 山姆、Costco、胖东来在下沉,高端品牌反而集体打折。</text>
+          <text x="24" y="130" fill="#E6CDA8" font-size="12">蜜雪冰城全球门店破 4 万家,是消费理性化最直观的信号。</text>
+          <text x="24" y="176" fill="#FFD9A8" font-size="14" font-weight="700">按住查看 · 松开即投赞同票 →</text>
+          <set attributeName="visibility" to="hidden" begin="cover2.touchstart" fill="freeze"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- #3 -->
+    <div style="margin-bottom:16px;border-radius:14px;overflow:hidden;background:#FFFFFF;box-shadow:0 4px 16px rgba(80,40,10,0.06);">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" style="display:block;width:100%;">
+        <rect width="600" height="210" fill="#FFFFFF"/>
+        <text x="24" y="38" fill="#D97706" font-size="13" font-weight="700">命题 03 · 职场</text>
+        <text x="24" y="72" fill="#2A1810" font-size="19" font-weight="800">35 岁不是坎,28 岁才是。</text>
+        <text x="24" y="100" fill="#5A3F2E" font-size="13">职业拐点前移,早期判断比中年转型更决定命运。</text>
+        <rect x="24" y="122" width="90" height="26" fill="#FEF3C7" rx="6"/>
+        <text x="69" y="139" fill="#B45309" font-size="12" text-anchor="middle" font-weight="700">✓ 你的票</text>
+        <text x="24" y="170" fill="#5A3F2E" font-size="12">此刻读者支持率 · 57%</text>
+        <rect x="24" y="178" width="552" height="8" fill="#F3E8D8" rx="4"/>
+        <rect x="24" y="178" width="315" height="8" fill="#D97706" rx="4"/>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;margin-top:-210px;">
+        <rect id="cover3" x="0" y="0" width="600" height="210" fill="#2A1810" style="cursor:pointer;">
+          <set attributeName="visibility" to="hidden" begin="cover3.touchstart" fill="freeze"/>
+        </rect>
+        <g style="pointer-events:none;">
+          <text x="24" y="38" fill="#FFD9A8" font-size="13" font-weight="700">命题 03 · 职场</text>
+          <text x="24" y="72" fill="#FFFFFF" font-size="19" font-weight="800">35 岁不是坎,28 岁才是。</text>
+          <text x="24" y="110" fill="#E6CDA8" font-size="12">背景: 招聘数据显示,互联网大厂 P6→P7 晋升窗口平均在 28.3 岁关闭。</text>
+          <text x="24" y="130" fill="#E6CDA8" font-size="12">过了这个窗口,要么成为专家,要么转通道,原地卡住概率极大。</text>
+          <text x="24" y="176" fill="#FFD9A8" font-size="14" font-weight="700">按住查看 · 松开即投赞同票 →</text>
+          <set attributeName="visibility" to="hidden" begin="cover3.touchstart" fill="freeze"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- #4 -->
+    <div style="margin-bottom:16px;border-radius:14px;overflow:hidden;background:#FFFFFF;box-shadow:0 4px 16px rgba(80,40,10,0.06);">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" style="display:block;width:100%;">
+        <rect width="600" height="210" fill="#FFFFFF"/>
+        <text x="24" y="38" fill="#D97706" font-size="13" font-weight="700">命题 04 · 内容行业</text>
+        <text x="24" y="72" fill="#2A1810" font-size="19" font-weight="800">短视频流量见顶,长图文回潮了。</text>
+        <text x="24" y="100" fill="#5A3F2E" font-size="13">读者对深度内容的渴望在 2026 年明显回来了。</text>
+        <rect x="24" y="122" width="90" height="26" fill="#FEF3C7" rx="6"/>
+        <text x="69" y="139" fill="#B45309" font-size="12" text-anchor="middle" font-weight="700">✓ 你的票</text>
+        <text x="24" y="170" fill="#5A3F2E" font-size="12">此刻读者支持率 · 72%</text>
+        <rect x="24" y="178" width="552" height="8" fill="#F3E8D8" rx="4"/>
+        <rect x="24" y="178" width="397" height="8" fill="#D97706" rx="4"/>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;margin-top:-210px;">
+        <rect id="cover4" x="0" y="0" width="600" height="210" fill="#2A1810" style="cursor:pointer;">
+          <set attributeName="visibility" to="hidden" begin="cover4.touchstart" fill="freeze"/>
+        </rect>
+        <g style="pointer-events:none;">
+          <text x="24" y="38" fill="#FFD9A8" font-size="13" font-weight="700">命题 04 · 内容行业</text>
+          <text x="24" y="72" fill="#FFFFFF" font-size="19" font-weight="800">短视频流量见顶,长图文回潮了。</text>
+          <text x="24" y="110" fill="#E6CDA8" font-size="12">背景: 抖音 DAU 同比持平,公众号人均阅读时长却上升 18%。</text>
+          <text x="24" y="130" fill="#E6CDA8" font-size="12">播客、Newsletter、知识星球全面复苏,这是信号而非噪音。</text>
+          <text x="24" y="176" fill="#FFD9A8" font-size="14" font-weight="700">按住查看 · 松开即投赞同票 →</text>
+          <set attributeName="visibility" to="hidden" begin="cover4.touchstart" fill="freeze"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- #5 -->
+    <div style="margin-bottom:16px;border-radius:14px;overflow:hidden;background:#FFFFFF;box-shadow:0 4px 16px rgba(80,40,10,0.06);">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" style="display:block;width:100%;">
+        <rect width="600" height="210" fill="#FFFFFF"/>
+        <text x="24" y="38" fill="#D97706" font-size="13" font-weight="700">命题 05 · 出海</text>
+        <text x="24" y="72" fill="#2A1810" font-size="19" font-weight="800">东南亚不是出海的终点,是起点。</text>
+        <text x="24" y="100" fill="#5A3F2E" font-size="13">拉美、中东、非洲才是利润率最高的下一站。</text>
+        <rect x="24" y="122" width="90" height="26" fill="#FEF3C7" rx="6"/>
+        <text x="69" y="139" fill="#B45309" font-size="12" text-anchor="middle" font-weight="700">✓ 你的票</text>
+        <text x="24" y="170" fill="#5A3F2E" font-size="12">此刻读者支持率 · 68%</text>
+        <rect x="24" y="178" width="552" height="8" fill="#F3E8D8" rx="4"/>
+        <rect x="24" y="178" width="375" height="8" fill="#D97706" rx="4"/>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;margin-top:-210px;">
+        <rect id="cover5" x="0" y="0" width="600" height="210" fill="#2A1810" style="cursor:pointer;">
+          <set attributeName="visibility" to="hidden" begin="cover5.touchstart" fill="freeze"/>
+        </rect>
+        <g style="pointer-events:none;">
+          <text x="24" y="38" fill="#FFD9A8" font-size="13" font-weight="700">命题 05 · 出海</text>
+          <text x="24" y="72" fill="#FFFFFF" font-size="19" font-weight="800">东南亚不是出海的终点,是起点。</text>
+          <text x="24" y="110" fill="#E6CDA8" font-size="12">背景: Shein 中东站毛利 38%,抖音中东站 ARPU 达东南亚 3.2 倍。</text>
+          <text x="24" y="130" fill="#E6CDA8" font-size="12">真正的蓝海不在价格战激烈的东南亚,而在下一个梯队。</text>
+          <text x="24" y="176" fill="#FFD9A8" font-size="14" font-weight="700">按住查看 · 松开即投赞同票 →</text>
+          <set attributeName="visibility" to="hidden" begin="cover5.touchstart" fill="freeze"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- #6 -->
+    <div style="margin-bottom:16px;border-radius:14px;overflow:hidden;background:#FFFFFF;box-shadow:0 4px 16px rgba(80,40,10,0.06);">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" style="display:block;width:100%;">
+        <rect width="600" height="210" fill="#FFFFFF"/>
+        <text x="24" y="38" fill="#D97706" font-size="13" font-weight="700">命题 06 · 创业</text>
+        <text x="24" y="72" fill="#2A1810" font-size="19" font-weight="800">VC 模式已死,独立盈利的小团队正在崛起。</text>
+        <text x="24" y="100" fill="#5A3F2E" font-size="13">不融资、不扩张、盯利润,成为新一代创业者默认姿势。</text>
+        <rect x="24" y="122" width="90" height="26" fill="#FEF3C7" rx="6"/>
+        <text x="69" y="139" fill="#B45309" font-size="12" text-anchor="middle" font-weight="700">✓ 你的票</text>
+        <text x="24" y="170" fill="#5A3F2E" font-size="12">此刻读者支持率 · 49%</text>
+        <rect x="24" y="178" width="552" height="8" fill="#F3E8D8" rx="4"/>
+        <rect x="24" y="178" width="270" height="8" fill="#D97706" rx="4"/>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;margin-top:-210px;">
+        <rect id="cover6" x="0" y="0" width="600" height="210" fill="#2A1810" style="cursor:pointer;">
+          <set attributeName="visibility" to="hidden" begin="cover6.touchstart" fill="freeze"/>
+        </rect>
+        <g style="pointer-events:none;">
+          <text x="24" y="38" fill="#FFD9A8" font-size="13" font-weight="700">命题 06 · 创业</text>
+          <text x="24" y="72" fill="#FFFFFF" font-size="19" font-weight="800">VC 模式已死,独立团队正在崛起。</text>
+          <text x="24" y="110" fill="#E6CDA8" font-size="12">背景: 全球独立开发者年收入超百万美元的项目数量同比增长 141%。</text>
+          <text x="24" y="130" fill="#E6CDA8" font-size="12">Bootstrap + AI 工具 + 远程团队 = 新一代创业三件套。</text>
+          <text x="24" y="176" fill="#FFD9A8" font-size="14" font-weight="700">按住查看 · 松开即投赞同票 →</text>
+          <set attributeName="visibility" to="hidden" begin="cover6.touchstart" fill="freeze"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- #7 -->
+    <div style="margin-bottom:16px;border-radius:14px;overflow:hidden;background:#FFFFFF;box-shadow:0 4px 16px rgba(80,40,10,0.06);">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" style="display:block;width:100%;">
+        <rect width="600" height="210" fill="#FFFFFF"/>
+        <text x="24" y="38" fill="#D97706" font-size="13" font-weight="700">命题 07 · 教育</text>
+        <text x="24" y="72" fill="#2A1810" font-size="19" font-weight="800">学历贬值的速度比你想象的更快。</text>
+        <text x="24" y="100" fill="#5A3F2E" font-size="13">2026 年,"作品集 + GitHub"开始比毕业证更有议价权。</text>
+        <rect x="24" y="122" width="90" height="26" fill="#FEF3C7" rx="6"/>
+        <text x="69" y="139" fill="#B45309" font-size="12" text-anchor="middle" font-weight="700">✓ 你的票</text>
+        <text x="24" y="170" fill="#5A3F2E" font-size="12">此刻读者支持率 · 55%</text>
+        <rect x="24" y="178" width="552" height="8" fill="#F3E8D8" rx="4"/>
+        <rect x="24" y="178" width="303" height="8" fill="#D97706" rx="4"/>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;margin-top:-210px;">
+        <rect id="cover7" x="0" y="0" width="600" height="210" fill="#2A1810" style="cursor:pointer;">
+          <set attributeName="visibility" to="hidden" begin="cover7.touchstart" fill="freeze"/>
+        </rect>
+        <g style="pointer-events:none;">
+          <text x="24" y="38" fill="#FFD9A8" font-size="13" font-weight="700">命题 07 · 教育</text>
+          <text x="24" y="72" fill="#FFFFFF" font-size="19" font-weight="800">学历贬值的速度比你想象的更快。</text>
+          <text x="24" y="110" fill="#E6CDA8" font-size="12">背景: 2026 年高校应届生平均起薪中位数较 2022 年实际下降 11.2%。</text>
+          <text x="24" y="130" fill="#E6CDA8" font-size="12">大厂开始把算法岗要求改为"上过一次 Kaggle 金牌或发表一作"。</text>
+          <text x="24" y="176" fill="#FFD9A8" font-size="14" font-weight="700">按住查看 · 松开即投赞同票 →</text>
+          <set attributeName="visibility" to="hidden" begin="cover7.touchstart" fill="freeze"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- #8 -->
+    <div style="margin-bottom:16px;border-radius:14px;overflow:hidden;background:#FFFFFF;box-shadow:0 4px 16px rgba(80,40,10,0.06);">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" style="display:block;width:100%;">
+        <rect width="600" height="210" fill="#FFFFFF"/>
+        <text x="24" y="38" fill="#D97706" font-size="13" font-weight="700">命题 08 · 房产</text>
+        <text x="24" y="72" fill="#2A1810" font-size="19" font-weight="800">一线城市核心地段的房子,仍是家庭资产锚点。</text>
+        <text x="24" y="100" fill="#5A3F2E" font-size="13">但"上车"的门槛,会在 2027 年前最后一次探底。</text>
+        <rect x="24" y="122" width="90" height="26" fill="#FEF3C7" rx="6"/>
+        <text x="69" y="139" fill="#B45309" font-size="12" text-anchor="middle" font-weight="700">✓ 你的票</text>
+        <text x="24" y="170" fill="#5A3F2E" font-size="12">此刻读者支持率 · 41%</text>
+        <rect x="24" y="178" width="552" height="8" fill="#F3E8D8" rx="4"/>
+        <rect x="24" y="178" width="226" height="8" fill="#D97706" rx="4"/>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;margin-top:-210px;">
+        <rect id="cover8" x="0" y="0" width="600" height="210" fill="#2A1810" style="cursor:pointer;">
+          <set attributeName="visibility" to="hidden" begin="cover8.touchstart" fill="freeze"/>
+        </rect>
+        <g style="pointer-events:none;">
+          <text x="24" y="38" fill="#FFD9A8" font-size="13" font-weight="700">命题 08 · 房产</text>
+          <text x="24" y="72" fill="#FFFFFF" font-size="19" font-weight="800">一线核心地段仍是家庭资产锚点。</text>
+          <text x="24" y="110" fill="#E6CDA8" font-size="12">背景: 北上深核心区二手房价 2026 Q1 环比止跌,挂牌量回到 2022 水位。</text>
+          <text x="24" y="130" fill="#E6CDA8" font-size="12">这是 3 年以来首次出现结构性回暖信号,尾部城市分化将更剧烈。</text>
+          <text x="24" y="176" fill="#FFD9A8" font-size="14" font-weight="700">按住查看 · 松开即投赞同票 →</text>
+          <set attributeName="visibility" to="hidden" begin="cover8.touchstart" fill="freeze"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- #9 -->
+    <div style="margin-bottom:16px;border-radius:14px;overflow:hidden;background:#FFFFFF;box-shadow:0 4px 16px rgba(80,40,10,0.06);">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" style="display:block;width:100%;">
+        <rect width="600" height="210" fill="#FFFFFF"/>
+        <text x="24" y="38" fill="#D97706" font-size="13" font-weight="700">命题 09 · 健康</text>
+        <text x="24" y="72" fill="#2A1810" font-size="19" font-weight="800">GLP-1 会重塑整个消费品行业。</text>
+        <text x="24" y="100" fill="#5A3F2E" font-size="13">减肥药普及,从快餐、零食到奶茶,品类格局都在重写。</text>
+        <rect x="24" y="122" width="90" height="26" fill="#FEF3C7" rx="6"/>
+        <text x="69" y="139" fill="#B45309" font-size="12" text-anchor="middle" font-weight="700">✓ 你的票</text>
+        <text x="24" y="170" fill="#5A3F2E" font-size="12">此刻读者支持率 · 60%</text>
+        <rect x="24" y="178" width="552" height="8" fill="#F3E8D8" rx="4"/>
+        <rect x="24" y="178" width="331" height="8" fill="#D97706" rx="4"/>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;margin-top:-210px;">
+        <rect id="cover9" x="0" y="0" width="600" height="210" fill="#2A1810" style="cursor:pointer;">
+          <set attributeName="visibility" to="hidden" begin="cover9.touchstart" fill="freeze"/>
+        </rect>
+        <g style="pointer-events:none;">
+          <text x="24" y="38" fill="#FFD9A8" font-size="13" font-weight="700">命题 09 · 健康</text>
+          <text x="24" y="72" fill="#FFFFFF" font-size="19" font-weight="800">GLP-1 会重塑整个消费品行业。</text>
+          <text x="24" y="110" fill="#E6CDA8" font-size="12">背景: 司美格鲁肽国内版上市首年销售破 80 亿元,带动代糖赛道异动。</text>
+          <text x="24" y="130" fill="#E6CDA8" font-size="12">可口可乐、百事可乐无糖线增长 23%,传统快餐巨头 SKU 瘦身提速。</text>
+          <text x="24" y="176" fill="#FFD9A8" font-size="14" font-weight="700">按住查看 · 松开即投赞同票 →</text>
+          <set attributeName="visibility" to="hidden" begin="cover9.touchstart" fill="freeze"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- #10 -->
+    <div style="margin-bottom:16px;border-radius:14px;overflow:hidden;background:#FFFFFF;box-shadow:0 4px 16px rgba(80,40,10,0.06);">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" style="display:block;width:100%;">
+        <rect width="600" height="210" fill="#FFFFFF"/>
+        <text x="24" y="38" fill="#D97706" font-size="13" font-weight="700">命题 10 · 生活方式</text>
+        <text x="24" y="72" fill="#2A1810" font-size="19" font-weight="800">"静音社交"是年轻人的新默认。</text>
+        <text x="24" y="100" fill="#5A3F2E" font-size="13">不露脸、不加好友、只留一个兴趣标签,已是新一代的社交底色。</text>
+        <rect x="24" y="122" width="90" height="26" fill="#FEF3C7" rx="6"/>
+        <text x="69" y="139" fill="#B45309" font-size="12" text-anchor="middle" font-weight="700">✓ 你的票</text>
+        <text x="24" y="170" fill="#5A3F2E" font-size="12">此刻读者支持率 · 76%</text>
+        <rect x="24" y="178" width="552" height="8" fill="#F3E8D8" rx="4"/>
+        <rect x="24" y="178" width="419" height="8" fill="#D97706" rx="4"/>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 210" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;margin-top:-210px;">
+        <rect id="cover10" x="0" y="0" width="600" height="210" fill="#2A1810" style="cursor:pointer;">
+          <set attributeName="visibility" to="hidden" begin="cover10.touchstart" fill="freeze"/>
+        </rect>
+        <g style="pointer-events:none;">
+          <text x="24" y="38" fill="#FFD9A8" font-size="13" font-weight="700">命题 10 · 生活方式</text>
+          <text x="24" y="72" fill="#FFFFFF" font-size="19" font-weight="800">"静音社交"是年轻人的新默认。</text>
+          <text x="24" y="110" fill="#E6CDA8" font-size="12">背景: 微信"朋友圈仅三天可见"比例达 37%,豆瓣小组 UV 同比反弹 29%。</text>
+          <text x="24" y="130" fill="#E6CDA8" font-size="12">从"人设管理"到"身份隐匿",社交的权力轴正在悄悄转移。</text>
+          <text x="24" y="176" fill="#FFD9A8" font-size="14" font-weight="700">按住查看 · 松开即投赞同票 →</text>
+          <set attributeName="visibility" to="hidden" begin="cover10.touchstart" fill="freeze"/>
+        </g>
+      </svg>
+    </div>
+
+  </section>
+
+  <!-- 5. 中段小结 -->
+  <section style="padding:32px 24px 8px;">
+    <div style="padding:24px 20px;background:#FFFFFF;border-radius:14px;box-shadow:0 4px 16px rgba(80,40,10,0.06);">
+      <p style="margin:0 0 10px;font-size:12px;color:#D97706;font-weight:700;letter-spacing:2px;">关于投票</p>
+      <h3 style="margin:0 0 12px;font-size:18px;font-weight:800;color:#2A1810;">这份榜单的意义</h3>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.88;color:#5A3F2E;">榜单不是为了得出唯一结论。它记录的是 —— 在这个时间点上,有一群人共同相信什么、共同怀疑什么。</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.88;color:#5A3F2E;">明年此时,我们会把这 10 条命题拿出来复盘,看哪条兑现了、哪条翻车了、哪条开始成为新共识。现在你看到的支持率,会成为未来的历史参考坐标。</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.88;color:#5A3F2E;">去年那份同类榜单里,最大的"翻车判断"是 —— "2025 年新势力造车会出现一场大洗牌"。当时 81% 的读者投了赞同,但真正发生的是 2026 年初才开始的缓慢分化,没有戏剧性出清。这条判断让我们意识到,读者的共识往往领先真实节奏 12-18 个月。</p>
+      <p style="margin:0;font-size:14px;line-height:1.88;color:#5A3F2E;">反过来,最精准的一条判断是"静音社交"这条雏形。去年这条命题只拿到 48% 支持率,今年重做时已经涨到 76%。真实世界正在朝着它走,只是那时候没几个人敢公开说。</p>
+    </div>
+  </section>
+
+  <!-- 5b. 读者分层观察 -->
+  <section style="padding:16px 24px 4px;">
+    <div style="padding:22px 20px;background:#FFFFFF;border-radius:14px;box-shadow:0 4px 16px rgba(80,40,10,0.06);border-top:3px solid #D97706;">
+      <p style="margin:0 0 10px;font-size:12px;color:#92400E;font-weight:700;letter-spacing:2px;">读者分层趣味观察</p>
+      <h3 style="margin:0 0 14px;font-size:17px;font-weight:800;color:#2A1810;">同一命题,不同职业的人投出的票完全不一样</h3>
+      <p style="margin:0 0 8px;font-size:14px;line-height:1.88;color:#5A3F2E;"><b style="color:#D97706;">命题 02 "消费升级退场"</b> · 在一线城市中产中支持率 89%,但在三四线城市读者中只有 52%。真实的消费分层,往往比我们想象的更剧烈。</p>
+      <p style="margin:0 0 8px;font-size:14px;line-height:1.88;color:#5A3F2E;"><b style="color:#D97706;">命题 06 "VC 模式已死"</b> · 在独立开发者群体支持率 73%,但在 TMT 投资人中只有 19%。立场决定结论,这条命题最能暴露身份。</p>
+      <p style="margin:0;font-size:14px;line-height:1.88;color:#5A3F2E;"><b style="color:#D97706;">命题 09 "GLP-1 重塑消费"</b> · 女性读者支持率 68%,男性 52%。这条数据差异暗示了健康议题在不同性别注意力中的不对称。</p>
+    </div>
+  </section>
+
+  <!-- 5c. 为什么要投票 -->
+  <section style="padding:12px 24px 8px;">
+    <div style="padding:22px 20px;background:#FFFFFF;border-radius:14px;box-shadow:0 4px 16px rgba(80,40,10,0.06);">
+      <p style="margin:0 0 10px;font-size:12px;color:#92400E;font-weight:700;letter-spacing:2px;">为什么让你按住才能投票</p>
+      <h3 style="margin:0 0 12px;font-size:17px;font-weight:800;color:#2A1810;">这个交互设计背后的用心</h3>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.88;color:#5A3F2E;">传统投票只需要一下点击,但信息量为零 —— 你不知道读者有没有真的读懂命题,就匆忙投下一票。</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.88;color:#5A3F2E;">按住看背景再松手,强制读者多停 1 秒。一秒钟的停留,会改变 40% 投票者的最终选择 —— 这是我们 2024 年测出来的数字。</p>
+      <p style="margin:0;font-size:14px;line-height:1.88;color:#5A3F2E;">所以这份榜单的支持率数字,比普通投票更可信一些。它代表的是"读了背景、又想了 1 秒钟后,仍然愿意投赞同的人的比例"。这个「思考过的赞同」,才是真正的行业共识。</p>
+    </div>
+  </section>
+
+  <!-- 6. CTA -->
+  <section style="padding:28px 24px 20px;">
+    <div style="padding:26px 22px;background:linear-gradient(135deg,#D97706 0%,#92400E 100%);border-radius:18px;">
+      <p style="margin:0 0 6px;font-size:12px;color:rgba(255,255,255,0.78);letter-spacing:2px;font-weight:700;">参与下一轮</p>
+      <h3 style="margin:0 0 10px;font-size:20px;color:#FFFFFF;font-weight:700;">留言你心中第 11 条判断</h3>
+      <p style="margin:0 0 18px;font-size:14px;color:rgba(255,255,255,0.92);line-height:1.75;">我们会挑选 3 条最有分量的读者命题,收进 2027 年版的年终投票,并公开署名。</p>
+      <a href="https://example.com/submit" style="display:inline-block;padding:11px 20px;background:#FFFFFF;color:#92400E;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">去留言提交 →</a>
+    </div>
+  </section>
+
+  <!-- 7. 落款 -->
+  <section style="padding:4px 24px 48px;">
+    <p style="margin:16px 0 4px;font-size:12px;color:#92603E;line-height:1.8;">出品 · 行业观察编辑部 | 命题整理 · 温禾 陈清</p>
+    <p style="margin:0 0 4px;font-size:12px;color:#92603E;line-height:1.8;">发布日期 · 2026 年 4 月 23 日 | 下次复盘 · 2027 年 1 月</p>
+    <p style="margin:0;font-size:12px;color:#C08860;line-height:1.8;">本文中支持率数据为模拟展示,真实投票请以文章留言区互动为准。命题不代表任何投资建议。</p>
+  </section>
+
+</section>
+<!-- 深色模式提示: 浅色系背景已锁定,深色模式下建议文章提示切换,SVG 可能不渲染 -->

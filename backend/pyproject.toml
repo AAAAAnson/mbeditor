@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mbeditor"
+version = "5.0.0"
+description = "MBEditor - WeChat article editor with agent-first CLI"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "MBEditor" }]
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "python-multipart",
+    "pydantic-settings",
+    "Pillow",
+    "httpx",
+    "typer>=0.12,<1.0",
+    "aiofiles",
+    "cryptography",
+    "premailer",
+    "playwright",
+    "anthropic>=0.40",
+    "jsonschema>=4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "pytest-mock",
+]
+
+[project.scripts]
+mbeditor = "app.cli.main:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+"app.cli" = ["SKILL.md"]

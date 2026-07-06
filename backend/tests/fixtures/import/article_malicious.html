@@ -1,0 +1,8 @@
+<h1>Looks innocent</h1>
+<script>alert('xss')</script>
+<p>Some text</p>
+<img src="https://ok.com/a.png" onerror="steal()" alt="img">
+<a href="javascript:evil()">click me</a>
+<svg><script>alert('svg')</script><circle cx="5" cy="5" r="3"/></svg>
+<img src="data:text/html,<script>x</script>" alt="data">
+<ul><li onclick="bad()">item</li></ul>

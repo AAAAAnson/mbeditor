@@ -1,0 +1,318 @@
+<!--
+  模板: passthrough-hotspot.html
+  模式: 穿透触发 (pointer-events:none 上层装饰) + 精确热区(pointer-events:all) + 伸长动画切换详情
+  选题: 一张图看懂 2026 新能源汽车产业链
+  交互: 主图静态显示产业链 6 大环节,每个热点圆点可点击,对应环节详情面板以伸长动画在下方展开
+  说明: 多个 begin="hotspotN.click" 触发同一组详情面板中对应那张的 visibility 切换
+-->
+<section style="margin:0;padding:0;background:#F7F8FB;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;color:#1A202C;">
+
+  <!-- 1. Hero -->
+  <section style="padding:44px 24px 30px;background:#FFFFFF;border-bottom:1px solid #E6EAF2;">
+    <div style="display:inline-block;padding:5px 12px;background:#EEF1FB;color:#2A4BDB;font-size:12px;font-weight:700;letter-spacing:2px;border-radius:6px;">INDUSTRY MAP · 2026</div>
+    <h1 style="margin:16px 0 10px;font-size:28px;line-height:1.32;font-weight:800;color:#0F1629;letter-spacing:-0.3px;">
+      一张图看懂<br/>2026 新能源汽车产业链
+    </h1>
+    <p style="margin:0;font-size:15px;line-height:1.78;color:#4A5568;">
+      从锂矿到 Robotaxi,六个环节,72 家代表企业,一张可点的图。<br/>点图上的热点,看这一环节今年发生了什么。
+    </p>
+  </section>
+
+  <!-- 2. 开篇钩子 -->
+  <section style="padding:32px 24px 4px;">
+    <div style="padding:22px 20px;background:#FFFFFF;border-radius:14px;border:1px solid #E6EAF2;box-shadow:0 2px 10px rgba(22,30,55,0.04);">
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.78;color:#2D3748;">
+        2026 年一季度,中国新能源汽车渗透率突破 52.7%。历史上第一次,每卖出两台车就有一台是电动或混动。
+      </p>
+      <p style="margin:0 0 12px;font-size:15px;line-height:1.78;color:#2D3748;">
+        但产业链内部正在发生更剧烈的变化: 锂价触底反弹,磷酸铁锂份额冲过 75%,固态电池装车元年到来,Robotaxi 开始规模化盈利。这张图把这些散落的信号,画在一张产业链上。
+      </p>
+      <p style="margin:0;font-size:15px;line-height:1.78;color:#2D3748;">
+        一个细节可以佐证这种变化的强度: 一年前,新能源车主在谈充电焦虑;今年,他们在讨论换电站比加油站更方便。感受上的翻转只用了 12 个月,产业链背后的力量比想象中大。
+      </p>
+    </div>
+  </section>
+
+  <!-- 3. 价值主张 -->
+  <section style="padding:24px 24px 4px;">
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.88;color:#4A5568;">
+      下方这张产业链地图是静态的,但每个环节有一个可以点击的圆点热区 —— 点开,能看到这个环节在 2026 年的核心变化、代表企业、份额数据、关键事件。不要急着滑走,先点两个你最熟悉的环节,看看我们测到的数据跟你的直觉差多少。
+    </p>
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.88;color:#4A5568;">
+      先说两个背景数字,你读下面的数据时会更有参照。第一,2026 年中国新能源汽车产销均首次进入年度千万辆俱乐部,全年预计 1240 万辆。第二,整车企业数量从 2021 年的 493 家减到 2026 年的 87 家,行业正在从"百花齐放"进入"少数主角的终局赛"。
+    </p>
+    <p style="margin:0;font-size:14px;line-height:1.88;color:#4A5568;">
+      这篇文章不试图给出结论,它只试图把产业链「摊平」给你看 —— 哪个环节赚钱、哪个环节没赚钱、谁在吃利润、谁在吃现金流,点一下就一目了然。如果你是行业从业者,看完应该能对自己所在环节的位置有新的坐标;如果你是投资人或观察者,这张图可以作为 2026 Q2 的行业速写。
+    </p>
+  </section>
+
+  <!-- 4. 主体交互: 产业链地图 + 6 个热点 + 详情面板 -->
+  <section style="padding:20px 16px 0;">
+
+    <!-- 产业链主图(SVG) -->
+    <div style="border-radius:16px;overflow:hidden;background:#FFFFFF;border:1px solid #E6EAF2;box-shadow:0 4px 20px rgba(22,30,55,0.06);">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 380" style="display:block;width:100%;">
+        <defs>
+          <linearGradient id="chainBg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#F7F9FD"/>
+            <stop offset="1" stop-color="#EEF2FA"/>
+          </linearGradient>
+          <linearGradient id="chainFlow" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" stop-color="#2A4BDB"/>
+            <stop offset="1" stop-color="#8B5CF6"/>
+          </linearGradient>
+        </defs>
+        <rect width="600" height="380" fill="url(#chainBg)"/>
+
+        <!-- 顶部标题条 -->
+        <rect x="20" y="18" width="560" height="38" fill="#0F1629" rx="10"/>
+        <text x="36" y="42" fill="#FFFFFF" font-size="14" font-weight="700">上游 · 材料与矿</text>
+        <text x="230" y="42" fill="#A6B2CF" font-size="14" font-weight="700">中游 · 电池与三电</text>
+        <text x="430" y="42" fill="#A6B2CF" font-size="14" font-weight="700">下游 · 整车与服务</text>
+
+        <!-- 三大区块背景 -->
+        <rect x="20" y="74" width="180" height="230" fill="#FFFFFF" stroke="#D9E0F0" stroke-width="1" rx="12"/>
+        <rect x="210" y="74" width="180" height="230" fill="#FFFFFF" stroke="#D9E0F0" stroke-width="1" rx="12"/>
+        <rect x="400" y="74" width="180" height="230" fill="#FFFFFF" stroke="#D9E0F0" stroke-width="1" rx="12"/>
+
+        <!-- 上游节点 -->
+        <text x="36" y="102" fill="#1A202C" font-size="13" font-weight="700">锂矿与精炼</text>
+        <text x="36" y="122" fill="#4A5568" font-size="11">碳酸锂、氢氧化锂</text>
+        <text x="36" y="160" fill="#1A202C" font-size="13" font-weight="700">正极材料</text>
+        <text x="36" y="180" fill="#4A5568" font-size="11">磷酸铁锂、高镍三元</text>
+        <text x="36" y="218" fill="#1A202C" font-size="13" font-weight="700">负极 + 电解液 + 隔膜</text>
+        <text x="36" y="238" fill="#4A5568" font-size="11">人造石墨、硅基、LiFSI</text>
+
+        <!-- 中游节点 -->
+        <text x="226" y="102" fill="#1A202C" font-size="13" font-weight="700">电芯与电池包</text>
+        <text x="226" y="122" fill="#4A5568" font-size="11">液态、半固态、固态</text>
+        <text x="226" y="160" fill="#1A202C" font-size="13" font-weight="700">电驱与电控</text>
+        <text x="226" y="180" fill="#4A5568" font-size="11">扁线电机、SiC 功率模块</text>
+        <text x="226" y="218" fill="#1A202C" font-size="13" font-weight="700">热管理系统</text>
+        <text x="226" y="238" fill="#4A5568" font-size="11">CO2 热泵、集成化模组</text>
+
+        <!-- 下游节点 -->
+        <text x="416" y="102" fill="#1A202C" font-size="13" font-weight="700">整车制造</text>
+        <text x="416" y="122" fill="#4A5568" font-size="11">新势力、传统自主、合资</text>
+        <text x="416" y="160" fill="#1A202C" font-size="13" font-weight="700">智驾与座舱</text>
+        <text x="416" y="180" fill="#4A5568" font-size="11">城市 NOA、舱驾一体</text>
+        <text x="416" y="218" fill="#1A202C" font-size="13" font-weight="700">充换电与后市场</text>
+        <text x="416" y="238" fill="#4A5568" font-size="11">超充桩、换电站、Robotaxi</text>
+
+        <!-- 流向箭头(纯装饰,不拦截点击) -->
+        <line x1="200" y1="189" x2="210" y2="189" stroke="url(#chainFlow)" stroke-width="2"/>
+        <polygon points="210,185 218,189 210,193" fill="#8B5CF6"/>
+        <line x1="390" y1="189" x2="400" y2="189" stroke="url(#chainFlow)" stroke-width="2"/>
+        <polygon points="400,185 408,189 400,193" fill="#8B5CF6"/>
+
+        <!-- 底部提示 -->
+        <rect x="20" y="320" width="560" height="44" fill="#EEF1FB" rx="10"/>
+        <text x="300" y="347" fill="#2A4BDB" font-size="13" text-anchor="middle" font-weight="700">点击图上任意 ● 圆点 · 展开该环节 2026 数据</text>
+      </svg>
+
+      <!-- 上层穿透装饰 + 精确热区(零高覆盖) -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 380"
+           style="display:block;width:100%;height:0;overflow:visible;margin-top:-380px;pointer-events:none;">
+
+        <!-- 装饰脉动圆,不拦截点击 -->
+        <g style="pointer-events:none;">
+          <circle cx="170" cy="116" r="10" fill="rgba(42,75,219,0.18)">
+            <animate attributeName="r" from="6" to="14" dur="1.6s" repeatCount="5"/>
+            <animate attributeName="opacity" from="0.9" to="0.1" dur="1.6s" repeatCount="5"/>
+          </circle>
+        </g>
+
+        <!-- 热区 1: 锂矿 -->
+        <circle id="hot1" cx="170" cy="116" r="11" fill="#2A4BDB" style="pointer-events:all;cursor:pointer;"/>
+        <circle cx="170" cy="116" r="4" fill="#FFFFFF" style="pointer-events:none;"/>
+
+        <!-- 热区 2: 正极材料 -->
+        <circle id="hot2" cx="170" cy="174" r="11" fill="#2A4BDB" style="pointer-events:all;cursor:pointer;"/>
+        <circle cx="170" cy="174" r="4" fill="#FFFFFF" style="pointer-events:none;"/>
+
+        <!-- 热区 3: 电芯 -->
+        <circle id="hot3" cx="360" cy="116" r="11" fill="#8B5CF6" style="pointer-events:all;cursor:pointer;"/>
+        <circle cx="360" cy="116" r="4" fill="#FFFFFF" style="pointer-events:none;"/>
+
+        <!-- 热区 4: 电驱 -->
+        <circle id="hot4" cx="360" cy="174" r="11" fill="#8B5CF6" style="pointer-events:all;cursor:pointer;"/>
+        <circle cx="360" cy="174" r="4" fill="#FFFFFF" style="pointer-events:none;"/>
+
+        <!-- 热区 5: 整车 -->
+        <circle id="hot5" cx="550" cy="116" r="11" fill="#EC4899" style="pointer-events:all;cursor:pointer;"/>
+        <circle cx="550" cy="116" r="4" fill="#FFFFFF" style="pointer-events:none;"/>
+
+        <!-- 热区 6: 充换电 -->
+        <circle id="hot6" cx="550" cy="232" r="11" fill="#EC4899" style="pointer-events:all;cursor:pointer;"/>
+        <circle cx="550" cy="232" r="4" fill="#FFFFFF" style="pointer-events:none;"/>
+      </svg>
+    </div>
+
+    <!-- 详情面板: 6 个环节共用一个展开容器,每次点击特定热点时,对应那个环节的 rect 从 0 伸长到 320 -->
+    <div style="margin-top:16px;">
+
+      <!-- 详情 1 - 锂矿 -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+        <rect x="0" y="0" width="600" height="320" fill="#FFFFFF" stroke="#D9E0F0" stroke-width="1" rx="14">
+          <animate attributeName="height" from="0" to="320" dur="0.5s" begin="hot1.click" fill="freeze"/>
+        </rect>
+        <rect x="0" y="0" width="6" height="320" fill="#2A4BDB" rx="3">
+          <animate attributeName="height" from="0" to="320" dur="0.5s" begin="hot1.click" fill="freeze"/>
+        </rect>
+        <text x="28" y="38" fill="#2A4BDB" font-size="12" font-weight="700">上游 · 锂矿与精炼</text>
+        <text x="28" y="66" fill="#0F1629" font-size="20" font-weight="700">从供给过剩到紧平衡,拐点在 Q2</text>
+        <text x="28" y="100" fill="#4A5568" font-size="13">碳酸锂 2026 Q1 均价 8.4 万元/吨,同比 +42%,库存周转天数降至 38 天。</text>
+        <text x="28" y="126" fill="#4A5568" font-size="13">西澳 Greenbushes、智利 SQM 延迟扩产,江西宜春低品位矿退出,供给收缩。</text>
+        <text x="28" y="168" fill="#1A202C" font-size="13" font-weight="700">代表企业 · 市占率</text>
+        <text x="28" y="192" fill="#4A5568" font-size="12">赣锋锂业(12.6%) · 天齐锂业(10.8%) · Albemarle(9.4%) · SQM(8.1%)</text>
+        <text x="28" y="216" fill="#4A5568" font-size="12">盐湖股份(5.2%) · 中矿资源(4.8%) · 紫金矿业(4.3%) · 雅化集团(3.7%)</text>
+        <text x="28" y="260" fill="#10B981" font-size="13" font-weight="700">2026 关键事件</text>
+        <text x="28" y="282" fill="#4A5568" font-size="12">3 月 · 阿根廷盐湖项目 Cauchari-Olaroz 二期投产,新增 4 万吨 LCE 年产能</text>
+        <text x="28" y="302" fill="#4A5568" font-size="12">4 月 · 宁德时代宜春硬岩锂矿复产,直供自家电芯厂</text>
+      </svg>
+
+      <!-- 详情 2 - 正极 -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+        <rect x="0" y="0" width="600" height="320" fill="#FFFFFF" stroke="#D9E0F0" stroke-width="1" rx="14">
+          <animate attributeName="height" from="0" to="320" dur="0.5s" begin="hot2.click" fill="freeze"/>
+        </rect>
+        <rect x="0" y="0" width="6" height="320" fill="#2A4BDB" rx="3">
+          <animate attributeName="height" from="0" to="320" dur="0.5s" begin="hot2.click" fill="freeze"/>
+        </rect>
+        <text x="28" y="38" fill="#2A4BDB" font-size="12" font-weight="700">上游 · 正极材料</text>
+        <text x="28" y="66" fill="#0F1629" font-size="20" font-weight="700">磷酸铁锂拿下 75% 份额,高镍转向超充</text>
+        <text x="28" y="100" fill="#4A5568" font-size="13">LFP 在乘用车份额从 2024 年 58% 升至 2026 Q1 75.3%,主因是超充 LFP 商业化。</text>
+        <text x="28" y="126" fill="#4A5568" font-size="13">高镍 9 系、超高镍 95+ 体系聚焦旗舰车型,NCMA 四元开始装车验证。</text>
+        <text x="28" y="168" fill="#1A202C" font-size="13" font-weight="700">代表企业 · 市占率</text>
+        <text x="28" y="192" fill="#4A5568" font-size="12">湖南裕能(17.9%) · 德方纳米(11.2%) · 容百科技(9.8%,三元系第一)</text>
+        <text x="28" y="216" fill="#4A5568" font-size="12">当升科技(8.6%) · 龙蟠科技(7.4%) · 厦钨新能(6.9%) · 巴莫科技(5.1%)</text>
+        <text x="28" y="260" fill="#10B981" font-size="13" font-weight="700">2026 关键事件</text>
+        <text x="28" y="282" fill="#4A5568" font-size="12">2 月 · 宁德时代神行 PLUS 超充 LFP 装车比亚迪海豹 07 EV,充电 10 分钟续航 400 公里</text>
+        <text x="28" y="302" fill="#4A5568" font-size="12">4 月 · 容百与 LG 新能源签 7 万吨高镍三元 2027-2030 长单</text>
+      </svg>
+
+      <!-- 详情 3 - 电芯 -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+        <rect x="0" y="0" width="600" height="320" fill="#FFFFFF" stroke="#D9E0F0" stroke-width="1" rx="14">
+          <animate attributeName="height" from="0" to="320" dur="0.5s" begin="hot3.click" fill="freeze"/>
+        </rect>
+        <rect x="0" y="0" width="6" height="320" fill="#8B5CF6" rx="3">
+          <animate attributeName="height" from="0" to="320" dur="0.5s" begin="hot3.click" fill="freeze"/>
+        </rect>
+        <text x="28" y="38" fill="#8B5CF6" font-size="12" font-weight="700">中游 · 电芯与电池包</text>
+        <text x="28" y="66" fill="#0F1629" font-size="20" font-weight="700">固态装车元年,半固态先跑一步</text>
+        <text x="28" y="100" fill="#4A5568" font-size="13">2026 Q1 全球电芯装机 248 GWh,同比 +29%,宁德、比亚迪双寡头合计 51.3%。</text>
+        <text x="28" y="126" fill="#4A5568" font-size="13">半固态电池装车进入量产,能量密度 360 Wh/kg;全固态仍以工程样件为主。</text>
+        <text x="28" y="168" fill="#1A202C" font-size="13" font-weight="700">代表企业 · 市占率</text>
+        <text x="28" y="192" fill="#4A5568" font-size="12">宁德时代(36.2%) · 比亚迪弗迪(15.1%) · LG 新能源(13.4%) · SK On(5.8%)</text>
+        <text x="28" y="216" fill="#4A5568" font-size="12">中创新航(5.3%) · 国轩高科(4.9%) · 松下(4.5%) · 欣旺达(3.2%)</text>
+        <text x="28" y="260" fill="#10B981" font-size="13" font-weight="700">2026 关键事件</text>
+        <text x="28" y="282" fill="#4A5568" font-size="12">1 月 · 宁德时代全固态中试线贯通,硫化物路线能量密度达 500 Wh/kg</text>
+        <text x="28" y="302" fill="#4A5568" font-size="12">3 月 · 智己 L6 搭载光年半固态电池,实测续航 1068 公里</text>
+      </svg>
+
+      <!-- 详情 4 - 电驱 -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+        <rect x="0" y="0" width="600" height="320" fill="#FFFFFF" stroke="#D9E0F0" stroke-width="1" rx="14">
+          <animate attributeName="height" from="0" to="320" dur="0.5s" begin="hot4.click" fill="freeze"/>
+        </rect>
+        <rect x="0" y="0" width="6" height="320" fill="#8B5CF6" rx="3">
+          <animate attributeName="height" from="0" to="320" dur="0.5s" begin="hot4.click" fill="freeze"/>
+        </rect>
+        <text x="28" y="38" fill="#8B5CF6" font-size="12" font-weight="700">中游 · 电驱与电控</text>
+        <text x="28" y="66" fill="#0F1629" font-size="20" font-weight="700">800V + SiC 成新车标配</text>
+        <text x="28" y="100" fill="#4A5568" font-size="13">2026 新上市纯电车型中,800V 高压平台占比 62%,较 2024 年翻一倍。</text>
+        <text x="28" y="126" fill="#4A5568" font-size="13">碳化硅功率模块渗透至 25 万元以下车型,扁线油冷电机效率突破 97.5%。</text>
+        <text x="28" y="168" fill="#1A202C" font-size="13" font-weight="700">代表企业 · 市占率</text>
+        <text x="28" y="192" fill="#4A5568" font-size="12">比亚迪弗迪(18.4%) · 汇川技术(12.7%) · 特斯拉自研(10.9%) · 华为数字能源(7.8%)</text>
+        <text x="28" y="216" fill="#4A5568" font-size="12">英飞凌(SiC 35%) · 意法半导体(SiC 22%) · 士兰微(国产 SiC 第一)</text>
+        <text x="28" y="260" fill="#10B981" font-size="13" font-weight="700">2026 关键事件</text>
+        <text x="28" y="282" fill="#4A5568" font-size="12">3 月 · 华为 DriveONE 800V 总成装车阿维塔 12,峰值功率 425 kW</text>
+        <text x="28" y="302" fill="#4A5568" font-size="12">4 月 · 汇川第四代扁线电机量产,NEDC 效率 96.8% 行业最高</text>
+      </svg>
+
+      <!-- 详情 5 - 整车 -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+        <rect x="0" y="0" width="600" height="320" fill="#FFFFFF" stroke="#D9E0F0" stroke-width="1" rx="14">
+          <animate attributeName="height" from="0" to="320" dur="0.5s" begin="hot5.click" fill="freeze"/>
+        </rect>
+        <rect x="0" y="0" width="6" height="320" fill="#EC4899" rx="3">
+          <animate attributeName="height" from="0" to="320" dur="0.5s" begin="hot5.click" fill="freeze"/>
+        </rect>
+        <text x="28" y="38" fill="#EC4899" font-size="12" font-weight="700">下游 · 整车制造</text>
+        <text x="28" y="66" fill="#0F1629" font-size="20" font-weight="700">比亚迪登顶,新势力分化</text>
+        <text x="28" y="100" fill="#4A5568" font-size="13">2026 Q1 国内新能源汽车销量 298 万辆,同比 +35.4%。</text>
+        <text x="28" y="126" fill="#4A5568" font-size="13">比亚迪单季 91 万辆,特斯拉(中国) 18 万辆,小米汽车 12 万辆首次入榜前五。</text>
+        <text x="28" y="168" fill="#1A202C" font-size="13" font-weight="700">代表企业 · 市占率</text>
+        <text x="28" y="192" fill="#4A5568" font-size="12">比亚迪(30.5%) · 吉利银河+极氪(11.8%) · 特斯拉(6.0%) · 小米(4.0%)</text>
+        <text x="28" y="216" fill="#4A5568" font-size="12">理想(3.8%) · 鸿蒙智行(3.5%) · 小鹏(2.9%) · 蔚来(2.1%) · 零跑(2.6%)</text>
+        <text x="28" y="260" fill="#10B981" font-size="13" font-weight="700">2026 关键事件</text>
+        <text x="28" y="282" fill="#4A5568" font-size="12">2 月 · 小米 YU7 上市 72 小时大定突破 24 万台</text>
+        <text x="28" y="302" fill="#4A5568" font-size="12">4 月 · 比亚迪全系搭载天神之眼高阶智驾,全面跟进华为 ADS 4</text>
+      </svg>
+
+      <!-- 详情 6 - 充换电 -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+        <rect x="0" y="0" width="600" height="320" fill="#FFFFFF" stroke="#D9E0F0" stroke-width="1" rx="14">
+          <animate attributeName="height" from="0" to="320" dur="0.5s" begin="hot6.click" fill="freeze"/>
+        </rect>
+        <rect x="0" y="0" width="6" height="320" fill="#EC4899" rx="3">
+          <animate attributeName="height" from="0" to="320" dur="0.5s" begin="hot6.click" fill="freeze"/>
+        </rect>
+        <text x="28" y="38" fill="#EC4899" font-size="12" font-weight="700">下游 · 充换电与 Robotaxi</text>
+        <text x="28" y="66" fill="#0F1629" font-size="20" font-weight="700">超充进主干线,Robotaxi 单城跑通</text>
+        <text x="28" y="100" fill="#4A5568" font-size="13">全国 480 kW 以上超充桩保有量 31 万桩,高速公路服务区覆盖率 88%。</text>
+        <text x="28" y="126" fill="#4A5568" font-size="13">Robotaxi 在北京、武汉、广州、深圳四城跑通单城单车日毛利模型。</text>
+        <text x="28" y="168" fill="#1A202C" font-size="13" font-weight="700">代表企业 · 市占率</text>
+        <text x="28" y="192" fill="#4A5568" font-size="12">特来电(22.6%) · 星星充电(18.4%) · 国家电网(14.2%) · 华为数字能源(9.8%)</text>
+        <text x="28" y="216" fill="#4A5568" font-size="12">Robotaxi: 萝卜快跑、小马智行、文远知行、Waymo、滴滴自动驾驶</text>
+        <text x="28" y="260" fill="#10B981" font-size="13" font-weight="700">2026 关键事件</text>
+        <text x="28" y="282" fill="#4A5568" font-size="12">2 月 · 萝卜快跑北京全域开放,单车日均订单突破 17 单</text>
+        <text x="28" y="302" fill="#4A5568" font-size="12">4 月 · 特斯拉 Cybercab 在国内深圳前海启动路测,不搭方向盘</text>
+      </svg>
+
+    </div>
+  </section>
+
+  <!-- 5. 编辑部判断 -->
+  <section style="padding:32px 24px 4px;">
+    <div style="padding:24px 20px;background:#FFFFFF;border-radius:14px;border:1px solid #E6EAF2;">
+      <p style="margin:0 0 10px;font-size:12px;color:#2A4BDB;font-weight:700;letter-spacing:2px;">编辑部判断</p>
+      <h3 style="margin:0 0 12px;font-size:18px;font-weight:800;color:#0F1629;">三条主线押注 2026 下半年</h3>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.78;color:#2D3748;"><b style="color:#2A4BDB;">01</b> · 锂价回暖但不会回到 2022 高点,真正的机会在中游加工环节的定价权重估。盐湖提锂的低成本优势将持续,但加工工艺的壁垒让精炼商有机会拿回一部分定价权。</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.78;color:#2D3748;"><b style="color:#8B5CF6;">02</b> · 半固态在下半年扩产,能量密度进阶 400 Wh/kg,两轮车、无人机、eVTOL 三个场景会先导入。乘用车大规模装车仍需等到 2027-2028,全固态的商业化窗口则更久。</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.78;color:#2D3748;"><b style="color:#EC4899;">03</b> · Robotaxi 单城盈利模型一旦跑通,将触发新一轮智驾芯片、激光雷达、高精地图的重估。武汉萝卜快跑的单车日均订单突破 17 单,已经接近财务模型的盈亏临界点,这可能是本轮智驾行情的真正起点。</p>
+      <p style="margin:10px 0 0;font-size:14px;line-height:1.78;color:#2D3748;">这三条主线背后,还有一条更大的变化: 整车厂和供应商的权力边界正在重新划定。过去由 Tier1 把持的域控制器、电池包总成,已经被整车厂直采甚至自研切走。这意味着下一轮产业利润分配会更倾向"整车 + 核心三电自研"的模式,Tier1 需要在"模块化能力 + 出口 + 跨界"三个方向重新卡位。</p>
+    </div>
+  </section>
+
+  <!-- 5c. 三个容易被忽略的细节 -->
+  <section style="padding:12px 24px 4px;">
+    <div style="padding:24px 20px;background:#FFFFFF;border-radius:14px;border:1px solid #E6EAF2;">
+      <p style="margin:0 0 10px;font-size:12px;color:#8B5CF6;font-weight:700;letter-spacing:2px;">容易被忽略的细节</p>
+      <h3 style="margin:0 0 12px;font-size:17px;font-weight:800;color:#0F1629;">三个不常被提起但更值得关注的变化</h3>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.85;color:#2D3748;"><b style="color:#2A4BDB;">一</b> · 电芯回收产业在 2026 年正式进入规模化阶段,邦普循环、格林美、华友钴业合计处理量占全球 42%,回收的碳酸锂当量已经可以反哺上游供应。</p>
+      <p style="margin:0 0 10px;font-size:14px;line-height:1.85;color:#2D3748;"><b style="color:#2A4BDB;">二</b> · 48V 电子电气架构被多家车企放弃,800V 不是锦上添花,是未来十年的默认底座;这意味着整车厂的零部件供应商白名单会发生一轮结构性换血。</p>
+      <p style="margin:0;font-size:14px;line-height:1.85;color:#2D3748;"><b style="color:#2A4BDB;">三</b> · eVTOL、重卡、工程机械、矿山车的电动化拐点开始显现,乘用车以外的应用场景,可能是下一个十年最被低估的增量池。</p>
+    </div>
+  </section>
+
+  <!-- 6. CTA -->
+  <section style="padding:28px 24px 20px;">
+    <div style="padding:26px 22px;background:linear-gradient(135deg,#2A4BDB 0%,#6F2FF5 100%);border-radius:18px;">
+      <p style="margin:0 0 6px;font-size:12px;color:rgba(255,255,255,0.78);letter-spacing:2px;font-weight:700;">下期预告</p>
+      <h3 style="margin:0 0 10px;font-size:20px;color:#FFFFFF;font-weight:700;">2026 智能驾驶产业链地图(同款交互)</h3>
+      <p style="margin:0 0 18px;font-size:14px;color:rgba(255,255,255,0.88);line-height:1.75;">从激光雷达到域控制器,从高精地图到端到端大模型,一张图讲清。智驾芯片国产化率、高精地图路权、数据闭环能力,这三条主线会决定谁赢。</p>
+      <a href="https://example.com/auto-map" style="display:inline-block;padding:11px 20px;background:#FFFFFF;color:#2A4BDB;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">点此查看全部产业图谱 →</a>
+    </div>
+  </section>
+
+  <!-- 7. 落款 -->
+  <section style="padding:4px 24px 48px;">
+    <p style="margin:12px 0 4px;font-size:12px;color:#718096;line-height:1.8;">出品 · 汽车产业观察 | 数据 · 中汽协、GGII、EVTank、SNE Research</p>
+    <p style="margin:0 0 4px;font-size:12px;color:#718096;line-height:1.8;">发布日期 · 2026 年 4 月 23 日 | 更新频率 · 每季度</p>
+    <p style="margin:0;font-size:12px;color:#A0AEC0;line-height:1.8;">数据截至 2026 年 3 月 31 日,来源为公开披露信息与行业机构统计,仅供参考。</p>
+  </section>
+
+</section>
+<!-- 深色模式提示: 背景已适配浅色系,深色模式下微信可能直接不渲染 SVG,请读者切换至浅色 -->

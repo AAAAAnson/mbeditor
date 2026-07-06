@@ -1,0 +1,369 @@
+<!--
+  模板: stretch-accordion.html
+  模式: 伸长动画 (height 从 0 动画到目标值) + 零高容器
+  选题: 2026 年度 AI 生产力工具精选榜 TOP 10
+  交互: 每个产品卡片点击标题行,下方面板以 0.45s 伸长展开详情;再次加载文章即重置
+  说明: 单向展开(不再收起),这是微信 SVG 的稳态行为,若要折叠需配合双层触发
+-->
+<section style="margin:0;padding:0;background:#0F1117;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;color:#E7E9EE;">
+
+  <!-- 1. 封面 Hero -->
+  <section style="padding:48px 24px 40px;background:linear-gradient(180deg,#151926 0%,#0F1117 100%);">
+    <div style="display:inline-block;padding:6px 14px;border:1px solid #2A3347;border-radius:999px;font-size:12px;color:#8CA0C2;letter-spacing:2px;">ANNUAL REPORT · 2026</div>
+    <h1 style="margin:18px 0 12px;font-size:30px;line-height:1.32;font-weight:700;color:#F5F7FA;letter-spacing:-0.5px;">
+      2026 年度 AI 生产力工具<br/>精选榜 TOP 10
+    </h1>
+    <p style="margin:0;font-size:15px;line-height:1.7;color:#8CA0C2;">
+      从写作、开发、设计到自动化,我们用了 11 个月,测完 147 款工具。<br/>只留这 10 个,敢让你把一年的订阅预算押进去。
+    </p>
+    <div style="margin-top:28px;display:flex;gap:10px;flex-wrap:wrap;">
+      <span style="padding:6px 12px;background:#1A2030;border-radius:8px;font-size:12px;color:#A8B5CC;">147 款实测</span>
+      <span style="padding:6px 12px;background:#1A2030;border-radius:8px;font-size:12px;color:#A8B5CC;">11 个月追踪</span>
+      <span style="padding:6px 12px;background:#1A2030;border-radius:8px;font-size:12px;color:#A8B5CC;">32 位深度用户访谈</span>
+    </div>
+  </section>
+
+  <!-- 2. 开篇钩子 + 价值主张 -->
+  <section style="padding:36px 24px 28px;">
+    <div style="padding:22px 20px;border-left:3px solid #6366F1;background:#151926;border-radius:0 12px 12px 0;">
+      <p style="margin:0 0 10px;font-size:15px;line-height:1.75;color:#C9D3E5;">
+        一个反直觉的结论先放在这里: 2026 年值得付费的 AI 工具,比 2024 年少了 40%。
+      </p>
+      <p style="margin:0;font-size:15px;line-height:1.75;color:#C9D3E5;">
+        不是 AI 退步了,而是大部分工具被底层模型吃掉了。留下来的这 10 个,做对了一件事 —— 它们不是「再包一层 GPT」,而是把某个具体工种的流程重写了一遍。
+      </p>
+    </div>
+    <p style="margin:24px 0 14px;font-size:14px;line-height:1.9;color:#8CA0C2;">
+      这份榜单不按流量排,按我们团队真实的每月账单排。每个工具我们都用满了 90 天,测完写、测完删、测完换、再装回来。下面 10 张卡片,点一下展开完整评测 —— 定位、定价、优缺点、适用人群、替代方案,一次说完。
+    </p>
+    <p style="margin:0 0 14px;font-size:14px;line-height:1.9;color:#8CA0C2;">
+      我们的评选标准只有三条: 第一,过去 12 个月内没有被底层模型能力完全吞掉;第二,解决的是一个具体工种的具体问题,不是「帮你聊天」;第三,付费用户的 6 个月留存率大于 72%。符合这三条的工具,在 2024 年我们筛出过 27 款,到 2026 年只剩下 16 款,我们取其中最具代表性的 10 款来讲。
+    </p>
+    <p style="margin:0;font-size:14px;line-height:1.9;color:#8CA0C2;">
+      读的时候建议先整体扫一遍 10 个标题,记下对你本职工作最相关的 2-3 个,再去点开那几张卡的详情。没必要每张都展开 —— 这份榜单不是百科全书,是一个帮你决定「今年要不要调整订阅清单」的参考。
+    </p>
+  </section>
+
+  <!-- 3. 主体: 10 个可点击展开的卡片,每个卡片由 "标题 SVG + 零高详情 SVG" 组成 -->
+  <section style="padding:8px 16px 24px;">
+
+    <!-- #1 Cursor -->
+    <div style="margin-bottom:14px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 90" style="display:block;width:100%;border-radius:14px;overflow:hidden;">
+        <defs>
+          <linearGradient id="grad1" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" stop-color="#1B2235"/>
+            <stop offset="1" stop-color="#141926"/>
+          </linearGradient>
+        </defs>
+        <rect id="t1" x="0" y="0" width="600" height="90" fill="url(#grad1)" style="cursor:pointer;"/>
+        <text x="24" y="34" fill="#6366F1" font-size="14" font-weight="700" font-family="-apple-system,PingFang SC,sans-serif">NO.1 · 开发者组</text>
+        <text x="24" y="62" fill="#F5F7FA" font-size="22" font-weight="700" font-family="-apple-system,PingFang SC,sans-serif">Cursor</text>
+        <text x="260" y="62" fill="#8CA0C2" font-size="13" font-family="-apple-system,PingFang SC,sans-serif">AI 原生代码编辑器</text>
+        <text x="560" y="52" fill="#8CA0C2" font-size="13" text-anchor="end" font-family="-apple-system,PingFang SC,sans-serif">点击展开 ↓</text>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+        <rect x="0" y="0" width="600" height="260" fill="#10141F" rx="14">
+          <animate attributeName="height" from="0" to="260" dur="0.45s" begin="t1.click" fill="freeze"/>
+        </rect>
+        <text x="24" y="38" fill="#6366F1" font-size="13" font-weight="700">定位</text>
+        <text x="80" y="38" fill="#D3DAE8" font-size="13">把 VS Code 的编辑体验 + Claude 的改写能力做进了同一个光标</text>
+        <text x="24" y="72" fill="#6366F1" font-size="13" font-weight="700">定价</text>
+        <text x="80" y="72" fill="#D3DAE8" font-size="13">Pro 20 美元/月,学生免费,团队 40 美元/月起</text>
+        <text x="24" y="110" fill="#10B981" font-size="13" font-weight="700">优势</text>
+        <text x="80" y="110" fill="#D3DAE8" font-size="13">Composer 可跨文件改写,diff 可逐块接受,Tab 补全拟合个人风格</text>
+        <text x="24" y="144" fill="#F59E0B" font-size="13" font-weight="700">劣势</text>
+        <text x="80" y="144" fill="#D3DAE8" font-size="13">大仓库索引偶有滞后,离线场景不可用,国内网络需代理</text>
+        <text x="24" y="182" fill="#6366F1" font-size="13" font-weight="700">适合</text>
+        <text x="80" y="182" fill="#D3DAE8" font-size="13">独立开发者、原型阶段团队、每天写代码超过 4 小时的重度用户</text>
+        <text x="24" y="220" fill="#8CA0C2" font-size="12">替代: Zed AI、Windsurf(Codeium)、JetBrains AI Assistant</text>
+      </svg>
+    </div>
+
+    <!-- #2 Claude -->
+    <div style="margin-bottom:14px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 90" style="display:block;width:100%;border-radius:14px;overflow:hidden;">
+        <rect id="t2" x="0" y="0" width="600" height="90" fill="url(#grad1)" style="cursor:pointer;"/>
+        <text x="24" y="34" fill="#8B5CF6" font-size="14" font-weight="700">NO.2 · 写作研究组</text>
+        <text x="24" y="62" fill="#F5F7FA" font-size="22" font-weight="700">Claude (Sonnet 4.7)</text>
+        <text x="290" y="62" fill="#8CA0C2" font-size="13">长文写作与研究首选</text>
+        <text x="560" y="52" fill="#8CA0C2" font-size="13" text-anchor="end">点击展开 ↓</text>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+        <rect x="0" y="0" width="600" height="260" fill="#10141F" rx="14">
+          <animate attributeName="height" from="0" to="260" dur="0.45s" begin="t2.click" fill="freeze"/>
+        </rect>
+        <text x="24" y="38" fill="#8B5CF6" font-size="13" font-weight="700">定位</text>
+        <text x="80" y="38" fill="#D3DAE8" font-size="13">长上下文写作、研究综述、代码审查,对中文长文语感最好</text>
+        <text x="24" y="72" fill="#8B5CF6" font-size="13" font-weight="700">定价</text>
+        <text x="80" y="72" fill="#D3DAE8" font-size="13">Pro 20 美元/月,Max 100-200 美元/月,API 按 token 计费</text>
+        <text x="24" y="110" fill="#10B981" font-size="13" font-weight="700">优势</text>
+        <text x="80" y="110" fill="#D3DAE8" font-size="13">Artifacts 直出可交付文档,Projects 能挂 10 万字参考材料</text>
+        <text x="24" y="144" fill="#F59E0B" font-size="13" font-weight="700">劣势</text>
+        <text x="80" y="144" fill="#D3DAE8" font-size="13">实时联网搜索偏弱,需要外部检索配合;图片生成不支持</text>
+        <text x="24" y="182" fill="#8B5CF6" font-size="13" font-weight="700">适合</text>
+        <text x="80" y="182" fill="#D3DAE8" font-size="13">内容从业者、研究员、产品经理、律师、每天要产出 2000 字以上的人</text>
+        <text x="24" y="220" fill="#8CA0C2" font-size="12">替代: GPT-5 Pro、Gemini 2.5 Pro、通义千问 Max</text>
+      </svg>
+    </div>
+
+    <!-- #3 Notion AI -->
+    <div style="margin-bottom:14px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 90" style="display:block;width:100%;border-radius:14px;overflow:hidden;">
+        <rect id="t3" x="0" y="0" width="600" height="90" fill="url(#grad1)" style="cursor:pointer;"/>
+        <text x="24" y="34" fill="#10B981" font-size="14" font-weight="700">NO.3 · 团队协作组</text>
+        <text x="24" y="62" fill="#F5F7FA" font-size="22" font-weight="700">Notion AI</text>
+        <text x="210" y="62" fill="#8CA0C2" font-size="13">文档就是知识库,AI 就是搜索入口</text>
+        <text x="560" y="52" fill="#8CA0C2" font-size="13" text-anchor="end">点击展开 ↓</text>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+        <rect x="0" y="0" width="600" height="260" fill="#10141F" rx="14">
+          <animate attributeName="height" from="0" to="260" dur="0.45s" begin="t3.click" fill="freeze"/>
+        </rect>
+        <text x="24" y="38" fill="#10B981" font-size="13" font-weight="700">定位</text>
+        <text x="80" y="38" fill="#D3DAE8" font-size="13">把全公司文档、会议纪要、项目库变成可问的知识图谱</text>
+        <text x="24" y="72" fill="#10B981" font-size="13" font-weight="700">定价</text>
+        <text x="80" y="72" fill="#D3DAE8" font-size="13">AI 加购每人 10 美元/月,企业版绑定 Business 计划</text>
+        <text x="24" y="110" fill="#10B981" font-size="13" font-weight="700">优势</text>
+        <text x="80" y="110" fill="#D3DAE8" font-size="13">Q&A 能跨空间搜索,引用精确到段落,写初稿比从零快 3 倍</text>
+        <text x="24" y="144" fill="#F59E0B" font-size="13" font-weight="700">劣势</text>
+        <text x="80" y="144" fill="#D3DAE8" font-size="13">只对已存入 Notion 的内容有效,零散文件不在射程内</text>
+        <text x="24" y="182" fill="#10B981" font-size="13" font-weight="700">适合</text>
+        <text x="80" y="182" fill="#D3DAE8" font-size="13">10-200 人的知识密集型团队、已经在用 Notion 做 Wiki 的组织</text>
+        <text x="24" y="220" fill="#8CA0C2" font-size="12">替代: Coda AI、飞书智能伙伴、Glean、Mem</text>
+      </svg>
+    </div>
+
+    <!-- #4 ElevenLabs -->
+    <div style="margin-bottom:14px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 90" style="display:block;width:100%;border-radius:14px;overflow:hidden;">
+        <rect id="t4" x="0" y="0" width="600" height="90" fill="url(#grad1)" style="cursor:pointer;"/>
+        <text x="24" y="34" fill="#EC4899" font-size="14" font-weight="700">NO.4 · 内容生产组</text>
+        <text x="24" y="62" fill="#F5F7FA" font-size="22" font-weight="700">ElevenLabs</text>
+        <text x="220" y="62" fill="#8CA0C2" font-size="13">中英双语配音,已接近人类水平</text>
+        <text x="560" y="52" fill="#8CA0C2" font-size="13" text-anchor="end">点击展开 ↓</text>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+        <rect x="0" y="0" width="600" height="260" fill="#10141F" rx="14">
+          <animate attributeName="height" from="0" to="260" dur="0.45s" begin="t4.click" fill="freeze"/>
+        </rect>
+        <text x="24" y="38" fill="#EC4899" font-size="13" font-weight="700">定位</text>
+        <text x="80" y="38" fill="#D3DAE8" font-size="13">短视频、播客、有声书配音,也做多语种同声翻译</text>
+        <text x="24" y="72" fill="#EC4899" font-size="13" font-weight="700">定价</text>
+        <text x="80" y="72" fill="#D3DAE8" font-size="13">Creator 22 美元/月包 10 万字符,Pro 99 美元/月</text>
+        <text x="24" y="110" fill="#10B981" font-size="13" font-weight="700">优势</text>
+        <text x="80" y="110" fill="#D3DAE8" font-size="13">克隆一段 3 分钟录音即可生成稳定音色,情绪可用标签控制</text>
+        <text x="24" y="144" fill="#F59E0B" font-size="13" font-weight="700">劣势</text>
+        <text x="80" y="144" fill="#D3DAE8" font-size="13">中文方言支持仍弱,字符消耗快,高频用户建议直接上 API</text>
+        <text x="24" y="182" fill="#EC4899" font-size="13" font-weight="700">适合</text>
+        <text x="80" y="182" fill="#D3DAE8" font-size="13">播客主、知识付费讲师、短视频工作室、独立有声书作者</text>
+        <text x="24" y="220" fill="#8CA0C2" font-size="12">替代: 火山引擎豆包语音、Resemble AI、Play.ht</text>
+      </svg>
+    </div>
+
+    <!-- #5 Perplexity -->
+    <div style="margin-bottom:14px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 90" style="display:block;width:100%;border-radius:14px;overflow:hidden;">
+        <rect id="t5" x="0" y="0" width="600" height="90" fill="url(#grad1)" style="cursor:pointer;"/>
+        <text x="24" y="34" fill="#3B82F6" font-size="14" font-weight="700">NO.5 · 研究信息组</text>
+        <text x="24" y="62" fill="#F5F7FA" font-size="22" font-weight="700">Perplexity Pro</text>
+        <text x="250" y="62" fill="#8CA0C2" font-size="13">带引用的联网 AI 搜索</text>
+        <text x="560" y="52" fill="#8CA0C2" font-size="13" text-anchor="end">点击展开 ↓</text>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+        <rect x="0" y="0" width="600" height="260" fill="#10141F" rx="14">
+          <animate attributeName="height" from="0" to="260" dur="0.45s" begin="t5.click" fill="freeze"/>
+        </rect>
+        <text x="24" y="38" fill="#3B82F6" font-size="13" font-weight="700">定位</text>
+        <text x="80" y="38" fill="#D3DAE8" font-size="13">替代谷歌的事实型问答,每个结论都带出处</text>
+        <text x="24" y="72" fill="#3B82F6" font-size="13" font-weight="700">定价</text>
+        <text x="80" y="72" fill="#D3DAE8" font-size="13">Pro 20 美元/月,Enterprise 40 美元/人/月起</text>
+        <text x="24" y="110" fill="#10B981" font-size="13" font-weight="700">优势</text>
+        <text x="80" y="110" fill="#D3DAE8" font-size="13">Spaces 可以预置文献库,Deep Research 一次能读 200 篇</text>
+        <text x="24" y="144" fill="#F59E0B" font-size="13" font-weight="700">劣势</text>
+        <text x="80" y="144" fill="#D3DAE8" font-size="13">对长篇创作不擅长,只适合查-答-引的流程</text>
+        <text x="24" y="182" fill="#3B82F6" font-size="13" font-weight="700">适合</text>
+        <text x="80" y="182" fill="#D3DAE8" font-size="13">记者、分析师、投研、律师、所有需要"答案有出处"的岗位</text>
+        <text x="24" y="220" fill="#8CA0C2" font-size="12">替代: ChatGPT Search、You.com、Exa、秘塔 AI 搜索</text>
+      </svg>
+    </div>
+
+    <!-- #6 Midjourney -->
+    <div style="margin-bottom:14px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 90" style="display:block;width:100%;border-radius:14px;overflow:hidden;">
+        <rect id="t6" x="0" y="0" width="600" height="90" fill="url(#grad1)" style="cursor:pointer;"/>
+        <text x="24" y="34" fill="#F59E0B" font-size="14" font-weight="700">NO.6 · 视觉设计组</text>
+        <text x="24" y="62" fill="#F5F7FA" font-size="22" font-weight="700">Midjourney v7</text>
+        <text x="260" y="62" fill="#8CA0C2" font-size="13">图像审美天花板</text>
+        <text x="560" y="52" fill="#8CA0C2" font-size="13" text-anchor="end">点击展开 ↓</text>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+        <rect x="0" y="0" width="600" height="260" fill="#10141F" rx="14">
+          <animate attributeName="height" from="0" to="260" dur="0.45s" begin="t6.click" fill="freeze"/>
+        </rect>
+        <text x="24" y="38" fill="#F59E0B" font-size="13" font-weight="700">定位</text>
+        <text x="80" y="38" fill="#D3DAE8" font-size="13">宣传图、情绪板、概念艺术、出版物插画的工业级出图</text>
+        <text x="24" y="72" fill="#F59E0B" font-size="13" font-weight="700">定价</text>
+        <text x="80" y="72" fill="#D3DAE8" font-size="13">Basic 10 美元/月,Standard 30 美元/月,Pro 60 美元/月</text>
+        <text x="24" y="110" fill="#10B981" font-size="13" font-weight="700">优势</text>
+        <text x="80" y="110" fill="#D3DAE8" font-size="13">色彩与构图感稳定,--sref 复刻风格一致性极高</text>
+        <text x="24" y="144" fill="#F59E0B" font-size="13" font-weight="700">劣势</text>
+        <text x="80" y="144" fill="#D3DAE8" font-size="13">中文 prompt 理解一般,可控性低于 Flux + ControlNet 组合</text>
+        <text x="24" y="182" fill="#F59E0B" font-size="13" font-weight="700">适合</text>
+        <text x="80" y="182" fill="#D3DAE8" font-size="13">品牌设计师、概念艺术家、出版编辑、广告从业者</text>
+        <text x="24" y="220" fill="#8CA0C2" font-size="12">替代: Flux.1 Pro、即梦 AI、Stable Diffusion 3.5、Ideogram</text>
+      </svg>
+    </div>
+
+    <!-- #7 Gamma -->
+    <div style="margin-bottom:14px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 90" style="display:block;width:100%;border-radius:14px;overflow:hidden;">
+        <rect id="t7" x="0" y="0" width="600" height="90" fill="url(#grad1)" style="cursor:pointer;"/>
+        <text x="24" y="34" fill="#06B6D4" font-size="14" font-weight="700">NO.7 · 演讲汇报组</text>
+        <text x="24" y="62" fill="#F5F7FA" font-size="22" font-weight="700">Gamma</text>
+        <text x="210" y="62" fill="#8CA0C2" font-size="13">从一段文字到一份 PPT</text>
+        <text x="560" y="52" fill="#8CA0C2" font-size="13" text-anchor="end">点击展开 ↓</text>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+        <rect x="0" y="0" width="600" height="260" fill="#10141F" rx="14">
+          <animate attributeName="height" from="0" to="260" dur="0.45s" begin="t7.click" fill="freeze"/>
+        </rect>
+        <text x="24" y="38" fill="#06B6D4" font-size="13" font-weight="700">定位</text>
+        <text x="80" y="38" fill="#D3DAE8" font-size="13">AI 生成演示文稿、路演网页、产品一页纸,所见即可分享</text>
+        <text x="24" y="72" fill="#06B6D4" font-size="13" font-weight="700">定价</text>
+        <text x="80" y="72" fill="#D3DAE8" font-size="13">Plus 10 美元/月,Pro 20 美元/月,含移除水印</text>
+        <text x="24" y="110" fill="#10B981" font-size="13" font-weight="700">优势</text>
+        <text x="80" y="110" fill="#D3DAE8" font-size="13">10 分钟从零做一版路演稿,配图自动拉,排版默认合格</text>
+        <text x="24" y="144" fill="#F59E0B" font-size="13" font-weight="700">劣势</text>
+        <text x="80" y="144" fill="#D3DAE8" font-size="13">高端设计师看不上,严重品牌约束的场景需要人工接手</text>
+        <text x="24" y="182" fill="#06B6D4" font-size="13" font-weight="700">适合</text>
+        <text x="80" y="182" fill="#D3DAE8" font-size="13">创业者路演、产品经理汇报、HR 培训、咨询顾问初稿</text>
+        <text x="24" y="220" fill="#8CA0C2" font-size="12">替代: Tome、Beautiful.ai、Canva Magic Design、iSlide</text>
+      </svg>
+    </div>
+
+    <!-- #8 Zapier -->
+    <div style="margin-bottom:14px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 90" style="display:block;width:100%;border-radius:14px;overflow:hidden;">
+        <rect id="t8" x="0" y="0" width="600" height="90" fill="url(#grad1)" style="cursor:pointer;"/>
+        <text x="24" y="34" fill="#F97316" font-size="14" font-weight="700">NO.8 · 自动化组</text>
+        <text x="24" y="62" fill="#F5F7FA" font-size="22" font-weight="700">Zapier Agents</text>
+        <text x="250" y="62" fill="#8CA0C2" font-size="13">7000+ 应用的 AI 编排层</text>
+        <text x="560" y="52" fill="#8CA0C2" font-size="13" text-anchor="end">点击展开 ↓</text>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+        <rect x="0" y="0" width="600" height="260" fill="#10141F" rx="14">
+          <animate attributeName="height" from="0" to="260" dur="0.45s" begin="t8.click" fill="freeze"/>
+        </rect>
+        <text x="24" y="38" fill="#F97316" font-size="13" font-weight="700">定位</text>
+        <text x="80" y="38" fill="#D3DAE8" font-size="13">让 AI 跨系统干活: 读邮件、建卡片、发钉钉、更新 CRM</text>
+        <text x="24" y="72" fill="#F97316" font-size="13" font-weight="700">定价</text>
+        <text x="80" y="72" fill="#D3DAE8" font-size="13">Professional 29.99 美元/月起,Agents 单独额度计费</text>
+        <text x="24" y="110" fill="#10B981" font-size="13" font-weight="700">优势</text>
+        <text x="80" y="110" fill="#D3DAE8" font-size="13">生态最全,Tables + Interfaces 让它从工具变成内部系统</text>
+        <text x="24" y="144" fill="#F59E0B" font-size="13" font-weight="700">劣势</text>
+        <text x="80" y="144" fill="#D3DAE8" font-size="13">价格易失控,复杂流推荐用 n8n 自部署省 70% 成本</text>
+        <text x="24" y="182" fill="#F97316" font-size="13" font-weight="700">适合</text>
+        <text x="80" y="182" fill="#D3DAE8" font-size="13">运营、增长、客户成功岗位,以及任何跨 SaaS 工作的小团队</text>
+        <text x="24" y="220" fill="#8CA0C2" font-size="12">替代: n8n、Make、Pipedream、微软 Power Automate</text>
+      </svg>
+    </div>
+
+    <!-- #9 Descript -->
+    <div style="margin-bottom:14px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 90" style="display:block;width:100%;border-radius:14px;overflow:hidden;">
+        <rect id="t9" x="0" y="0" width="600" height="90" fill="url(#grad1)" style="cursor:pointer;"/>
+        <text x="24" y="34" fill="#A855F7" font-size="14" font-weight="700">NO.9 · 视频剪辑组</text>
+        <text x="24" y="62" fill="#F5F7FA" font-size="22" font-weight="700">Descript</text>
+        <text x="220" y="62" fill="#8CA0C2" font-size="13">改文字即改视频</text>
+        <text x="560" y="52" fill="#8CA0C2" font-size="13" text-anchor="end">点击展开 ↓</text>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+        <rect x="0" y="0" width="600" height="260" fill="#10141F" rx="14">
+          <animate attributeName="height" from="0" to="260" dur="0.45s" begin="t9.click" fill="freeze"/>
+        </rect>
+        <text x="24" y="38" fill="#A855F7" font-size="13" font-weight="700">定位</text>
+        <text x="80" y="38" fill="#D3DAE8" font-size="13">把视频当文档剪,删一句话就是删一段画面</text>
+        <text x="24" y="72" fill="#A855F7" font-size="13" font-weight="700">定价</text>
+        <text x="80" y="72" fill="#D3DAE8" font-size="13">Creator 15 美元/月,Pro 30 美元/月,Business 50 美元/月</text>
+        <text x="24" y="110" fill="#10B981" font-size="13" font-weight="700">优势</text>
+        <text x="80" y="110" fill="#D3DAE8" font-size="13">Overdub 补录、Studio Sound 降噪、Eye Contact 校视,省下剪辑师一半时间</text>
+        <text x="24" y="144" fill="#F59E0B" font-size="13" font-weight="700">劣势</text>
+        <text x="80" y="144" fill="#D3DAE8" font-size="13">调色能力弱,电影级项目还得回到 DaVinci Resolve</text>
+        <text x="24" y="182" fill="#A855F7" font-size="13" font-weight="700">适合</text>
+        <text x="80" y="182" fill="#D3DAE8" font-size="13">知识博主、播客转视频、企业培训、课程讲师</text>
+        <text x="24" y="220" fill="#8CA0C2" font-size="12">替代: CapCut Pro、剪映专业版、Riverside、Veed.io</text>
+      </svg>
+    </div>
+
+    <!-- #10 Cline -->
+    <div style="margin-bottom:14px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 90" style="display:block;width:100%;border-radius:14px;overflow:hidden;">
+        <rect id="t10" x="0" y="0" width="600" height="90" fill="url(#grad1)" style="cursor:pointer;"/>
+        <text x="24" y="34" fill="#22D3EE" font-size="14" font-weight="700">NO.10 · 黑马推荐</text>
+        <text x="24" y="62" fill="#F5F7FA" font-size="22" font-weight="700">Cline</text>
+        <text x="180" y="62" fill="#8CA0C2" font-size="13">VS Code 里的 Autonomous Agent</text>
+        <text x="560" y="52" fill="#8CA0C2" font-size="13" text-anchor="end">点击展开 ↓</text>
+      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:0;overflow:visible;">
+        <rect x="0" y="0" width="600" height="260" fill="#10141F" rx="14">
+          <animate attributeName="height" from="0" to="260" dur="0.45s" begin="t10.click" fill="freeze"/>
+        </rect>
+        <text x="24" y="38" fill="#22D3EE" font-size="13" font-weight="700">定位</text>
+        <text x="80" y="38" fill="#D3DAE8" font-size="13">开源代码 Agent,自带命令行、浏览器、文件操作权限</text>
+        <text x="24" y="72" fill="#22D3EE" font-size="13" font-weight="700">定价</text>
+        <text x="80" y="72" fill="#D3DAE8" font-size="13">插件免费,模型 API 自带钥匙(Claude、OpenAI、本地 Ollama 均可)</text>
+        <text x="24" y="110" fill="#10B981" font-size="13" font-weight="700">优势</text>
+        <text x="80" y="110" fill="#D3DAE8" font-size="13">所有操作都要你点确认,比 Cursor 更透明,适合对代码有洁癖的工程师</text>
+        <text x="24" y="144" fill="#F59E0B" font-size="13" font-weight="700">劣势</text>
+        <text x="80" y="144" fill="#D3DAE8" font-size="13">不内嵌索引,大仓库需要自行配 MCP,新手门槛略高</text>
+        <text x="24" y="182" fill="#22D3EE" font-size="13" font-weight="700">适合</text>
+        <text x="80" y="182" fill="#D3DAE8" font-size="13">后端工程师、DevOps、开源贡献者、注重本地控制的团队</text>
+        <text x="24" y="220" fill="#8CA0C2" font-size="12">替代: Continue、Aider、Roo Code、Kilo Code</text>
+      </svg>
+    </div>
+
+  </section>
+
+  <!-- 4. 中段转折: 一年的账单总结 -->
+  <section style="padding:28px 24px 8px;">
+    <div style="padding:26px 22px;background:#151926;border-radius:16px;">
+      <p style="margin:0 0 14px;font-size:13px;color:#8B5CF6;letter-spacing:2px;font-weight:700;">我们的真实账单</p>
+      <h3 style="margin:0 0 14px;font-size:20px;color:#F5F7FA;font-weight:700;">一个 8 人内容团队的 2026 年 AI 工具开销</h3>
+      <p style="margin:0 0 10px;font-size:14px;color:#C9D3E5;line-height:1.8;">上面这 10 个工具,我们团队全部购买,每月订阅总额 —— 2340 元人民币。</p>
+      <p style="margin:0 0 10px;font-size:14px;color:#C9D3E5;line-height:1.8;">代替掉的岗位: 1 位初级文案、0.5 位视觉设计、0.3 位剪辑、0.2 位运营助理。</p>
+      <p style="margin:0 0 10px;font-size:14px;color:#C9D3E5;line-height:1.8;">不是替代人,而是把 8 个人的带宽从"日常产出"里解放出来,去做更难的事。这是 2026 年 AI 工具的正确用法。</p>
+      <p style="margin:0;font-size:14px;color:#C9D3E5;line-height:1.8;">更有意思的一个发现: 我们原本预估的年度订阅总额是 3.6 万元,实际花下来 2.8 万元。差的那 8000 元,是我们在年中砍掉的三款重复工具 —— 这就是做一次年度盘点的意义,你总会发现预算里藏着一些早该退订的冗余。</p>
+    </div>
+  </section>
+
+  <!-- 4b. 选型建议 -->
+  <section style="padding:16px 24px 4px;">
+    <div style="padding:24px 20px;background:#13172A;border-radius:14px;border:1px solid #1D2436;">
+      <p style="margin:0 0 10px;font-size:12px;color:#6366F1;letter-spacing:2px;font-weight:700;">如何看这份榜单</p>
+      <h3 style="margin:0 0 14px;font-size:18px;color:#F5F7FA;font-weight:700;">三种典型人画像 · 对号入座</h3>
+      <p style="margin:0 0 10px;font-size:14px;color:#C9D3E5;line-height:1.85;"><b style="color:#10B981;">个体创作者</b> · 只留 3 个: Claude + Cursor + ElevenLabs。覆盖 90% 创作动作,每月 55 美元封顶,够了。其余工具按项目临时开,不要做常订阅。</p>
+      <p style="margin:0 0 10px;font-size:14px;color:#C9D3E5;line-height:1.85;"><b style="color:#F59E0B;">10 人以下团队</b> · 再加 Notion AI + Perplexity + Zapier,共 6 个。核心是把"沟通、检索、跨系统自动化"这三个协作黑洞补上,人越少这三个越关键。</p>
+      <p style="margin:0;font-size:14px;color:#C9D3E5;line-height:1.85;"><b style="color:#8B5CF6;">重视觉/视频团队</b> · 再追加 Midjourney + Gamma + Descript。建议 Midjourney 按 Standard 一个账号团队共用 prompt 库,效率比每人 Basic 高 3 倍以上。</p>
+    </div>
+  </section>
+
+  <!-- 5. CTA -->
+  <section style="padding:32px 24px;">
+    <div style="padding:28px 22px;background:linear-gradient(135deg,#6366F1 0%,#8B5CF6 100%);border-radius:18px;">
+      <p style="margin:0 0 6px;font-size:13px;color:rgba(255,255,255,0.75);letter-spacing:2px;font-weight:700;">NEXT ISSUE</p>
+      <h3 style="margin:0 0 10px;font-size:22px;color:#FFFFFF;font-weight:700;">下期: 2026 中国区 AI 工具本土化榜</h3>
+      <p style="margin:0 0 18px;font-size:14px;color:rgba(255,255,255,0.88);line-height:1.7;">豆包、文心、通义、智谱、Kimi、DeepSeek 全部实测完毕。关注后第一时间推给你。</p>
+      <a href="https://example.com/subscribe" style="display:inline-block;padding:12px 22px;background:#FFFFFF;color:#6366F1;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;">关注一下,不迷路 →</a>
+    </div>
+  </section>
+
+  <!-- 6. 落款 -->
+  <section style="padding:8px 24px 48px;border-top:1px solid #1D2436;margin-top:16px;">
+    <p style="margin:18px 0 6px;font-size:12px;color:#8CA0C2;line-height:1.8;">出品 · 生产力实验室编辑部 | 主笔 · 林知远 | 数据 · 温禾</p>
+    <p style="margin:0 0 6px;font-size:12px;color:#8CA0C2;line-height:1.8;">发布日期 · 2026 年 4 月 23 日 | 下次更新 · 2026 年 Q3 年中加餐</p>
+    <p style="margin:0;font-size:12px;color:#56607A;line-height:1.8;">本榜仅代表编辑部测试偏好,不构成任何购买建议。部分工具在中国大陆使用需配合合规网络环境。</p>
+  </section>
+
+</section>
+<!-- 深色模式提示: 本模板已适配深色,切换浅色模式时请把背景色改为 #F5F7FA 并反向文字色 -->

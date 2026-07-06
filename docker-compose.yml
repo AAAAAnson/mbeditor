@@ -1,0 +1,42 @@
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "${MBEDITOR_BIND_HOST:-127.0.0.1}:7073:8080"
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  backend:
+    build: ./backend
+    ports:
+      - "${MBEDITOR_BIND_HOST:-127.0.0.1}:7072:8000"
+    restart: unless-stopped
+    environment:
+      - MAX_UPLOAD_SIZE=52428800
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:7073,http://127.0.0.1:7073}
+      # Image upload endpoint is deployment-local config; do not hardcode private hosts here.
+      - LOCAL_IMGBED_UPLOAD_URL=${LOCAL_IMGBED_UPLOAD_URL:-}
+      - LOCAL_IMGBED_UPLOAD_TOKEN=${LOCAL_IMGBED_UPLOAD_TOKEN:-}
+      # 微信 API 网关(复用云端 wechat-api-proxy:base URL + Bearer token + 自签证书),
+      # 满足公众号 IP 白名单。留空则直连官方域名。证书经下方 volume 挂进容器。
+      - WECHAT_API_BASE=${WECHAT_API_BASE:-}
+      - WECHAT_PROXY_TOKEN=${WECHAT_PROXY_TOKEN:-}
+      - WECHAT_PROXY_CA=${WECHAT_PROXY_CA:-}
+    volumes:
+      # 后端基础设施配置持久化(具名卷,由 Docker 管理,不在仓库目录树内)。
+      # 存网关配置 /app/data/gateway.json(地址/令牌/内联证书),扛得住 up -d --build。
+      - mbeditor-data:/app/data
+      # 网关自签证书(只读)。宿主机 ./certs/wechat-proxy.crt -> 容器内固定路径,
+      # 供 env-path 模式 WECHAT_PROXY_CA 指向做 TLS pin 验证(新 UI 用内联 PEM,用不到)。
+      - ./certs:/etc/mbeditor-certs:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/version')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  mbeditor-data:
