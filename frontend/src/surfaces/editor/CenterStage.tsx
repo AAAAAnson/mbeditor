@@ -28,6 +28,7 @@ import {
 import type { EditorDraft, EditorField } from "@/types";
 import type { OutlineBlock } from "./StructurePanel";
 import { buildHtmlOutline } from "./StructurePanel";
+import { BackgroundControl } from "./BackgroundControl";
 import { stripUnsafeUnicode } from "./utils/unicode";
 import { sanitizePastedHtml } from "./utils/htmlSanitize";
 import { buildRawPreviewSrcDoc } from "./utils/rawPreview";
@@ -1261,6 +1262,10 @@ export default function CenterStage({
                   justifyContent: "flex-end",
                 }}
               >
+                <BackgroundControl
+                  html={draft.html}
+                  onChange={(nextHtml) => onFieldChange("html", nextHtml)}
+                />
                 {!isMobile && (
                   <button
                     type="button"
@@ -1392,7 +1397,9 @@ export default function CenterStage({
                   borderRadius: effPhonePreview ? 28 : "var(--r-md)",
                   overflow: "hidden",
                   boxShadow: "0 24px 48px -24px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.1)",
-                  background: "#FAF6EB",
+                  // 画布恒白:模拟公众号白页,是 chrome、永不进复制。文章自身背景
+                  // (信封壳 background)才是会被复制的显式页背景,由控件/agent 决定。
+                  background: "#ffffff",
                   position: "absolute",
                   top: 0,
                   left: 0,
@@ -1405,7 +1412,7 @@ export default function CenterStage({
                     style={{
                       position: "absolute",
                       inset: 0,
-                      background: "rgba(250,246,235,0.72)",
+                      background: "rgba(255,255,255,0.72)",
                       display: "grid",
                       placeItems: "center",
                       zIndex: 1,
@@ -1430,7 +1437,7 @@ export default function CenterStage({
                       height: "100%",
                       border: "none",
                       display: "block",
-                      background: "#FAF6EB",
+                      background: "#ffffff",
                     }}
                   />
                 ) : (

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>起稿台 · 三套视觉方向</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,600&family=Baloo+2:wght@500;700&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; height: 100%; background: #f0eee9; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="concepts/shared.jsx"></script>
+<script type="text/babel" src="concepts/HomeWarm.jsx"></script>
+<script type="text/babel" src="concepts/HomeEditorial.jsx"></script>
+<script type="text/babel" src="concepts/HomePlayful.jsx"></script>
+<script type="text/babel">
+const { useEffect, useState } = React;
+
+// neutral caption strip beneath each homepage mock
+function Caption({ name, swatches, points }) {
+  return (
+    <div style={{ width: 1280, background: "#fff", borderTop: "1px solid #ebe7df", padding: "20px 36px 24px",
+      fontFamily: '-apple-system,BlinkMacSystemFont,"Noto Sans SC",sans-serif', color: "#3a352e" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10 }}>
+        <span style={{ fontWeight: 700, fontSize: 16 }}>{name}</span>
+        <div style={{ display: "flex", gap: 6 }}>
+          {swatches.map((s) => <span key={s} style={{ width: 18, height: 18, borderRadius: 5, background: s, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.08)" }}></span>)}
+        </div>
+      </div>
+      <div style={{ fontSize: 13.5, lineHeight: 1.7, color: "#6b6258", maxWidth: 1100 }}>{points}</div>
+    </div>
+  );
+}
+
+function Board({ children, name, swatches, points }) {
+  return (
+    <div style={{ width: 1280 }}>
+      {children}
+      <Caption name={name} swatches={swatches} points={points} />
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="home-dirs" title="起稿台首页 · 三套视觉方向" subtitle="同一个产品骨架,三种性格 — 看完告诉我选哪条,或要哪两条杂交">
+        <DCArtboard id="A" label="A · 暖意亲和 Warm-Friendly" width={1280} height={1154}>
+          <Board name="A · 暖意亲和 · 「被照顾的小帮手」"
+            swatches={["#fbf6ee", "#e8553a", "#3f8f72", "#fffdf9", "#3a332c"]}
+            points={<>配色锚点:奶油米底 + 橙红只做点睛(CTA / 强调),薄荷绿担「安全 / 省钱」语义,绝不全屏暖橙。字体:思源宋体标题给温度,思源黑体正文。圆角 16–20px、柔阴影、留白充裕。最强化「随口讲一句就行」的低焦虑、被照顾感。</>}>
+            <HomeWarm />
+          </Board>
+        </DCArtboard>
+        <DCArtboard id="B" label="B · 克制编辑感 Editorial-Clean" width={1280} height={1080}>
+          <Board name="B · 克制编辑感 · 「专业排版工具」"
+            swatches={["#fcfcfa", "#1b1b1a", "#e8553a", "#74726c", "#ffffff"]}
+            points={<>配色锚点:近极简黑白灰 + 大留白,橙红是唯一强调色(主 CTA / 选中 / 链接)。字体:Source Serif 4 + 思源宋斜体标题,思源黑体正文,强排版纪律。发丝线、规整网格、小圆角、极淡阴影。最强化「预览=发布」的可信、秩序与专业感。</>}>
+            <HomeEditorial />
+          </Board>
+        </DCArtboard>
+        <DCArtboard id="C" label="C · 轻盈有趣 Playful-Confident" width={1280} height={1128}>
+          <Board name="C · 轻盈有趣 · 「上手零压力」"
+            swatches={["#fff7ef", "#e8553a", "#2ba89a", "#e0a12b", "#6c7be0"]}
+            points={<>配色锚点:橙红领衔 + 薄荷 / 暖黄 / 雾紫活力辅色做胶囊与受众 / 调子 chip。字体:站酷快乐体 / Baloo 圆体大标题,粗对比。大圆角 22–24px、彩色投影、Logo 圆角 M 延伸出的几何小图形。最强化「第一次就做出好看推文」的即时成就感。</>}>
+            <HomePlayful />
+          </Board>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

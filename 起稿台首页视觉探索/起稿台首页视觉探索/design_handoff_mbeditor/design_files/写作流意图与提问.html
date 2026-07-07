@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>写作流 · 意图 + 几道选择题 · IntentInput / AskFlow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="ds/theme.css" />
+<style>
+  html, body { margin: 0; height: 100%; background: #f0eee9; }
+  .frame { position: relative; height: 100%; overflow: hidden; border-radius: inherit; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ds/icons.jsx"></script>
+<script type="text/babel" src="ds/ui.jsx"></script>
+<script type="text/babel" src="compose/IntentInput.jsx"></script>
+<script type="text/babel" src="compose/AskFlow.jsx"></script>
+<script type="text/babel">
+const ASK_SEED = "今天带娃去公园,他第一次自己荡秋千,荡得老高还回头冲我笑,那一瞬间觉得他突然长大了。";
+
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="intent" title="意图 · intent(命脉漏斗第 1 步)"
+        subtitle="一句话大输入框(多行 + 装饰麦克风)· 4 灵感胶囊点击=填整句示例并聚焦(治「不知道写啥」)·「落笔」空文案禁用、有字才亮、⌘/Ctrl+Enter 提交 · 顶部恒有「← 返回起稿台」">
+        <DCArtboard id="i-empty" label="桌面 · 空输入(落笔禁用)" width={1180} height={760}>
+          <div className="frame"><IntentInput /></div>
+        </DCArtboard>
+        <DCArtboard id="i-filled" label="桌面 · 已填一句(落笔可点 · 显字数)" width={1180} height={760}>
+          <div className="frame"><IntentInput seed={ASK_SEED} /></div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="asking" title="几道选择题 · asking(决策预算 ≤ 2)"
+        subtitle="三道题:① 受众(单选)② 调子(单选)③ 学笔法(两卡二选一,选「学」展开贴原文 Textarea)· 每题一行说明 + 生活化例子 + 悬浮术语解释(? 角标)· 闸门:受众 + 调子皆选才解禁「开始写」,学笔法可跳过 · 底部 gate 实时提示还差什么">
+        <DCArtboard id="a-empty" label="桌面 · 未选满(开始写禁用)" width={1180} height={860}>
+          <div className="frame"><AskFlow /></div>
+        </DCArtboard>
+        <DCArtboard id="a-ready" label="桌面 · 已选满 + 学笔法展开(开始写可点)" width={1180} height={860}>
+          <div className="frame"><AskFlow audience="mom" tone="warm" learn="learn" /></div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="narrow-intent" title="390px · 意图(窄屏)"
+        subtitle="<600px:hero 字号收窄 · 输入卡纵向更高 ·「落笔」整行占满、kbd 提示居中 · 灵感胶囊换行排布 · 触控 ≥44px · 不挂底栏(自带返回)">
+        <DCArtboard id="ni-empty" label="390 · 空输入(落笔禁用)" width={390} height={800}>
+          <div className="frame"><IntentInput narrow={true} /></div>
+        </DCArtboard>
+        <DCArtboard id="ni-filled" label="390 · 已填一句(落笔可点)" width={390} height={800}>
+          <div className="frame"><IntentInput narrow={true} seed={ASK_SEED} /></div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="narrow-asking" title="390px · 几道选择题(窄屏)"
+        subtitle="<600px:问题缩进归零 · 两卡转单列堆叠 · gate 底栏换行、「开始写」整行占满 · 触控 ≥44px">
+        <DCArtboard id="na-empty" label="390 · 未选满(开始写禁用)" width={390} height={1040}>
+          <div className="frame"><AskFlow narrow={true} /></div>
+        </DCArtboard>
+        <DCArtboard id="na-ready" label="390 · 已选满 + 学笔法展开(开始写可点)" width={390} height={1180}>
+          <div className="frame"><AskFlow narrow={true} audience="mom" tone="warm" learn="learn" /></div>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

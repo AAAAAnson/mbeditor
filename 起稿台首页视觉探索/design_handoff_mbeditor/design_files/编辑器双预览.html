@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>编辑器 · 双预览 + 复制优先发布 · EditorSurface(P7)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="ds/theme.css" />
+<style>
+  html, body { margin: 0; height: 100%; background: #f0eee9; }
+  .frame { position: relative; height: 100%; overflow: hidden; border-radius: inherit; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ds/icons.jsx"></script>
+<script type="text/babel" src="ds/ui.jsx"></script>
+<script type="text/babel" src="editor/editorParts.jsx"></script>
+<script type="text/babel" src="editor/ProStage.jsx"></script>
+<script type="text/babel" src="editor/Dialogs.jsx"></script>
+<script type="text/babel" src="editor/EditorSurface.jsx"></script>
+<script type="text/babel">
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="simple" title="简单模式 · 默认(小白主路径)"
+        subtitle="全屏可编辑「公众号效果」预览 + 富文本工具条 +「复制到公众号」主按钮 · 无代码 / 三栏 / IDE · 预览容器克制得像一张真实公众号文章卡(白纸·系统正文·细发丝边)· 草稿收进「更多方式」次级位">
+        <DCArtboard id="s-default" label="桌面 · 公众号效果(可直接编辑)" width={1180} height={764}>
+          <div className="frame"><EditorSurface mode="simple" preview="wechat" canPushDraft={true} /></div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="dual" title="双预览(不可合并)+ 更多方式"
+        subtitle="①「公众号效果」=后端净化往返·所见即所得·可编辑 ②「交互预览」=纯前端 iframe sandbox(无脚本)·验 SVG/SMIL 交互·切换给落差 hint · 草稿是次要/高级动作,藏进「更多方式」,未绑号则禁用并标注">
+        <DCArtboard id="d-raw" label="桌面 · 交互预览(SVG 动起来 · 落差 hint)" width={1180} height={724}>
+          <div className="frame"><EditorSurface mode="simple" preview="raw" canPushDraft={true} /></div>
+        </DCArtboard>
+        <DCArtboard id="d-more" label="桌面 · 「更多方式」展开(草稿未绑号·禁用)" width={1180} height={640}>
+          <div className="frame"><EditorSurface mode="simple" preview="wechat" menu={true} canPushDraft={false} /></div>
+        </DCArtboard>
+        <DCArtboard id="d-down" label="桌面 · 写作服务掉线(软预警·编辑不受影响)" width={1180} height={640}>
+          <div className="frame"><EditorSurface mode="simple" preview="wechat" backendDown={true} canPushDraft={true} /></div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="pro" title="专业模式 · 三栏(暗门 · 收起不删除)"
+        subtitle="仅专业模式解锁:结构面板(大纲+插入)· CenterStage 预览(手机壳 + 缩放)· CodeDrawer(Monaco HTML/CSS/JS + 可视化编辑 SVG)· 实时 Lint · IDE 状态栏 · 简单 / 窄屏硬封死,绝不向小白漏出">
+        <DCArtboard id="p-triptych" label="桌面 · 三栏:结构 · 预览 · Monaco + Lint" width={1480} height={868}>
+          <div className="frame"><EditorSurface mode="pro" preview="wechat" canPushDraft={true} proView="triptych" /></div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="copy" title="复制优先发布 · 确认面板"
+        subtitle="复制到公众号 = 零门槛主推:校验闸通过 → 用户须再点一下才写剪贴板(浏览器要求)→ 成功显「可停留确认面板」(不自动消失·三步去后台引导)· 阻断级校验默认不可强过 · 含 SMIL 先信息级预警">
+        <DCArtboard id="c-ready" label="① 复制就绪 · 再点一下写入剪贴板" width={1180} height={724}>
+          <div className="frame"><EditorSurface mode="simple" preview="wechat" canPushDraft={true} dialog="copyReady" /></div>
+        </DCArtboard>
+        <DCArtboard id="c-success" label="② 复制成功 · 可停留确认面板" width={1180} height={724}>
+          <div className="frame"><EditorSurface mode="simple" preview="wechat" canPushDraft={true} dialog="copySuccess" /></div>
+        </DCArtboard>
+        <DCArtboard id="c-block" label="③ 阻断校验 · 默认不可强过" width={1180} height={764}>
+          <div className="frame"><EditorSurface mode="simple" preview="wechat" canPushDraft={true} dialog="block" /></div>
+        </DCArtboard>
+        <DCArtboard id="c-smil" label="④ SMIL 信息级预警 · 复制 / 草稿都过" width={1180} height={724}>
+          <div className="frame"><EditorSurface mode="simple" preview="wechat" canPushDraft={true} dialog="smil" /></div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="narrow" title="390px · 简单模式(窄屏)"
+        subtitle="<600px:硬封死代码 / 三栏 · 顶栏收窄、品牌名隐藏 · 动作行整行换行、复制按钮占满宽 · 工具条横向滚动 · 不挂底栏(自带「← 返回」)· 触控 ≥44px · 确认面板照常可停留">
+        <DCArtboard id="n-default" label="390 · 公众号效果(可编辑)" width={390} height={820}>
+          <div className="frame"><EditorSurface mode="simple" preview="wechat" narrow={true} canPushDraft={true} /></div>
+        </DCArtboard>
+        <DCArtboard id="n-success" label="390 · 复制成功(可停留确认)" width={390} height={820}>
+          <div className="frame"><EditorSurface mode="simple" preview="wechat" narrow={true} canPushDraft={true} dialog="copySuccess" /></div>
+        </DCArtboard>
+        <DCArtboard id="n-raw" label="390 · 交互预览(落差 hint)" width={390} height={820}>
+          <div className="frame"><EditorSurface mode="simple" preview="raw" narrow={true} canPushDraft={true} /></div>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>对话框 / 浮层层 · 统一对话语言 · DialogLayer(P9)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="ds/theme.css" />
+<style>
+  html, body { margin: 0; height: 100%; background: #f0eee9; }
+  .frame { position: relative; height: 100%; overflow: hidden; border-radius: inherit; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ds/icons.jsx"></script>
+<script type="text/babel" src="ds/ui.jsx"></script>
+<script type="text/babel" src="editor/editorParts.jsx"></script>
+<script type="text/babel" src="editor/DialogLayer.jsx"></script>
+<script type="text/babel">
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="gate" title="发布闸 · 三级严重度(层级清晰)"
+        subtitle="复制 / 草稿前的同一套校验闸,按严重度分流:信息(蓝·SMIL 预警·可继续)走信息模态 < 提醒(琥珀·人工确认项)按简报 §7-F 走「轻量 toast 放行」、绝不拦截 < 必修(红·会被微信静默剥离)才用模态硬拦(默认不可强过)。issues 硬 gate,warnings 仅 toast。">
+        <DCArtboard id="g-smil" label="① 信息级 · SVG-SMIL 预警(复制 / 草稿都过)" width={1180} height={744}>
+          <DlScreen overlay={<SmilWarningDialog action="copy" />} />
+        </DCArtboard>
+        <DCArtboard id="g-warn" label="② 警告级 · 轻量 toast 放行(非拦截式模态)" width={1180} height={744}>
+          <DlScreen overlay={<ValidationWarnToast action="copy" count={2} />} backdropProps={{ canPushDraft: true }} />
+        </DCArtboard>
+        <DCArtboard id="g-block" label="③ 阻断级 · 校验必修(默认不可强过)" width={1180} height={744}>
+          <DlScreen overlay={<ValidationBlockDialog action="copy" count={2} />} />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="progress" title="处理进度 · 忙态(互斥不堆叠)"
+        subtitle="复制 / 草稿真正动作时的进度态——绝不与对话框并存:进度浮层「替换」而非「叠加」任何对话。不用空转圈,而是工序点亮 stepper(校验 → 传图素材库 → 生成排版 → 就绪)· 无 veil 关闭、无逃生按钮,处理完才前进。草稿管线少一道传图步。">
+        <DCArtboard id="pr-copy" label="复制管线 · 传图到素材库(进行中)" width={1180} height={724}>
+          <DlScreen overlay={<PublishProgress action="copy" at={1} />} />
+        </DCArtboard>
+        <DCArtboard id="pr-draft" label="草稿管线 · 推送到草稿箱(进行中)" width={1180} height={724}>
+          <DlScreen overlay={<PublishProgress action="draft" at={2} />} />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="copy" title="复制就绪 → 成功 · 二次确认面板"
+        subtitle="校验全过 → 处理图片排版完 → 浏览器要求「最新一次点击里」才能写剪贴板,所以二次点击确认 → 成功显「可停留确认面板」(不自动消失·三步去后台引导·把下一步交还用户)。橙(待确认)→ 绿(已完成)的语义升级,首尾呼应主按钮动作。">
+        <DCArtboard id="c-ready" label="① 复制就绪 · 再点一下写入剪贴板" width={1180} height={724}>
+          <DlScreen overlay={<CopyReadyDialog />} backdropProps={{ menu: false }} />
+        </DCArtboard>
+        <DCArtboard id="c-success" label="② 复制成功 · 可停留确认(已绑号)" width={1180} height={724}>
+          <DlScreen overlay={<CopySuccessPanel canSendToDraft={true} />} />
+        </DCArtboard>
+        <DCArtboard id="c-big" label="③ 大文 >400KB · 分段复制预警" width={1180} height={724}>
+          <DlScreen overlay={<CopyReadyDialog big={true} />} />
+        </DCArtboard>
+        <DCArtboard id="c-success-nodraft" label="④ 复制成功 · 未绑号(只讲复制)" width={1180} height={724}>
+          <DlScreen overlay={<CopySuccessPanel canSendToDraft={false} />} backdropProps={{ canPushDraft: false }} />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="draft" title="草稿支路 · 与复制复用同一套闸"
+        subtitle="发到草稿箱 = 次要 / 高级动作,藏在「更多方式」(未绑号则禁用并标注「需先绑定公众号」)。一旦触发,走的是与复制完全相同的校验闸 + SMIL 预警 + 进度态,只是主按钮文案随动作切到「发布」。">
+        <DCArtboard id="d-menu" label="「更多方式」展开 · 草稿未绑号(禁用)" width={1180} height={660}>
+          <DlScreen overlay={null} backdropProps={{ menu: true, canPushDraft: false }} />
+        </DCArtboard>
+        <DCArtboard id="d-block" label="草稿阻断 · 主按钮换「仍要发布 / 去修正」" width={1180} height={744}>
+          <DlScreen overlay={<ValidationBlockDialog action="draft" count={2} />} />
+        </DCArtboard>
+        <DCArtboard id="d-progress" label="草稿进度 · 推送到草稿箱(少一道传图步)" width={1180} height={724}>
+          <DlScreen overlay={<PublishProgress action="draft" at={2} />} />
+        </DCArtboard>
+        <DCArtboard id="d-success" label="草稿成功 · 可停留确认(去后台→草稿箱·说人话)" width={1180} height={724}>
+          <DlScreen overlay={<DraftSuccessPanel />} backdropProps={{ canPushDraft: true }} />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="narrow" title="390px · 窄屏(同一套语言收窄)"
+        subtitle="<600px:沙堆 max-width 340 · 双按钮纵向堆叠(主在上)· 顶栏收成「← 返回起稿台」、品牌名隐藏、复制按钮文案缩成「复制」· 触控 ≥44px · 进度 / 确认面板照常工作,严重度 rail + tier 徽标不变。">
+        <DCArtboard id="n-block" label="390 · 阻断校验" width={390} height={812}>
+          <DlScreen narrow overlay={<ValidationBlockDialog narrow action="copy" count={2} />} />
+        </DCArtboard>
+        <DCArtboard id="n-progress" label="390 · 处理进度" width={390} height={812}>
+          <DlScreen narrow overlay={<PublishProgress narrow action="copy" at={1} />} />
+        </DCArtboard>
+        <DCArtboard id="n-success" label="390 · 复制成功 · 可停留" width={390} height={812}>
+          <DlScreen narrow overlay={<CopySuccessPanel narrow canSendToDraft={true} />} />
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

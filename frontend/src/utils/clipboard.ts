@@ -228,9 +228,13 @@ function stripThemeChromeBackgrounds(html: string): string {
   if (themeColors.size === 0) return html;
 
   const doc = new DOMParser().parseFromString(html, "text/html");
+  // 最外层元素 = block_doc 的信封壳。它的 background 是文章的显式页背景
+  // (用户/agent/模板设的),永不视为编辑器 chrome,即使值恰好等于某主题变量。
+  const rootEnvelope = doc.body ? doc.body.firstElementChild : null;
   const styled = doc.querySelectorAll<HTMLElement>("[style]");
   let changed = false;
   for (const el of styled) {
+    if (el === rootEnvelope) continue;
     const bg = el.style.backgroundColor;
     if (bg && themeColors.has(normalizeColor(bg))) {
       el.style.removeProperty("background-color");

@@ -376,6 +376,19 @@ describe("writeHtmlToClipboard", () => {
     expect(capturedHtml).toContain("background-color");
   });
 
+  // 文章背景显式化(2026-07-07):最外层信封壳的背景是文章的显式页背景,
+  // 复制时永不当作编辑器 chrome 剥掉——即使其值恰好等于某主题变量。
+  it("never strips the outer envelope background even if it matches a chrome var", async () => {
+    await writeHtmlToClipboard(
+      '<section style="background-color:#131313;padding:8px"><p style="background-color:#131313">x</p></section>'
+    );
+    // 壳背景保留;内部 <p> 同色 chrome 背景才被剥(格式容忍 hex/rgb)
+    const COLOR = /131313|rgb\(19, ?19, ?19\)/;
+    expect(capturedHtml).toMatch(COLOR);
+    const pStart = capturedHtml!.indexOf("<p");
+    expect(capturedHtml!.slice(pStart)).not.toMatch(COLOR);
+  });
+
   // Regression: the text/plain fallback used bare textContent, fusing
   // "<p>End.</p><p>Start</p>" into "End.Start" and collapsing whole
   // articles onto one line.

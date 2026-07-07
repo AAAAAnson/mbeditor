@@ -179,3 +179,37 @@ def test_per_style_structural_markers():
 def test_compose_is_deterministic_per_template():
     for tid in TEMPLATE_IDS:
         assert compose(_SAMPLE_MD, template_id=tid) == compose(_SAMPLE_MD, template_id=tid)
+
+
+# ── 守护:paper 只在信封壳、正文块透明、深色模板壳深色(2026-07-07)────────
+_BG_MD = "# 标题\n\n第一段正文足够长足够长足够长。\n\n## 小节\n\n第二段正文足够长。\n"
+
+
+def test_shell_carries_template_paper_as_page_background():
+    """paper「搬家到壳」:每套模板的页背景在信封壳开标签上,是唯一真源。"""
+    from app.services.block_doc import html_to_blocks
+    from app.services.layout_composer import _SHELL
+
+    for tid in TEMPLATE_IDS:
+        doc = html_to_blocks(compose(_BG_MD, template_id=tid))
+        assert doc.shell_open.startswith("<section")
+        assert doc.shell_close.strip() == "</section>"
+        assert f'background-color:{_SHELL[tid]["paper"]}' in doc.shell_open
+
+
+def test_dark_template_keeps_dark_shell_background():
+    """深色模板 tech_neon 壳背景必须是深色,否则浅字掉白画布不可读。"""
+    from app.services.block_doc import html_to_blocks
+
+    doc = html_to_blocks(compose(_BG_MD, template_id="tpl_tech_neon"))
+    assert "#0f1117" in doc.shell_open
+
+
+def test_minimal_content_blocks_have_no_background_fill():
+    """干货模板正文/结构块不带自身背景填充 -> 改壳背景全篇跟随。"""
+    from app.services.block_doc import html_to_blocks
+
+    doc = html_to_blocks(compose(_BG_MD, template_id="tpl_biz_minimal"))
+    for b in doc.blocks:
+        root = b.html[: b.html.find(">") + 1] if b.html.startswith("<") else ""
+        assert "background-color" not in root, (b.kind, root)

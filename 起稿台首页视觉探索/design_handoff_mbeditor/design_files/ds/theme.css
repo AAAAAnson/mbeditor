@@ -1,0 +1,158 @@
+/* ============================================================
+   MBEditor · Direction A — Warm-Friendly
+   Canonical design tokens. Single coherent system for the whole app.
+   Scope: :root (every screen imports this file).
+   Light is primary; a [data-theme="dark"] warm-dark layer is optional.
+   NO emoji anywhere — icons are inline SVG (see icons.jsx).
+   ============================================================ */
+
+:root {
+  /* ---- Brand anchor ---------------------------------------------------
+     Orange #E8553A lives on the logo, so it anchors the palette. In the UI
+     it plays ONE role at a time: the single strong accent (primary CTA /
+     selected / link). Everywhere else it recedes to a 点睛 touch — the
+     cream + warm-neutral surfaces carry the interface, never full-screen
+     orange. The scale below is a harmonious oklch ramp off #E8553A. */
+  --orange-50:  #fdeee9;
+  --orange-100: #fbdccf;
+  --orange-200: #f6b9a1;
+  --orange-300: #f0906f;
+  --orange-400: #ec6f4d;
+  --orange-500: #e8553a;   /* brand — primary action */
+  --orange-600: #cf4329;   /* hover/pressed */
+  --orange-700: #a8351f;
+  --orange-800: #7d2817;
+  --cream:      #fbf4e8;   /* logo reverse / on-accent text & glyphs */
+
+  /* ---- Warm neutral ramp (earth-tone, low-sat) ------------------------ */
+  --bg:         #fbf6ee;   /* page */
+  --bg-sunk:    #f4ece0;   /* recessed wells / track bg */
+  --surface:    #fffdf9;   /* cards / inputs */
+  --surface-2:  #f8f1e6;   /* hovered / striped surface */
+  --line:       #ece2d4;   /* hairline borders */
+  --line-strong:#dccdb8;   /* stronger divider / input border */
+  --ink:        #3a332c;   /* body text */
+  --ink-strong: #2a241e;   /* headings */
+  --ink-soft:   #7c7064;   /* secondary text */
+  --ink-faint:  #a99c8b;   /* placeholder / disabled */
+
+  /* ---- Semantic (each: solid + soft bg + on-soft text) ---------------- */
+  --success:      #3f8f72;  --success-soft: #e6f1ea;  --success-ink: #2c6a53;
+  --warning:      #c07f23;  --warning-soft: #faedce;  --warning-ink: #8f5d12;
+  --info:         #5b7a99;  --info-soft:    #e8eef4;  --info-ink:    #3f5a76;
+  --danger:       #b23a2b;  --danger-soft:  #f8e3df;  --danger-ink:  #8c2d20;
+  /* danger red is deliberately darker/browner than brand orange and is
+     rendered as outline/text by default, so a destructive control never
+     reads as the primary CTA. */
+
+  /* ---- Radius --------------------------------------------------------- */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 13px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-2xl: 26px;
+  --r-pill: 999px;
+
+  /* ---- Shadow (warm, brown-tinted; soft & low) ------------------------ */
+  --sh-xs: 0 1px 2px rgba(120,80,40,.07);
+  --sh-sm: 0 2px 8px -3px rgba(120,80,40,.16);
+  --sh-md: 0 8px 22px -12px rgba(120,80,40,.30);
+  --sh-lg: 0 18px 44px -26px rgba(120,80,40,.42);
+  --sh-xl: 0 30px 70px -32px rgba(120,80,40,.5);
+  --ring:  0 0 0 3px rgba(232,85,58,.24);   /* focus ring */
+  --ring-soft: 0 0 0 3px rgba(63,143,114,.22);
+
+  /* ---- Spacing (4-based) ---------------------------------------------- */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px; --s-5: 20px;
+  --s-6: 24px; --s-7: 32px; --s-8: 40px; --s-9: 48px; --s-10: 64px;
+
+  /* ---- Type families (中文优先) --------------------------------------- */
+  --f-display: "Source Serif 4", "Noto Serif SC", Georgia, serif;
+  --f-sans: "Noto Sans SC", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", "Noto Sans Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* ---- Motion --------------------------------------------------------- */
+  --ease: cubic-bezier(.2,.7,.3,1);          /* gentle ease-out, default */
+  --ease-spring: cubic-bezier(.34,1.4,.5,1); /* soft overshoot for delight */
+  --t-micro: 120ms;   /* hover / press feedback */
+  --t-base: 200ms;    /* most state changes */
+  --t-enter: 320ms;   /* element entrance */
+  --t-celebrate: 600ms; /* success / stamp moments */
+
+  /* ---- Displacement (how far things travel — keep moves short) -------- */
+  --d-press: 1px;     /* button/chip press settle */
+  --d-nudge: 4px;     /* hover lift, switch thumb micro-shift */
+  --d-rise:  10px;    /* element / list-item entrance from below */
+  --d-pop:   12px;    /* dialog & celebration card pop-in */
+  --d-slide: 16px;    /* page / panel cross-slide */
+  --stagger: 55ms;    /* per-item delay in a staggered list (cap ~6 items) */
+}
+
+/* ---- Optional warm dark (walnut) ------------------------------------- */
+[data-theme="dark"] {
+  --bg:         #211b15;
+  --bg-sunk:    #1a140f;
+  --surface:    #2c241c;
+  --surface-2:  #362c22;
+  --line:       #3d3225;
+  --line-strong:#4d3f2e;
+  --ink:        #efe6d8;
+  --ink-strong: #fbf4e8;
+  --ink-soft:   #b8a892;
+  --ink-faint:  #8a7a64;
+  --success-soft:#1f3b30; --warning-soft:#3e3015; --info-soft:#23313e; --danger-soft:#3e211b;
+  --sh-md: 0 8px 22px -12px rgba(0,0,0,.6);
+  --sh-lg: 0 18px 44px -26px rgba(0,0,0,.7);
+}
+
+/* ============================================================
+   Base + type utilities
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--f-sans);
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* type scale — class-based so components & docs share one source */
+.t-display-xl { font-family: var(--f-display); font-weight: 700; font-size: 46px; line-height: 1.14; letter-spacing: .3px; color: var(--ink-strong); }
+.t-display   { font-family: var(--f-display); font-weight: 700; font-size: 34px; line-height: 1.2;  letter-spacing: .3px; color: var(--ink-strong); }
+.t-title     { font-family: var(--f-display); font-weight: 700; font-size: 26px; line-height: 1.3;  color: var(--ink-strong); }
+.t-heading   { font-weight: 700; font-size: 20px; line-height: 1.4; color: var(--ink-strong); }
+.t-body-lg   { font-size: 17px; line-height: 1.75; }
+.t-body      { font-size: 15px; line-height: 1.7; }
+.t-small     { font-size: 13px; line-height: 1.6; color: var(--ink-soft); }
+.t-caption   { font-size: 12px; line-height: 1.5; color: var(--ink-soft); letter-spacing: .2px; }
+.t-mono      { font-family: var(--f-mono); font-size: 14px; line-height: 1.6; }
+
+/* ============================================================
+   Shared motion utilities — one source for the whole app.
+   Entrances are the visible end-state animated FROM hidden, so
+   print / reduced-motion / no-JS land on the final state.
+   ============================================================ */
+@keyframes mb-rise-in   { from { opacity:0; transform: translateY(var(--d-rise)); }   to { opacity:1; transform:none; } }
+@keyframes mb-page-in   { from { opacity:0; transform: translateY(var(--d-slide)); }  to { opacity:1; transform:none; } }
+@keyframes mb-page-out  { from { opacity:1; transform:none; } to { opacity:0; transform: translateY(calc(var(--d-slide) * -0.6)); } }
+@keyframes mb-dialog-in { from { opacity:0; transform: translateY(var(--d-pop)) scale(.96); } to { opacity:1; transform:none; } }
+@keyframes mb-dialog-out{ from { opacity:1; transform:none; } to { opacity:0; transform: translateY(8px) scale(.98); } }
+@keyframes mb-overlay-out{ from { opacity:1; } to { opacity:0; } }
+
+.u-page-in { animation: mb-page-in var(--t-enter) var(--ease) both; }
+.u-rise    { animation: mb-rise-in var(--t-enter) var(--ease) both; }
+/* staggered list: set --i (0-based index) on each child */
+.u-stagger > * { animation: mb-rise-in var(--t-enter) var(--ease) both; animation-delay: calc(var(--i, 0) * var(--stagger)); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;   /* stop caret blink / spinner / pulses looping */
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

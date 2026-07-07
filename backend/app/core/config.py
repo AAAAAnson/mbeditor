@@ -3,7 +3,7 @@ from typing import Optional
 from pydantic_settings import BaseSettings
 
 
-APP_VERSION = "6.0.0"
+APP_VERSION = "6.1.0"
 GITHUB_REPO = "AAAAAnson/mbeditor"
 
 

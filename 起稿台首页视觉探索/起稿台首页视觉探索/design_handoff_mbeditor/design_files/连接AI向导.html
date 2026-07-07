@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>连接 AI 写手 · BYOK 向导 · ConnectAiWizard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="ds/theme.css" />
+<style>
+  html, body { margin: 0; height: 100%; background: #f0eee9; }
+  .frame { position: relative; height: 100%; overflow: hidden; border-radius: inherit; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ds/icons.jsx"></script>
+<script type="text/babel" src="ds/ui.jsx"></script>
+<script type="text/babel" src="compose/ConnectAiWizard.jsx"></script>
+<script type="text/babel">
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="step1" title="步 1 · 选服务商" subtitle="左深褐叙事栏固定双安心承诺(①要花钱吗·几分钱·不经服务器 ②密钥只存本机/服务端·不外传)· 右栏 hairline 服务商列表:可信度 + 价格锚 · DeepSeek 推荐位 · 底部「我先去设置里配置」= cancel">
+        <DCArtboard id="s1-desktop" label="桌面 · 步1 选服务商(DeepSeek 推荐)" width={1180} height={720}>
+          <div className="frame"><ConnectAiWizard initialStep={1} /></div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="step2" title="步 2 · 连接" subtitle="3 步图文引导(注册→建密钥→粘贴,迷你后台窗口截图位)· 自动锁定 base_url / model(下划线式、无需手填)· 单个 API Key 密码框 autoFocus ·「测试并连接」空 key 禁用">
+        <DCArtboard id="s2-desktop" label="桌面 · 步2 连接(空 key · 按钮禁用)" width={1180} height={820}>
+          <div className="frame"><ConnectAiWizard initialStep={2} initialProvider="deepseek" initialTest="idle" /></div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="fail" title="测试失败态" subtitle="§7 G 硬约束:testLlmConnection 失败 → 显错、不保存、不放行 · 红条幅说人话(401 / 含空格 / 未充值激活)· 引导改好再点一次「测试并连接」· 左栏安全承诺仍在场">
+        <DCArtboard id="fail-desktop" label="桌面 · 测试失败(不保存 · 不放行)" width={1180} height={880}>
+          <div className="frame"><ConnectAiWizard initialStep={2} initialProvider="deepseek" initialTest="fail" /></div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="narrow" title="390px · 窄屏" subtitle="<600px:左叙事栏收成顶部 band(品牌+标题+双安心)· 右栏堆叠于下 · 3 步引导 / base_url+model 转单列 · 不挂底栏·触控 ≥44px">
+        <DCArtboard id="n-step1" label="390 · 步1 选服务商" width={390} height={880}>
+          <div className="frame"><ConnectAiWizard narrow={true} initialStep={1} /></div>
+        </DCArtboard>
+        <DCArtboard id="n-step2" label="390 · 步2 连接" width={390} height={1140}>
+          <div className="frame"><ConnectAiWizard narrow={true} initialStep={2} initialTest="idle" /></div>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

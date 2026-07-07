@@ -501,3 +501,53 @@ class TestSkippedBlockIds:
         out = run_tool("set_design_tokens", doc, {"body_font_size": 16})
         assert out.payload["applied"] is True
         assert out.payload["skipped_block_ids"] == []
+
+
+# ── set_design_tokens(background_color) 接上壳背景改写(2026-07-07)──────────
+def test_set_background_injects_on_shell_open():
+    doc = html_to_blocks('<section style="padding:18px 0 4px;"><p>正文</p></section>')
+    out = run_tool("set_design_tokens", doc, {"background_color": "#e8f0ff"})
+    assert out.payload["applied"] is True
+    html = blocks_to_html(out.doc)
+    assert "background-color:#e8f0ff" in out.doc.shell_open
+    assert html.startswith('<section style="padding:18px 0 4px; background-color:#e8f0ff">')
+    assert "<p>正文</p>" in html
+
+
+def test_set_background_replaces_existing_shell_background():
+    doc = html_to_blocks('<section style="background-color:#faf6eb;padding:10px;"><p>x</p></section>')
+    out = run_tool("set_design_tokens", doc, {"background_color": "#0f1117"})
+    assert out.doc.shell_open.count("background-color") == 1
+    assert "background-color:#0f1117" in out.doc.shell_open
+    assert "#faf6eb" not in out.doc.shell_open
+
+
+def test_set_background_wraps_when_no_shell():
+    doc = html_to_blocks('<p>甲</p><p>乙</p>')  # 多顶层元素 -> 无信封壳
+    assert doc.shell_open == ""
+    out = run_tool("set_design_tokens", doc, {"background_color": "#222244"})
+    html = blocks_to_html(out.doc)
+    assert html == '<section style="background-color:#222244;"><p>甲</p><p>乙</p></section>'
+
+
+def test_set_background_roundtrip_byte_equal():
+    doc = html_to_blocks('<section style="padding:8px;"><p>甲</p><p>乙</p></section>')
+    out = run_tool("set_design_tokens", doc, {"background_color": "transparent"})
+    html = blocks_to_html(out.doc)
+    assert blocks_to_html(html_to_blocks(html)) == html
+
+
+def test_set_background_preserves_media_count():
+    doc = html_to_blocks(
+        '<section style="padding:8px;">'
+        '<svg xmlns="http://www.w3.org/2000/svg"></svg><img src="a.png"></section>'
+    )
+    out = run_tool("set_design_tokens", doc, {"background_color": "#123456"})
+    html = blocks_to_html(out.doc)
+    assert html.count("<svg") == 1 and html.count("<img") == 1
+
+
+def test_set_tokens_without_background_leaves_shell_untouched():
+    doc = html_to_blocks('<section style="padding:8px;"><p>x</p></section>')
+    out = run_tool("set_design_tokens", doc, {"text_color": "#333333"})
+    assert out.doc.shell_open == '<section style="padding:8px;">'

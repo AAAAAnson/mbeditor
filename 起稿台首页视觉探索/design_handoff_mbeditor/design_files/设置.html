@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>设置 · 4 抽屉 · SettingsSurface(P8)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="ds/theme.css" />
+<style>
+  html, body { margin: 0; height: 100%; background: #f0eee9; }
+  .frame { position: relative; height: 100%; overflow: hidden; border-radius: inherit; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ds/icons.jsx"></script>
+<script type="text/babel" src="ds/ui.jsx"></script>
+<script type="text/babel" src="compose/ConnectAiWizard.jsx"></script>
+<script type="text/babel" src="settings/SettingsSections.jsx"></script>
+<script type="text/babel" src="settings/SettingsAppearance.jsx"></script>
+<script type="text/babel" src="settings/SettingsSurface.jsx"></script>
+<script type="text/babel">
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="desktop-appearance" title="桌面 · 设置「外观」(展开)"
+        subtitle="左 nav(4 视觉分组 / 8 叶子 key)+ 右内容。外观区:界面模式 simple/pro 卡片选择器 +「专业模式能解锁这些」预告盒(收起不删除)+ 主题 / 字体 / 密度 / 布局(专业才可用)/ 内嵌编辑器默认。section=editor 归一到 appearance。">
+        <DCArtboard id="d-appearance" label="桌面 · 外观与模式(section=appearance)" width={1200} height={1000}>
+          <div className="frame"><SettingsSurface section="appearance" /></div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="desktop-wechat" title="发布 · 公众号(三态密钥徽标 + 绑定向导)"
+        subtitle="账号列表 radio 选活跃号;三态徽标:密钥已保存(服务端·forest+锁)/ 会话临时(gold)/ 未配置密钥。「添加公众号」开绑定向导:步0 名称+AppID → 步1 AppSecret,测连接通过才解锁「确认绑定」。复制零门槛不需绑号,草稿才需要。">
+        <DCArtboard id="d-wechat" label="① 公众号列表 · 三态徽标 · 活跃号 radio" width={1200} height={760}>
+          <div className="frame"><SettingsSurface section="wechat" /></div>
+        </DCArtboard>
+        <DCArtboard id="d-bind0" label="② 绑定向导 · 步0 账号信息" width={1200} height={760}>
+          <div className="frame"><SettingsSurface section="wechat" _bind="step0" /></div>
+        </DCArtboard>
+        <DCArtboard id="d-bind1" label="③ 绑定向导 · 步1 测连接通过 → 解锁确认" width={1200} height={760}>
+          <div className="frame"><SettingsSurface section="wechat" _bind="ok" /></div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="desktop-leaves" title="其余叶子 · deep-link(写作 / 发布)"
+        subtitle="每个 section deep-link 独立可达。AI 引擎复用连接 presets + 当前来源 stored/env 标注;音色档案单档案、空档案按「无档案」处理;发布服务器开关 + 令牌 write-only + PEM;图床默认公众号素材库。">
+        <DCArtboard id="d-aiengine" label="AI 引擎(section=aiengine)" width={1200} height={820}>
+          <div className="frame"><SettingsSurface section="aiengine" /></div>
+        </DCArtboard>
+        <DCArtboard id="d-voice" label="音色档案(section=voice · 有档案)" width={1200} height={760}>
+          <div className="frame"><SettingsSurface section="voice" /></div>
+        </DCArtboard>
+        <DCArtboard id="d-gateway" label="发布服务器(section=gateway)" width={1200} height={760}>
+          <div className="frame"><SettingsSurface section="gateway" /></div>
+        </DCArtboard>
+        <DCArtboard id="d-imagehost" label="图床(section=imagehost)" width={1200} height={680}>
+          <div className="frame"><SettingsSurface section="imagehost" /></div>
+        </DCArtboard>
+        <DCArtboard id="d-about" label="关于(section=about)" width={1200} height={620}>
+          <div className="frame"><SettingsSurface section="about" /></div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="narrow" title="390px · 左 nav 转受控手风琴(单开)"
+        subtitle="<600px:左 nav 收成手风琴,单开一项,叶子 key(deep-link)零改;行内 label+控件改上下堆叠;模式卡 / 预告盒转单列;不挂顶 tab 改底部 2 tab。触控 ≥44px,底部留安全区。">
+        <DCArtboard id="n-appearance" label="390 · 手风琴(外观展开)" width={390} height={880}>
+          <div className="frame"><SettingsSurface narrow={true} section="appearance" /></div>
+        </DCArtboard>
+        <DCArtboard id="n-wechat" label="390 · 手风琴(公众号展开 · 三态徽标)" width={390} height={880}>
+          <div className="frame"><SettingsSurface narrow={true} section="wechat" /></div>
+        </DCArtboard>
+        <DCArtboard id="n-aiengine" label="390 · 手风琴(AI 引擎展开)" width={390} height={880}>
+          <div className="frame"><SettingsSurface narrow={true} section="aiengine" /></div>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

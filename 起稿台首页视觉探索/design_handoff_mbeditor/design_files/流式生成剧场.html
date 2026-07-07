@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>流式生成剧场 + 成功庆祝层 + 错误态 · GeneratingTheater</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="ds/theme.css" />
+<style>
+  html, body { margin: 0; height: 100%; background: #f0eee9; }
+  .frame { position: relative; height: 100%; overflow: hidden; border-radius: inherit; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ds/icons.jsx"></script>
+<script type="text/babel" src="ds/ui.jsx"></script>
+<script type="text/babel" src="compose/GeneratingTheater.jsx"></script>
+<script type="text/babel">
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="generating" title="流式生成剧场 · generating" subtitle="左 5 道工序竖轨(立意→行文→制版→自检→核验)逐道点亮 · 右逐字手稿:标题点亮 → 正文逐字 → 闪烁光标 + 实时字数 · 真流式循环演示,禁用空 loading">
+        <DCArtboard id="g-desktop" label="桌面 · 流式生成中(真流式,循环)" width={1280} height={760}>
+          <div className="frame"><GeneratingTheater phase="generating" live={true} /></div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="done" title="成功庆祝层 · done" subtitle="校样通过印章 → 庆祝层(confetti + 完成感)· 三条下一步交还用户,绝不自动跳转 · 草稿入口仅在已绑号时露出">
+        <DCArtboard id="d-bound" label="桌面 · 已绑公众号(复制 / 看效果 / 发草稿 三选)" width={1280} height={760}>
+          <div className="frame"><GeneratingTheater phase="done" canPushDraft={true} /></div>
+        </DCArtboard>
+        <DCArtboard id="d-unbound" label="桌面 · 未绑号(只露复制 · 文案降级讲复制)" width={1280} height={760}>
+          <div className="frame"><GeneratingTheater phase="done" canPushDraft={false} /></div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="error" title="错误态 · error" subtitle="no_provider → 友好引导连接 AI(BYOK 安心)· 其它错误码 → 后端中文 message +「换个说法 / 重试」回 asking">
+        <DCArtboard id="e-noprovider" label="桌面 · no_provider(未连 key · 引导连接向导)" width={1280} height={760}>
+          <div className="frame"><GeneratingTheater phase="error" errorCode="no_provider" /></div>
+        </DCArtboard>
+        <DCArtboard id="e-timeout" label="桌面 · llm_timeout(生成中断 · 换说法 / 重试)" width={1280} height={760}>
+          <div className="frame"><GeneratingTheater phase="error" errorCode="llm_timeout" /></div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="narrow" title="390px · 窄屏" subtitle="<600px:5 工序转横向步条 · 手稿 width:100% 流式 · 庆祝层按钮纵向堆叠 · 不挂底栏(自带返回)">
+        <DCArtboard id="n-gen" label="390 · 流式生成中(横向步条)" width={390} height={780}>
+          <div className="frame"><GeneratingTheater narrow={true} phase="generating" live={true} /></div>
+        </DCArtboard>
+        <DCArtboard id="n-done" label="390 · 成功庆祝层(已绑号)" width={390} height={780}>
+          <div className="frame"><GeneratingTheater narrow={true} phase="done" canPushDraft={true} /></div>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

@@ -99,11 +99,13 @@ def _summary_of(block: Block) -> str:
 
 
 def _clone_doc(doc: BlockDoc, blocks: list[Block] | None = None,
-               design_tokens: dict | None = None) -> BlockDoc:
+               design_tokens: dict | None = None,
+               shell_open: str | None = None,
+               shell_close: str | None = None) -> BlockDoc:
     """浅克隆出新 BlockDoc(纯函数写路径专用,入参零改动)。"""
     return BlockDoc(
-        shell_open=doc.shell_open,
-        shell_close=doc.shell_close,
+        shell_open=doc.shell_open if shell_open is None else shell_open,
+        shell_close=doc.shell_close if shell_close is None else shell_close,
         blocks=list(doc.blocks) if blocks is None else blocks,
         design_tokens=dict(doc.design_tokens) if design_tokens is None else design_tokens,
     )
@@ -196,6 +198,22 @@ def _merge_style_into_root(frag: str, props: list[tuple[str, str]]) -> str:
         new_attrs = attrs[: sm.start()] + f' style="{merged}"' + attrs[sm_end:]
     rest = frag[m.end():]
     return f"{lead}<{tag}{new_attrs}{selfclose}>{rest}"
+
+
+def _apply_shell_background(shell_open: str, shell_close: str, value: str) -> tuple[str, str]:
+    """确定性把 background-color 设进信封壳开标签(注入/替换)。
+
+    壳为空(无信封:多顶层元素/裸文本)时,按最小壳
+    ``<section style="background-color:VALUE;">`` 包裹,并补 ``</section>`` 闭壳,
+    保住 ``blocks_to_html = shell_open + blocks + shell_close``。
+    非空壳仅操作开标签的 style 属性,复用 ``_merge_style_into_root``(对 open-only
+    片段 rest 为空,返回改写后的开标签),故往返不变量不破。
+    """
+    val = value.strip()
+    if not shell_open.strip():
+        return f'<section style="background-color:{val};">', "</section>"
+    new_open = _merge_style_into_root(shell_open, [("background-color", val)])
+    return new_open, shell_close
 
 
 # apply_block_style 的扁平参数 -> CSS 属性;True = 数值型入参自动补 px。
@@ -398,8 +416,14 @@ def _tool_set_design_tokens(doc: BlockDoc, args: dict) -> ToolOutcome:
             skipped.append(b.id)
             continue
         blocks.append(Block(id=b.id, kind=b.kind, html=clean))
+    new_shell_open, new_shell_close = doc.shell_open, doc.shell_close
+    if incoming.get("background_color"):
+        new_shell_open, new_shell_close = _apply_shell_background(
+            doc.shell_open, doc.shell_close, str(incoming["background_color"])
+        )
     return ToolOutcome(
-        doc=_clone_doc(doc, blocks=blocks, design_tokens=tokens),
+        doc=_clone_doc(doc, blocks=blocks, design_tokens=tokens,
+                       shell_open=new_shell_open, shell_close=new_shell_close),
         payload={
             "applied": True,
             "tokens": dict(tokens),

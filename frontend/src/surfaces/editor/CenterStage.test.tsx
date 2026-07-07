@@ -1394,3 +1394,51 @@ describe("CenterStage", () => {
     expect(baseProps.onRefreshPreview).not.toHaveBeenCalled();
   });
 });
+
+describe("CenterStage · 文章背景显式化(2026-07-07)", () => {
+  afterEach(cleanup);
+
+  const baseProps = () => ({
+    articleId: "draft-1",
+    canGoBack: true,
+    view: "preview" as const,
+    setView: vi.fn(),
+    tab: "html",
+    setTab: vi.fn(),
+    saveState: "saved" as const,
+    selected: "body",
+    navigationRequest: null,
+    previewHtml: "<p>Hello preview</p>",
+    previewLoading: false,
+    previewError: null,
+    publishing: false,
+    copying: false,
+    previewMode: "wechat" as const,
+    onPreviewModeChange: vi.fn(),
+    onBackToList: vi.fn(),
+    onRefreshPreview: vi.fn(),
+    onCopyRichText: vi.fn(),
+    onPublish: vi.fn(),
+  });
+
+  it("preview frame uses white canvas, not warm chrome", () => {
+    render(<CenterStage {...baseProps()} draft={DRAFT} onFieldChange={vi.fn()} />);
+    const frame = screen.getByTestId("preview-frame");
+    const style = frame.getAttribute("style") ?? "";
+    expect(style).not.toMatch(/faf6eb/i);
+    expect(style).toMatch(/background:\s*(#fff|#ffffff|rgb\(255,\s*255,\s*255\))/i);
+  });
+
+  it("background control edits article html via onFieldChange", () => {
+    const onFieldChange = vi.fn();
+    render(
+      <CenterStage
+        {...baseProps()}
+        draft={{ ...DRAFT, html: '<section style="padding:8px;"><p>x</p></section>' }}
+        onFieldChange={onFieldChange}
+      />,
+    );
+    fireEvent.input(screen.getByTestId("bg-color-input"), { target: { value: "#123456" } });
+    expect(onFieldChange).toHaveBeenCalledWith("html", expect.stringContaining("background-color:#123456"));
+  });
+});
